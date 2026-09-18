@@ -24,7 +24,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ### Phase 0B — reversible mutation-dependent compatibility
 
-- [x] Codex CLI custom provider sends Responses to loopback with reproducible sanitized evidence. Evidence: `codex-cli-transport-v2-*.json`.
+- [ ] Codex CLI custom provider sends Responses to loopback — provisional; v3 Gate A `FAIL` due incomplete process termination evidence. Evidence: `codex-cli-transport-v3-20260918T205630Z.json`.
 - [ ] Codex picker retains desired provider route — `BLOCKED` pending user-assisted UI action.
 - [ ] Antigravity setting path/key and loopback behavior proven reversibly.
 - [ ] Native route and schema inventory captured safely.

@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "test_id": "P0B-CX-TRANSPORT-001",
+  "status": "FAIL",
+  "result": "The v3 recorder captured the intended request shape, but the Codex process did not complete bounded termination after the synthetic response and Gate A stopped.",
+  "evidence": "codex-cli-transport-v3-20260918T205630Z.json",
+  "cleanup": "Probe-owned process/listener and temporary root were removed after the bounded stop.",
+  "next_action": "Repair response/lifecycle harness and rerun before any user configuration mutation."
+}

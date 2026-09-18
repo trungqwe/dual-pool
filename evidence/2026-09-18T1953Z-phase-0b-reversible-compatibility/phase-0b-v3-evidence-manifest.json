@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "test_id": "phase0b-v3-evidence-manifest",
+  "status": "PASS",
+  "secret_scan": "PASS",
+  "json_validation": "PASS",
+  "cleanup": "PASS",
+  "gate_a": "FAIL",
+  "artifacts": [
+    {"path": "codex-cli-transport-v3-20260918T205630Z.json", "sha256": "9CC5BFDD4110960A43E0FA9FBFA233A6ABFB680CEDAEEE92BC310FB861596785"},
+    {"path": "probe-results-v3.json", "sha256": "D213A0BA4A2C5C8E18836C21F930B984E312B48FE2E1E592C79F43123875C3BF"},
+    {"path": "phase-0b-status-v3.json", "sha256": "637531C2CBC3600CADD6F571D9EEBB9102E2098B82C4FFA5DA415295D734AE29"},
+    {"path": "security-gate-v3.json", "sha256": "B05FE24D3C5905DBB72FE9374277C7777C74007EEBAC0E78315195C17FA2A37B"}
+  ],
+  "raw_artifacts": "deleted outside repository; no account or OAuth file added"
+}

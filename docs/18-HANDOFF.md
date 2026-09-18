@@ -80,6 +80,15 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 - Cleanup: synthetic process and listener were removed; no application integration was enabled.
 - Phase 1 remains forbidden. Repeat final acceptance on Windows 11 because this machine is Windows 10.
 
+## Final assisted-gates continuation
+
+- Starting commit: `a22e70bb913b6a547cbdf23d792c4280a33f219d`.
+- v3 Gate A: `FAIL`; Codex did not terminate naturally after the synthetic response, so picker and Antigravity UI checkpoints were not started.
+- Current authoritative status: `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/phase-0b-status-v3.json`.
+- Security evidence: `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/security-gate-v3.json` (`PASS`).
+- Cleanup: owned probe process/listener stopped; temporary v3 home removed; no user configuration or account/OAuth file changed.
+- Exact next objective: repair v3 bounded process lifecycle/response handling, rerun Gate A, and only then request the user-assisted Codex picker checkpoint.
+
 ## Exact next bounded objective
 
 Phase 0B — run backed-up and reversible Codex custom-provider/picker and Antigravity redirect/passthrough/envelope experiments. Entry requires confirming whether this Windows 10 machine is the intended exploratory target or providing the Windows 11 target required by the charter. Continue to prohibit provider-account work except a separately authorized U-004 probe.

@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "test_id": "phase0b-security-gate-v3",
+  "status": "PASS",
+  "timestamp_utc": "2026-09-18T2054Z",
+  "paths_scanned": [
+    "scripts/phase0b-codex-cli-transport-v3.ps1",
+    "docs/reports/2026-09-18T2054Z-phase-0b-final-assisted-gates.md",
+    "evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/"
+  ],
+  "procedure": "JSON parse plus pattern scan for secret/token/private-key, email, literal user path, Authorization/Cookie/Bearer values, and raw body markers",
+  "pattern_classes": ["sentinel values", "API keys", "OAuth/token values", "private keys", "email addresses", "user paths", "raw request/response bodies"],
+  "match_count": 0,
+  "limitations": ["The v3 probe itself failed Gate A; this security scan does not convert that failure to PASS."]
+}

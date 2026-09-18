@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "test_id": "phase0b-current-status-v3",
+  "supersedes": ["phase-0b-gates.json", "codex-cli-transport.json", "SUMMARY.md prior interpretation"],
+  "reason": "Independent audit found v2 evidence insufficient; v3 Gate A did not complete all required assertions.",
+  "authoritative_current_status": {
+    "U-001": "BLOCKED",
+    "U-002": "BLOCKED",
+    "U-003": "BLOCKED",
+    "U-004": "BLOCKED",
+    "U-005": "PARTIAL / UNKNOWN",
+    "U-006": "BLOCKED",
+    "U-007": "PROBED",
+    "U-008": "PARTIAL / UNKNOWN"
+  },
+  "phase_0b_gate": "BLOCKED",
+  "codex_v3": "FAIL",
+  "ui_probes": "BLOCKED: Gate A failed; user-assisted actions not started",
+  "phase_1_started": false
+}

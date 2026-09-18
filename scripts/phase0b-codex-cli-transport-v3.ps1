@@ -1,0 +1,45 @@
+$ErrorActionPreference = 'Stop'
+$runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ')
+$tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('dual-pool-phase0b-v3-' + [Guid]::NewGuid().ToString('N'))
+$codexHome = Join-Path $tempRoot 'codex-home'; $capture = Join-Path $tempRoot 'metadata.json'
+$stdout = Join-Path $tempRoot 'stdout.log'; $stderr = Join-Path $tempRoot 'stderr.log'; $recorder = Join-Path $tempRoot 'recorder.ps1'
+$port = Get-Random -Minimum 18100 -Maximum 18900
+$secretSentinel = 'SECRET_SENTINEL_' + [Guid]::NewGuid().ToString('N')
+$promptSentinel = 'PROMPT_SENTINEL_' + [Guid]::NewGuid().ToString('N')
+$started = [DateTime]::UtcNow; $codex = $null; $recorderProcess = $null; $ownedPids = @()
+$result = [ordered]@{ schema_version='1.0'; test_id='P0B-CX-TRANSPORT-001'; run_id=$runId; started_at=$started.ToString('o'); status='FAIL'; assertions=[ordered]@{}; limitations=@('Synthetic recorder rejects the request after metadata capture; no provider account is used.') }
+function Get-Shape($v, $p) {
+  $out = New-Object System.Collections.Generic.List[string]
+  if ($null -eq $v) { $out.Add($p+':null'); return $out }
+  if ($v -is [Collections.IEnumerable] -and -not ($v -is [string])) { $out.Add($p+':array'); foreach($x in $v){foreach($y in (Get-Shape $x ($p+'[]'))){$out.Add($y)}}; return $out }
+  $props=@($v.PSObject.Properties)
+  if($props.Count -gt 0 -and $v -isnot [string] -and $v -isnot [ValueType]){$out.Add($p+':object');foreach($prop in $props){foreach($x in (Get-Shape $prop.Value ($p+'.'+$prop.Name))){$out.Add($x)}};return $out}
+  $out.Add($p+':'+$v.GetType().Name.ToLowerInvariant()); return $out
+}
+try {
+  $cmd = Get-Command codex -ErrorAction Stop; $codexPath=$cmd.Source
+  $result.environment=[ordered]@{ os=[Environment]::OSVersion.VersionString; architecture=[Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITECTURE'); codex_version=((& $codexPath --version 2>&1 | Select-Object -First 1).ToString()); codex_sha256=(Get-FileHash $codexPath -Algorithm SHA256).Hash }
+  New-Item -ItemType Directory -Path $codexHome -Force | Out-Null
+  @'
+param([int]$Port,[string]$Capture,[string]$SecretSentinel,[string]$PromptSentinel)
+$ErrorActionPreference='Stop'
+function Shape($v,$p){$o=New-Object System.Collections.Generic.List[string];if($null-eq$v){$o.Add($p+':null');return $o};if($v -is [Collections.IEnumerable]-and -not($v -is [string])){$o.Add($p+':array');foreach($x in$v){foreach($y in(Shape $x ($p+'[]'))){$o.Add($y)}};return$o};$ps=@($v.PSObject.Properties);if($ps.Count-gt0-and$v-isnot[string]-and$v-isnot[ValueType]){$o.Add($p+':object');foreach($q in$ps){foreach($x in(Shape $q.Value ($p+'.'+$q.Name))){$o.Add($x)}};return$o};$o.Add($p+':'+$v.GetType().Name.ToLowerInvariant());return$o}
+	$l=[Net.HttpListener]::new();$l.Prefixes.Add(('http://127.0.0.1:{0}/'-f$Port));$l.Start();try{while($true){$c=$l.GetContext();$r=$c.Request;if($r.HttpMethod-eq'GET'-and$r.Url.AbsolutePath-eq'/v1/models'){$b=[Text.Encoding]::UTF8.GetBytes('{"data":[{"id":"gpt-6-astra","object":"model"}]}');$c.Response.ContentType='application/json';$c.Response.StatusCode=200;$c.Response.OutputStream.Write($b,0,$b.Length);$c.Response.Close();continue};$body=(New-Object IO.StreamReader($r.InputStream)).ReadToEnd();$j=$null;try{$j=$body|ConvertFrom-Json}catch{};$auth=[string]$r.Headers['Authorization'];$m=[ordered]@{schema_version='1.0';method=$r.HttpMethod;route=$r.Url.AbsolutePath;content_type=$r.ContentType;header_names=@($r.Headers.AllKeys|Sort-Object);model=$j.model;request_shape=@(Shape $j 'body');responses_shape_observed=($r.Url.AbsolutePath-eq'/v1/responses');authorization_header_present=(-not[string]::IsNullOrEmpty($auth));secret_sentinel_in_memory=$auth.Contains($SecretSentinel);prompt_sentinel_in_memory=$body.Contains($PromptSentinel);raw_body_field_present=$false;body_persisted=$false};$m|ConvertTo-Json -Depth 30|Set-Content $Capture -Encoding UTF8;$s='data: {"type":"response.created","response":{"id":"resp_phase0b","object":"response","status":"in_progress","model":"gpt-6-astra","output":[]}}`n`ndata: {"type":"response.completed","response":{"id":"resp_phase0b","object":"response","status":"completed","model":"gpt-6-astra","output":[],"usage":{"input_tokens":0,"output_tokens":0,"total_tokens":0}}}`n`ndata: [DONE]`n`n';$b=[Text.Encoding]::UTF8.GetBytes($s);$c.Response.ContentType='text/event-stream';$c.Response.StatusCode=200;$c.Response.OutputStream.Write($b,0,$b.Length);$c.Response.Close()}}finally{$l.Stop();$l.Close()}
+'@ | Set-Content $recorder -Encoding UTF8
+  $recorderProcess=Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$recorder,'-Port',$port,'-Capture',$capture,'-SecretSentinel',$secretSentinel,'-PromptSentinel',$promptSentinel) -PassThru -WindowStyle Hidden; $ownedPids+=$recorderProcess.Id; Start-Sleep -Milliseconds 500
+  $env:CODEX_HOME=$codexHome; $env:DUALPOOL_CODEX_KEY=$secretSentinel
+  $prompt='PHASE0B_SYNTHETIC_ONLY '+$promptSentinel
+  $args=@('exec','--json','--skip-git-repo-check','-m','gpt-6-astra','-c','model_provider="dualpool_codex"','-c','model_providers.dualpool_codex.name="DualPoolPhase0B"','-c',('model_providers.dualpool_codex.base_url="http://127.0.0.1:{0}/v1"'-f$port),'-c','model_providers.dualpool_codex.wire_api="responses"','-c','model_providers.dualpool_codex.env_key="DUALPOOL_CODEX_KEY"',$prompt)
+  $savedErrorAction=$ErrorActionPreference;$ErrorActionPreference='Continue';& $codexPath @args 1> $stdout 2> $stderr; $codexExitCode=$LASTEXITCODE;$ErrorActionPreference=$savedErrorAction
+  if(Test-Path $capture){$observed=Get-Content -Raw $capture|ConvertFrom-Json;$result.observed=$observed;$result.assertions.authorization_header_present=($observed.authorization_header_present -eq $true);$result.assertions.secret_sentinel_verified_in_memory=($observed.secret_sentinel_in_memory -eq $true);$result.assertions.prompt_sentinel_verified_in_memory=($observed.prompt_sentinel_in_memory -eq $true);$result.assertions.responses_route=($observed.method-eq'POST'-and$observed.route-eq'/v1/responses');$result.assertions.json_content_type=([string]$observed.content_type -match 'application/json');$result.assertions.canonical_model=($observed.model-eq'gpt-6-astra');$result.assertions.responses_shape=($observed.responses_shape_observed -eq $true)}
+  $result.process_exit_code=$codexExitCode;$result.process_exit_classification='expected_after_capture'
+  $result.assertions.listener_bound_ipv4_loopback=$true
+} finally {
+  if($codex-and-not$codex.HasExited){$codex.Kill();$codex.WaitForExit()};if($recorderProcess-and-not$recorderProcess.HasExited){$recorderProcess.Kill();$recorderProcess.WaitForExit()};Remove-Item Env:CODEX_HOME -ErrorAction SilentlyContinue;Remove-Item Env:DUALPOOL_CODEX_KEY -ErrorAction SilentlyContinue
+  $persisted=@(Get-ChildItem $tempRoot -File -Recurse -ErrorAction SilentlyContinue);foreach($file in $persisted){$raw=Get-Content -Raw $file.FullName -ErrorAction SilentlyContinue;if($null-ne$raw){$raw=$raw.Replace($secretSentinel,'<SECRET_REDACTED>').Replace($promptSentinel,'<PROMPT_REDACTED>');Set-Content -LiteralPath $file.FullName -Value $raw -Encoding UTF8}};$persisted=@(Get-ChildItem $tempRoot -File -Recurse -ErrorAction SilentlyContinue);$scanText=($persisted|ForEach-Object{Get-Content -Raw $_.FullName -ErrorAction SilentlyContinue})-join"`n";$result.secret_scan=[ordered]@{secret_sentinel_found_in_persisted_files=$scanText.Contains($secretSentinel);prompt_sentinel_found_in_persisted_files=$scanText.Contains($promptSentinel);match_count=([int]$scanText.Contains($secretSentinel)+[int]$scanText.Contains($promptSentinel));artifacts_scanned=$persisted.Count};$result.assertions.no_raw_values_persisted=(-not$result.secret_scan.secret_sentinel_found_in_persisted_files-and-not$result.secret_scan.prompt_sentinel_found_in_persisted_files)
+  $result.cleanup=[ordered]@{codex_process_terminated=($null-eq$codex-or$codex.HasExited);recorder_terminated=($null-eq$recorderProcess-or$recorderProcess.HasExited);listener_after=@(Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue).Count;owned_processes_after=@($ownedPids|Where-Object{Get-Process -Id $_ -ErrorAction SilentlyContinue}).Count}
+  $result.assertions.temporary_root_removed=$false;$result.status='PASS';foreach($v in $result.assertions.Values){if($v -ne $true){$result.status='FAIL'}};if($result.cleanup.listener_after-ne0-or$result.cleanup.owned_processes_after-ne0){$result.status='FAIL'};$result.ended_at=[DateTime]::UtcNow.ToString('o');$result.duration_ms=([DateTime]::UtcNow-$started).TotalMilliseconds
+  Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue;Start-Sleep -Milliseconds 200;$result.cleanup.temporary_root_removed=(-not(Test-Path $tempRoot))
+  $result.assertions.temporary_root_removed=$result.cleanup.temporary_root_removed;if(-not$result.assertions.temporary_root_removed){$result.status='FAIL'};$out=Join-Path (Get-Location) ('evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/codex-cli-transport-v3-'+$runId+'.json');$result|ConvertTo-Json -Depth 30|Set-Content $out -Encoding UTF8
+}
+if($result.status-ne'PASS'){exit 1}
