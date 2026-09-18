@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "test_id": "phase0b-audit-addendum",
+  "status": "PASS",
+  "historical_correction": {
+    "prior_cli_observation": "Useful but insufficient for PASS under docs/20; provisional evidence level E1/E2.",
+    "u005": "PARTIAL / UNKNOWN",
+    "u006": "BLOCKED",
+    "antigravity_gates": {
+      "u001": "setting and loopback redirect",
+      "u002": "native route/upstream inventory",
+      "u003": "envelope round-trip",
+      "u004": "credential-specific Gemini/model eligibility"
+    }
+  },
+  "prospective_status": {
+    "u005": "PARTIAL / UNKNOWN",
+    "u006": "BLOCKED",
+    "u001": "BLOCKED",
+    "u002": "BLOCKED",
+    "u003": "BLOCKED",
+    "u004": "BLOCKED"
+  },
+  "reason": "Required desktop actions need explicit user assistance and are not performed automatically under the active Windows automation policy."
+}

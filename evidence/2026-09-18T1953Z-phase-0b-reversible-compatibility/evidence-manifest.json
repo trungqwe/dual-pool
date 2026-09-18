@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "run_id": "2026-09-19T0000Z-phase-0b-evidence-repair-and-assisted-probes",
+  "artifacts": [
+    {"path": "codex-cli-transport-v2-20260918T204800Z.json", "kind": "sanitized probe result", "sha256": "CA35B9B1C60479018ED02EE66E11C0991BD87A9C6354256FB32D4902DAAC7E64"},
+    {"path": "phase-0b-audit-addendum.json", "kind": "status correction", "sha256": "F8FE6C68E3E7C49B142738F78BF49E1D4BEA8CD38ADCDFC61A8E5DB372C29EA9"},
+    {"path": "probe-results.json", "kind": "probe index", "sha256": "66B71B55CB5B1AA414D9E2FEC8845FE12265EDF18F3C0A8AE4690AED5B918FA9"}
+  ],
+  "raw_artifacts": "not committed; recorder body and values were never persisted",
+  "secret_scan": "PENDING_FINAL_GATE"
+}

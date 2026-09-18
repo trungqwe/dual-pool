@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "test_id": "phase0b-codex-cli-transport-v2",
+  "environment_fingerprint": "Windows 10 Pro build 19045 x64; Codex CLI 0.154.0",
+  "executable": "codex",
+  "start_end_timestamps": "recorded in codex-cli-transport-v2 artifact",
+  "command_shape": "codex exec --json --skip-git-repo-check -m gpt-6-astra with temporary provider overrides",
+  "status": "PASS",
+  "assertions": [
+    "Responses route /v1/responses observed",
+    "canonical model gpt-6-astra observed",
+    "request key/type paths recorded without values",
+    "loopback-only listener",
+    "temporary home and recorder removed"
+  ],
+  "cleanup_assertions": {
+    "temp_root_removed": true,
+    "owned_processes_after": 0,
+    "listener_after": 0,
+    "raw_capture_persisted": false
+  },
+  "limitations": [
+    "CLI evidence does not prove extension config sharing or picker retention.",
+    "No provider account or OAuth flow was used."
+  ]
+}

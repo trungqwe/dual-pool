@@ -51,12 +51,12 @@ Phase 0A non-destructive compatibility inventory is complete and pushed on branc
 
 ## Unknown status
 
-- U-001: PARTIAL / UNKNOWN.
-- U-002: UNKNOWN.
-- U-003: UNKNOWN.
-- U-004: UNKNOWN.
+- U-001: BLOCKED.
+- U-002: BLOCKED.
+- U-003: BLOCKED.
+- U-004: BLOCKED pending separately authorized credential-specific probe.
 - U-005: PARTIAL / UNKNOWN.
-- U-006: UNKNOWN.
+- U-006: BLOCKED pending user-assisted picker action.
 - U-007: PROBED.
 - U-008: PARTIAL / UNKNOWN.
 
@@ -74,8 +74,9 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 - Run report: `docs/reports/2026-09-18T1953Z-phase-0b-reversible-compatibility.md`.
 - Evidence: `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/`.
 - Codex CLI transport: `PASS` — synthetic recorder observed `POST /v1/responses`, `gpt-6-astra`, `wire_api=responses`, loopback-only traffic, and metadata-only capture.
-- Codex picker retention: `UNKNOWN` — Codex CLI/extension UI automation is outside the active Windows automation safety boundary.
-- Antigravity account compatibility and reversible settings mutation: `UNKNOWN` / `NOT_RUN` — no account, OAuth, provider prompt, or user configuration was touched.
+- Codex picker retention: `BLOCKED` — user-assisted picker action is required; automatic Codex CLI/extension UI automation is outside the active Windows automation safety boundary.
+- Antigravity U-001/U-002/U-003: `BLOCKED` pending user-assisted settings/reload/discovery actions. U-004 is separately `BLOCKED` pending authorized credential-specific probing.
+- Codex CLI transport v2: `PASS` — reproducible script and sanitized key/type tree are in the append-only evidence directory.
 - Cleanup: synthetic process and listener were removed; no application integration was enabled.
 - Phase 1 remains forbidden. Repeat final acceptance on Windows 11 because this machine is Windows 10.
 

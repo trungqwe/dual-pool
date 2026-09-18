@@ -34,3 +34,12 @@ This initial matrix defines minimum test identities. Implementation must add exa
 ## Update rule
 
 No requirement may be marked DONE until every mapped mandatory test passes for the pinned release/target environment. Add new rows when behavior is discovered; never remove a mapping solely because implementation is difficult.
+## Phase 0B evidence-repair addendum
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Reproducible Codex Responses transport | `scripts/phase0b-codex-cli-transport.ps1` and `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/codex-cli-transport-v2-*.json` | PASS |
+| Extension picker retention | User-assisted picker selection and loopback request | BLOCKED |
+| Antigravity setting/redirect | User-assisted reload and loopback discovery | BLOCKED |
+| Antigravity route/envelope | Depends on U-001 and U-002 | BLOCKED |
+| Credential-specific Gemini eligibility | Separately authorized provider probe | BLOCKED |
