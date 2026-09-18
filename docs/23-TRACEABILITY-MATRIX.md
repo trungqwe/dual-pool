@@ -38,7 +38,7 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 | Requirement | Evidence | Status |
 |---|---|---|
-| Reproducible Codex Responses transport | `scripts/phase0b-codex-cli-transport-v3.ps1` and `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/codex-cli-transport-v3-20260918T205630Z.json` | FAIL |
+| P0B-CX-TRANSPORT-001: CLI Responses, lifecycle, sentinel, cleanup | [v5 script](../scripts/phase0b-codex-cli-transport-v5.ps1), [v5 result](../evidence/phase-0b-v5/codex-cli-transport-v5-20260918T212522665Z.json) | PASS — Windows 10 exploratory; U-005 remains PARTIAL / UNKNOWN |
 | Extension picker retention | User-assisted picker selection and loopback request | BLOCKED |
 | Antigravity setting/redirect | User-assisted reload and loopback discovery | BLOCKED |
 | Antigravity route/envelope | Depends on U-001 and U-002 | BLOCKED |

@@ -4,9 +4,15 @@ Last updated: 2026-09-18 UTC.
 
 ## Current status
 
-Phase 0A non-destructive compatibility inventory is complete and pushed on branch `phase-0/compatibility-inventory`. Runtime implementation has not started. No effective Antigravity/Codex configuration was changed and no provider account/OAuth flow was used.
+Phase hiện tại: **Phase 0B**. Gate `P0B-CX-TRANSPORT-001` v5: **PASS**; recorder và Codex tự thoát với code 0, không timeout/forced kill. Phase 1 chưa bắt đầu. Gate CLI không đóng U-005/U-006.
 
-## Repository and delivery
+Nguồn trạng thái hiện hành: [status v5](../evidence/phase-0b-v5/phase-0b-status-v5.json). Bằng chứng: [result](../evidence/phase-0b-v5/codex-cli-transport-v5-20260918T212522665Z.json), [index](../evidence/phase-0b-v5/probe-results-v5.json). Run này không sửa cấu hình Codex/Antigravity và không thực hiện UI/OAuth.
+
+Hash trước/sau của hai cấu hình bằng nhau; thứ tự trong result là Codex, Antigravity. Cleanup v5 còn 0 process/listener, temp root đã xóa và child environment không làm thay đổi environment cha. Bốn recorder v4 bị sót đã được dừng theo identity check; xem [correction](../evidence/phase-0b-v5/legacy-cleanup-correction.json).
+
+Branch hiện hành: `phase-0/reversible-compatibility`; start HEAD `aa420da331c4dadab1443c2547f645e13f8eb1b6`. Delivery SHA và kết quả push được ghi bằng receipt sau commit. GitHub trả danh sách PR mở rỗng cho branch; run này không tạo PR.
+
+## Repository and delivery — lịch sử Phase 0A
 
 - Target remote: `https://github.com/trungqwe/dual-pool.git`.
 - Start HEAD: `5e91df5f31531452a74444d171a7edb7db405573`.
@@ -73,14 +79,14 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 
 - Run report: `docs/reports/2026-09-18T1953Z-phase-0b-reversible-compatibility.md`.
 - Evidence: `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/`.
-- Codex CLI transport: `PASS` — synthetic recorder observed `POST /v1/responses`, `gpt-6-astra`, `wire_api=responses`, loopback-only traffic, and metadata-only capture.
+- Codex CLI transport: `PASS` trong lịch sử, provisional và đã được thay thế bởi Gate A v5.
 - Codex picker retention: `BLOCKED` — user-assisted picker action is required; automatic Codex CLI/extension UI automation is outside the active Windows automation safety boundary.
 - Antigravity U-001/U-002/U-003: `BLOCKED` pending user-assisted settings/reload/discovery actions. U-004 is separately `BLOCKED` pending authorized credential-specific probing.
-- Codex CLI transport v2: `PASS` — reproducible script and sanitized key/type tree are in the append-only evidence directory.
+- Codex CLI transport v2: `PASS` trong lịch sử, provisional và đã được thay thế bởi Gate A v5.
 - Cleanup: synthetic process and listener were removed; no application integration was enabled.
 - Phase 1 remains forbidden. Repeat final acceptance on Windows 11 because this machine is Windows 10.
 
-## Final assisted-gates continuation
+## Final assisted-gates continuation — lịch sử, đã được v5 thay thế
 
 - Starting commit: `a22e70bb913b6a547cbdf23d792c4280a33f219d`.
 - v3 Gate A: `FAIL`; Codex did not terminate naturally after the synthetic response, so picker and Antigravity UI checkpoints were not started.
@@ -89,7 +95,7 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 - Cleanup: owned probe process/listener stopped; temporary v3 home removed; no user configuration or account/OAuth file changed.
 - Exact next objective: repair v3 bounded process lifecycle/response handling, rerun Gate A, and only then request the user-assisted Codex picker checkpoint.
 
-## Gate A harness repair continuation
+## Gate A harness repair continuation — lịch sử, đã được v5 thay thế
 
 - Start commit: `a6a04adbd468b9aeeab6e90ac358e9b4019377a4`.
 - Current Gate A: `FAIL` — v4 reached the Responses request and passed the real SSE byte self-test, but the final harness result-persistence path failed; lifecycle result is explicitly `UNRECORDED`.
@@ -100,4 +106,4 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 
 ## Exact next bounded objective
 
-Phase 0B — run backed-up and reversible Codex custom-provider/picker and Antigravity redirect/passthrough/envelope experiments. Entry requires confirming whether this Windows 10 machine is the intended exploratory target or providing the Windows 11 target required by the charter. Continue to prohibit provider-account work except a separately authorized U-004 probe.
+Phase 0B — user-assisted Codex extension picker/config-layer probe, trong một run độc lập với backup/hash/restore. Windows 10 hiện tại chỉ chứng minh compatibility thăm dò; acceptance Windows 11 vẫn mở. U-004 cần ủy quyền credential-specific riêng.

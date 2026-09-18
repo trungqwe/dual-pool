@@ -1,0 +1,26 @@
+{
+  "schema_version": "5",
+  "test_id": "P0B-STATUS-005",
+  "gate_a": "PASS",
+  "phase_0_exit": "BLOCKED",
+  "authoritative_result": "codex-cli-transport-v5-20260918T212522665Z.json",
+  "supersedes": [
+    "../2026-09-18T1953Z-phase-0b-reversible-compatibility/phase-0b-gates.json",
+    "../2026-09-18T1953Z-phase-0b-reversible-compatibility/phase-0b-status-v3.json",
+    "Prior transport PASS interpretations in SUMMARY.md and v1/v2/v3/v4 evidence"
+  ],
+  "authoritative_current_status": {
+    "U-001": "BLOCKED",
+    "U-002": "BLOCKED",
+    "U-003": "BLOCKED",
+    "U-004": "BLOCKED",
+    "U-005": "PARTIAL / UNKNOWN",
+    "U-006": "BLOCKED",
+    "U-007": "PROBED",
+    "U-008": "PARTIAL / UNKNOWN"
+  },
+  "u004_reason": "CREDENTIAL_PROBE_NOT_AUTHORIZED",
+  "ui_probes_this_run": "SKIPPED: explicitly out of scope",
+  "phase_1_started": false,
+  "next_exact_task": "Phase 0B user-assisted Codex extension picker/config-layer probe"
+}

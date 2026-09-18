@@ -1,0 +1,51 @@
+{
+    "schema_version":  "5",
+    "secret_scan":  "PASS",
+    "test_id":  "P0B-MANIFEST-005",
+    "gate_a":  "PASS",
+    "artifacts":  [
+                      {
+                          "sha256":  "7F6D8AE806DF4A111374290974D9B722AB513E63F69C69B442785A5C4FA883FA",
+                          "path":  "codex-cli-transport-v5-20260918T212340079Z.json"
+                      },
+                      {
+                          "sha256":  "E0316FD871171F7B51280ABDAF9A713775A0FC304B3137FD60BB83F97431B9AD",
+                          "path":  "codex-cli-transport-v5-20260918T212522665Z.json"
+                      },
+                      {
+                          "sha256":  "3C077668D07443C6BB9FA5A5A19D7DAE6D387A1B78940BD6A76518DA0F0A5E77",
+                          "path":  "legacy-cleanup-correction.json"
+                      },
+                      {
+                          "sha256":  "EC2699B517626F7DC24A6A7F32C8B8CA2486A1C2C3275D4397977374D870A54C",
+                          "path":  "phase-0b-status-v5.json"
+                      },
+                      {
+                          "sha256":  "EDAEB62DE30185AE454CAD823A8F89BF2A77F7041C0B634846B946F1215D9C10",
+                          "path":  "probe-results-v5.json"
+                      },
+                      {
+                          "sha256":  "E039406353DF47A46FE8AF866BDDB87E33CAECA94011E1C40B994F48F750A79C",
+                          "path":  "security-gate-v5.json"
+                      }
+                  ],
+    "cleanup":  "PASS",
+    "generated_at":  "2026-09-18T21:29:40.6962615Z",
+    "json_validation":  "PASS",
+    "status":  "PASS",
+    "authoritative_status":  "phase-0b-status-v5.json",
+    "sources":  [
+                    {
+                        "sha256":  "2E58BDDC0F8E3759F3AEAEF8BEC18B7CE95C74A744CE092974E0387C39D4840D",
+                        "path":  "scripts/phase0b-codex-cli-transport-v5.ps1"
+                    },
+                    {
+                        "sha256":  "B4C2CE335FCFCFA269A300B9496C4136D3EA2DCF277E0ABD4FE7499F8D300C87",
+                        "path":  "scripts/phase0b-recorder-v5.cjs"
+                    },
+                    {
+                        "sha256":  "723EC450C925D0D73970EA5AB852A22D8962CA0473CE814C259F351453D8B2E3",
+                        "path":  "scripts/phase0b-verify-v5.ps1"
+                    }
+                ]
+}

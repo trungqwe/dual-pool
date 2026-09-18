@@ -1,0 +1,58 @@
+{
+    "procedure":  "scripts/phase0b-verify-v5.ps1",
+    "test_id":  "P0B-SECURITY-005",
+    "started_at":  "2026-09-18T21:29:39.6549482Z",
+    "local_links_checked":  10,
+    "ended_at":  "2026-09-18T21:29:40.6471310Z",
+    "diff_check":  "PASS",
+    "cleanup":  {
+                    "key_environment_absent":  true,
+                    "v5_temp_roots":  0,
+                    "old_diagnostic_absent":  true,
+                    "legacy_v4_recorders_after":  0,
+                    "listener_after":  0,
+                    "v5_recorders_after":  0
+                },
+    "matches_by_category":  {
+                                "sentinel":  0,
+                                "authorization_cookie_bearer":  0,
+                                "token":  0,
+                                "private_key":  0,
+                                "email":  0,
+                                "literal_user_path":  0,
+                                "raw_body_fields":  0
+                            },
+    "documentation_links":  "PASS",
+    "json_validation":  "PASS",
+    "probe_ended_at":  "2026-09-18T21:25:25.2008929Z",
+    "paths_actually_scanned":  [
+                                   ".gitattributes",
+                                   "docs/03-DECISIONS-AND-EVIDENCE.md",
+                                   "docs/15-MASTER-CHECKLIST.md",
+                                   "docs/18-HANDOFF.md",
+                                   "docs/23-TRACEABILITY-MATRIX.md",
+                                   "docs/reports/2026-09-18T2120Z-phase-0b-gate-a-finalization-repair.md",
+                                   "evidence/phase-0b-v5/codex-cli-transport-v5-20260918T212340079Z.json",
+                                   "evidence/phase-0b-v5/codex-cli-transport-v5-20260918T212522665Z.json",
+                                   "evidence/phase-0b-v5/legacy-cleanup-correction.json",
+                                   "evidence/phase-0b-v5/phase-0b-status-v5.json",
+                                   "evidence/phase-0b-v5/probe-results-v5.json",
+                                   "scripts/phase0b-codex-cli-transport-v5.ps1",
+                                   "scripts/phase0b-recorder-v5.cjs",
+                                   "scripts/phase0b-verify-v5.ps1"
+                               ],
+    "match_count":  0,
+    "scanner_selftest":  "PASS",
+    "schema_version":  "5",
+    "status":  "PASS",
+    "pattern_classes":  [
+                            "sentinel",
+                            "authorization_cookie_bearer",
+                            "token",
+                            "private_key",
+                            "email",
+                            "literal_user_path",
+                            "raw_body_fields"
+                        ],
+    "json_files_checked":  30
+}

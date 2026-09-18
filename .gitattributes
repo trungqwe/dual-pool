@@ -1,0 +1,6 @@
+# Stable probe source and immutable evidence hashes across Windows checkouts.
+/scripts/phase0b-codex-cli-transport-v5.ps1 text eol=lf
+/scripts/phase0b-recorder-v5.cjs text eol=lf
+/scripts/phase0b-verify-v5.ps1 text eol=lf
+# PowerShell emits CRLF JSON; preserve exact bytes and recognize CR as EOL.
+/evidence/phase-0b-v5/*.json -text whitespace=cr-at-eol

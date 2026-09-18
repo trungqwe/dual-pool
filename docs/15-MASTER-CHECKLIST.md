@@ -24,7 +24,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ### Phase 0B — reversible mutation-dependent compatibility
 
-- [ ] Codex CLI custom provider sends Responses to loopback — provisional; v3 Gate A `FAIL` due incomplete process termination evidence. Evidence: `codex-cli-transport-v3-20260918T205630Z.json`.
+- [x] Codex CLI custom provider sends Responses to loopback; Gate A v5 PASS với natural exit, sentinel scan và cleanup. Evidence: [v5 result](../evidence/phase-0b-v5/codex-cli-transport-v5-20260918T212522665Z.json). Chưa chứng minh extension/config-layer hoặc Windows 11.
 - [ ] Codex picker retains desired provider route — `BLOCKED` pending user-assisted UI action.
 - [ ] Antigravity setting path/key and loopback behavior proven reversibly.
 - [ ] Native route and schema inventory captured safely.

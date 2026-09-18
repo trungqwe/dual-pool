@@ -1,0 +1,15 @@
+{
+  "schema_version": "5",
+  "test_id": "P0B-LEGACY-CLEANUP-005",
+  "status": "PASS",
+  "observed_at": "2026-09-18T21:24:33.6514807Z",
+  "legacy_v4_recorders_before": 4,
+  "legacy_v4_recorders_after": 0,
+  "identity_checks": ["powershell.exe", "recorder.ps1 under unique dual-pool-phase0b-v4 temporary root", "unchanged command line and CreationDate immediately before Stop-Process"],
+  "ports_verified_absent": [19410, 19380, 19348, 19165],
+  "old_diagnostic_status": "NOT_FOUND",
+  "raw_diagnostic_removed": "SKIPPED: absent",
+  "unrelated_processes_stopped": 0,
+  "correction": "Historical v4 claims of zero owned recorder listeners were unsupported: four orphaned recorder processes remained. They were identified and stopped in this run. HTTP.sys reported their sockets under PID 4; v5 uses a process-owned Node socket.",
+  "v4_exact_exception": "UNKNOWN: fixed diagnostic absent; asynchronous PowerShell delegate/runspace failure is a static hypothesis, not a recovered exception"
+}

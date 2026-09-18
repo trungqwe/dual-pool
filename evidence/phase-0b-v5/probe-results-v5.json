@@ -1,0 +1,15 @@
+{
+  "schema_version": "5",
+  "test_id": "P0B-CX-TRANSPORT-001",
+  "status": "PASS",
+  "authoritative_result": "codex-cli-transport-v5-20260918T212522665Z.json",
+  "prior_development_result": "codex-cli-transport-v5-20260918T212340079Z.json",
+  "rerun_reason": "Added forced primary-writer failure self-test and explicit in-memory pipe secret assertions before the final run.",
+  "initial_prelaunch_error": "PowerShell evaluated the parameter default before PSScriptRoot was populated; moved output-directory resolution into the script body. No process or temporary root was created by that failed invocation.",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/phase0b-codex-cli-transport-v5.ps1",
+  "exit_code": 0,
+  "primary_result_readback": "PASS",
+  "configuration_hash_order": ["Codex user config", "Antigravity user settings"],
+  "persistence_boundary": "Original temporary files scanned before deletion; stdin, request body and stdout/stderr remain in memory. Only key/type trees, allowlisted model and derived facts enter evidence.",
+  "limitations": ["Windows 10 exploratory only", "No extension picker/config-layer proof", "No real provider model eligibility proof"]
+}
