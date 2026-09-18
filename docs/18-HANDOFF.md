@@ -69,6 +69,16 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 - No application integration was enabled, no account connected, and no foreign process terminated.
 - JSON/link/privacy/secret/whitespace and final diff checks are recorded in the run report and `probe-results.json`.
 
+## Latest Phase 0B run
+
+- Run report: `docs/reports/2026-09-18T1953Z-phase-0b-reversible-compatibility.md`.
+- Evidence: `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/`.
+- Codex CLI transport: `PASS` — synthetic recorder observed `POST /v1/responses`, `gpt-6-astra`, `wire_api=responses`, loopback-only traffic, and metadata-only capture.
+- Codex picker retention: `UNKNOWN` — Codex CLI/extension UI automation is outside the active Windows automation safety boundary.
+- Antigravity account compatibility and reversible settings mutation: `UNKNOWN` / `NOT_RUN` — no account, OAuth, provider prompt, or user configuration was touched.
+- Cleanup: synthetic process and listener were removed; no application integration was enabled.
+- Phase 1 remains forbidden. Repeat final acceptance on Windows 11 because this machine is Windows 10.
+
 ## Exact next bounded objective
 
 Phase 0B — run backed-up and reversible Codex custom-provider/picker and Antigravity redirect/passthrough/envelope experiments. Entry requires confirming whether this Windows 10 machine is the intended exploratory target or providing the Windows 11 target required by the charter. Continue to prohibit provider-account work except a separately authorized U-004 probe.

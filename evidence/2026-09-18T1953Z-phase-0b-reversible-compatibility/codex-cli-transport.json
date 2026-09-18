@@ -1,0 +1,29 @@
+{
+  "run_id": "2026-09-18T1953Z-phase-0b-reversible-compatibility",
+  "gate": "U-005-cli-transport",
+  "status": "PASS",
+  "transport": {
+    "method": "POST",
+    "path": "/v1/responses",
+    "model": "gpt-6-astra",
+    "wire_api": "responses",
+    "authorization_header_present": true,
+    "content_type": "application/json",
+    "listener_addresses": ["127.0.0.1"],
+    "body_persisted": false
+  },
+  "request_metadata": {
+    "header_names_only": true,
+    "body_key_paths_only": true,
+    "tool_and_reasoning_metadata_observed": true,
+    "credentials_or_payload_values_persisted": false
+  },
+  "cleanup": {
+    "listener_after": 0,
+    "owned_codex_after": 0
+  },
+  "limitations": [
+    "This proves CLI transport only; it does not prove the desktop/extension picker.",
+    "The synthetic recorder rejected the response request after metadata capture; no provider account was used."
+  ]
+}

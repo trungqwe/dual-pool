@@ -1,0 +1,21 @@
+{
+  "run_id": "2026-09-18T1953Z-phase-0b-reversible-compatibility",
+  "status": "PARTIAL",
+  "gates": {
+    "U-005-cli-transport": "PASS",
+    "U-006-picker-retention": "UNKNOWN",
+    "U-004-antigravity-account-compatibility": "UNKNOWN",
+    "reversible-config-mutation": "NOT_RUN"
+  },
+  "reasoning": {
+    "picker": "The available Windows automation policy forbids automating Codex CLI or Codex extensions.",
+    "antigravity": "No provider-account or OAuth operation was authorized; no application settings were changed.",
+    "mutation": "No user configuration was changed because the effective picker/extension path was not proven."
+  },
+  "security": {
+    "real_credentials_used": false,
+    "real_prompts_used": false,
+    "raw_payload_persisted": false,
+    "auth_files_copied": false
+  }
+}
