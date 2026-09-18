@@ -1,10 +1,22 @@
 # Phase 0 Compatibility Probe
 
-Phase 0 is read-only except for writing sanitized evidence inside the repository's ignored evidence workspace. It must run before production code assumes any path, port, setting, endpoint or schema.
+Phase 0 is split into two bounded subphases and must finish before production code assumes any path, port, setting, endpoint or schema.
+
+## Phase boundaries
+
+### Phase 0A — non-destructive discovery
+
+Allowed: read files; query versions; inspect process/listener tables; run supported help/version/debug commands; download and hash-verify a candidate release in a disposable external workspace; start and stop a credential-free disposable loopback instance with disposable config/data roots; and write sanitized project evidence.
+
+Forbidden: change installed Antigravity settings; change effective Codex user configuration or extension profiles; connect provider/OAuth accounts; modify existing auth files; leave probe integrations/processes enabled; install services; patch binaries/VSIX/bundles; install certificates; or edit hosts/firewall.
+
+### Phase 0B — reversible mutation-dependent compatibility
+
+Phase 0B contains the temporary, backed-up and reversible application configuration experiments required for the Codex custom-provider transport and picker/provider-retention tests, Antigravity Cloud Code URL redirect, transparent passthrough, and native envelope round trip. Phase 0B is outside a Phase 0A run.
 
 ## Outputs
 
-Create `evidence/<run-id>/` containing:
+Create `evidence/<run-id>/` containing sanitized evidence only:
 
 - `environment.json`: OS build, architecture, locale/time zone, non-sensitive executable paths.
 - `versions.json`: Antigravity, Codex extension, Codex CLI/app-server, CLIProxyAPI candidate version.
@@ -16,7 +28,7 @@ Create `evidence/<run-id>/` containing:
 - `probe-results.json`: machine-readable test records.
 - `SUMMARY.md`: decisions, blockers and next permitted phase.
 
-Evidence committed to Git must pass redaction and secret scanning. Raw captures, if temporarily necessary, remain outside the repository and are deleted after sanitized derivatives are produced.
+Raw and temporary artifacts live outside the repository whenever possible, for example `%TEMP%\dual-pool-probe\<run-id>\`. The required flow is raw capture/download → minimal sanitized derivative → explicit privacy/secret scan → commit under `evidence/<run-id>/`. Raw captures, binaries, archives, logs, temporary configs/keys and data roots are never committed and are removed after the sanitized derivative and cleanup proof are complete.
 
 ## Repository preflight
 
@@ -80,12 +92,17 @@ Do not copy the current `main` example into production. Generate config from a v
 
 ## Codex probe
 
-Record exact executable and extension versions. Then:
+Phase 0A records exact executable and extension versions and then:
 
 1. Locate the effective user-level `config.toml` using supported application behavior, not a guessed path.
 2. Determine whether the extension and CLI share that config or have distinct launch environments.
 3. Obtain the installed build's model catalog using a supported debug command if present; otherwise document a matching-artifact extraction method.
 4. Validate that `gpt-6-astra` exists, is visible, supports required reasoning/tool behavior, and meets the installed client minimum version.
+
+Phase 0A must not write a custom provider, inject an environment key, run the picker test, or start an outbound Responses recorder. If no safe supported catalog command exists, U-007 remains open with the exact matching-artifact extraction needed next.
+
+Phase 0B only:
+
 5. Start a disposable mock Responses endpoint on loopback.
 6. Apply a temporary, reversible custom provider in a controlled profile/config copy.
 7. Prove the client sends a Responses request and uses an environment-provided key.
@@ -98,16 +115,24 @@ Required result for U-006: UI screenshot or structured UI observation plus loopb
 
 This is the highest-risk compatibility spike.
 
+Phase 0A:
+
 1. Record Antigravity version and settings file candidates.
-2. Prove which setting controls the Cloud Code base URL using official settings metadata or reversible controlled experiment.
-3. Run a loopback recorder that returns no fabricated application response and captures only route/method/header-name/body-field-name fingerprints.
-4. Redirect the candidate setting temporarily after backup.
-5. Trigger: startup, model-list refresh, one simple generation, one streaming generation, cancellation, tool action, long session resume.
-6. Determine the original upstream destination from supported configuration/observed behavior without TLS interception.
-7. Implement temporary transparent forwarding and compare direct vs bridged behavior.
-8. Capture exact model ID location and identify a generation endpoint allowlist.
-9. Verify the inner request can be forwarded to the proven Google CLIProxyAPI endpoint and the response can be rewrapped losslessly.
-10. Restore the setting and verify hash/semantic equivalence.
+2. Inspect installed settings metadata/schema for a Cloud Code/base URL candidate without changing effective configuration.
+
+The candidate setting remains unproven until Phase 0B shows that target-machine loopback HTTP is honored. U-002 and U-003 remain open unless non-mutating installed metadata truly proves their full wording.
+
+Phase 0B only:
+
+3. Prove which setting controls the Cloud Code base URL using official settings metadata or a reversible controlled experiment.
+4. Run a loopback recorder that returns no fabricated application response and captures only route/method/header-name/body-field-name fingerprints.
+5. Redirect the candidate setting temporarily after backup.
+6. Trigger: startup, model-list refresh, one simple generation, one streaming generation, cancellation, tool action, long session resume.
+7. Determine the original upstream destination from supported configuration/observed behavior without TLS interception.
+8. Implement temporary transparent forwarding and compare direct vs bridged behavior.
+9. Capture exact model ID location and identify a generation endpoint allowlist.
+10. Verify the inner request can be forwarded to the proven Google CLIProxyAPI endpoint and the response can be rewrapped losslessly.
+11. Restore the setting and verify hash/semantic equivalence.
 
 No production donor routing may begin until transparent mode passes all native scenarios.
 

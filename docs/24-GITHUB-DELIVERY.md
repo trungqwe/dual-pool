@@ -72,13 +72,7 @@ Use a normal upstream push for the verified current branch. If authentication, p
 
 ## Report/commit SHA problem
 
-The report written before a commit cannot know its own final SHA. Use one of:
-
-- record `PENDING` in the main implementation report, commit, then add a tiny follow-up handoff/report metadata commit;
-- allow CI/reviewer to attach immutable commit metadata externally;
-- record the parent/start SHA and branch in the report, with final SHA in the next handoff update.
-
-Never amend or force-push merely to make a report self-referential.
+The report written before a commit cannot know its own final SHA. Record `PENDING` in the report. Once that report is included in a pushed commit it is immutable. Record final commit SHA, push result and compare/PR URL in `docs/18-HANDOFF.md` or a new append-only delivery receipt. Never amend, force-push, or edit the pushed report merely to make it self-referential.
 
 ## Review prompt
 

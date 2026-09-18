@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "captured_at": "2026-09-18T19:37:40Z",
+  "status": "PROBED",
+  "ports": [
+    {
+      "port": 51074,
+      "purpose": "proposed Antigravity bridge",
+      "listen_state": "not_listening",
+      "classification": "free"
+    },
+    {
+      "port": 8317,
+      "purpose": "proposed Codex CLIProxyAPI instance",
+      "listen_state": "not_listening",
+      "classification": "free"
+    },
+    {
+      "port": 8318,
+      "purpose": "proposed Google CLIProxyAPI instance",
+      "listen_state": "not_listening",
+      "classification": "free"
+    },
+    {
+      "port": 1455,
+      "purpose": "CLIProxyAPI v7.3.7 Codex OAuth callback",
+      "source": "tag v7.3.7 internal/api/handlers/management/auth_files_oauth_callback.go",
+      "listen_state": "not_listening",
+      "classification": "free"
+    },
+    {
+      "port": 51121,
+      "purpose": "CLIProxyAPI v7.3.7 Antigravity OAuth callback",
+      "source": "tag v7.3.7 internal/auth/antigravity/constants.go",
+      "listen_state": "not_listening",
+      "classification": "free"
+    }
+  ],
+  "foreign_processes_terminated": false
+}

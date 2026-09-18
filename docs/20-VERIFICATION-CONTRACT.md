@@ -20,6 +20,10 @@ Security, isolation, rollback and protocol-preservation requirements require E3 
 
 Every result records test ID, exact version hashes, config adapter version, environment fingerprint, start time, duration, status, assertions and sanitized artifact hashes. Results are immutable once referenced by a report; reruns create new result IDs.
 
+## Run report immutability
+
+A run report becomes immutable once included in a pushed commit. It may contain `End HEAD: PENDING`. Final delivery metadata is recorded after push in `docs/18-HANDOFF.md` or a new append-only delivery receipt; a pushed report is not amended or rewritten merely to record its own commit SHA.
+
 ## Required proof patterns
 
 ### Pool isolation

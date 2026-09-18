@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "status": "PROBED",
+  "repository": "trungqwe/dual-pool",
+  "root_identity": "%WORKSPACE%\\dual-pool",
+  "branch": "phase-0/compatibility-inventory",
+  "start_head": "5e91df5f31531452a74444d171a7edb7db405573",
+  "remotes": [
+    {
+      "name": "origin",
+      "fetch": "https://github.com/trungqwe/dual-pool.git",
+      "push": "https://github.com/trungqwe/dual-pool.git"
+    }
+  ],
+  "start_dirty_state": "clean",
+  "submodules": [],
+  "worktrees": [
+    {
+      "identity": "%WORKSPACE%\\dual-pool",
+      "branch": "phase-0/compatibility-inventory"
+    }
+  ],
+  "literal_user_profile": false
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "status": "PROBED",
+  "codex_cli_version": "0.154.0",
+  "export_method": "codex debug models --bundled",
+  "effective_catalog_export_supported": true,
+  "bundled_catalog_export_supported": true,
+  "raw_catalog_committed": false,
+  "effective_and_bundled_astra_metadata_match": true,
+  "model": {
+    "slug": "gpt-6-astra",
+    "display_name": "GPT-6-Astra",
+    "visibility": "list",
+    "supported_in_api": true,
+    "default_reasoning_level": "low",
+    "supported_reasoning_levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ],
+    "shell_type": "unified_exec",
+    "tool_mode": "code_mode_only",
+    "apply_patch_tool_type": "freeform",
+    "web_search_tool_type": "text_and_image",
+    "multi_agent_version": "v2",
+    "multi_agent_reasoning_effort": "xhigh",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "use_responses_lite": true,
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "minimum_client_version": null,
+    "websocket_preference_or_support": "not exposed by this descriptor"
+  },
+  "limits": {
+    "extension_config_sharing": "UNKNOWN",
+    "outbound_responses_transport": "NOT_RUN_PHASE_0B",
+    "picker_provider_retention": "NOT_RUN_PHASE_0B"
+  }
+}

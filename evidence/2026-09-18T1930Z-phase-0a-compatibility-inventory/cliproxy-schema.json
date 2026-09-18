@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "status": "PARTIAL",
+  "candidate": {
+    "tag": "v7.3.7",
+    "commit": "b773607e3e7756dc6020a291825e4eb08899595a",
+    "release_published_at": "2026-09-17T19:19:20Z",
+    "release_url": "https://github.com/router-for-me/CLIProxyAPI/releases/tag/v7.3.7",
+    "artifact": "CLIProxyAPI_7.3.7_windows_amd64.zip",
+    "artifact_url": "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.7/CLIProxyAPI_7.3.7_windows_amd64.zip",
+    "artifact_sha256": "da5466b81beb7c769b99e26a5f6f41d9999a07be7c36be170167f10a2a6ecfc7",
+    "checksums_asset_sha256": "3550a435b0100ff694dad3698b8f9298be337d0a5041a8dab201bc6f2a794225",
+    "archive_matches_published_checksum": true,
+    "archive_matches_github_asset_digest": true,
+    "executable_sha256": "bb44c6fa6a30214a294bdf64cf7385aa7ff65982aebd501ae37dc6a62a227072",
+    "binary_and_tag_version_match": true
+  },
+  "config_fields_observed_in_tagged_release": {
+    "host": true,
+    "port": true,
+    "auth-dir": true,
+    "api-keys": true,
+    "remote-management.allow-remote": true,
+    "remote-management.secret-key": true,
+    "remote-management.disable-control-panel": true,
+    "routing.strategy": true,
+    "routing.session-affinity": true,
+    "routing.session-affinity-ttl": true,
+    "routing.session-affinity-subagents": true,
+    "ws-auth": true,
+    "streaming.keepalive-seconds": true,
+    "streaming.bootstrap-retries": true
+  },
+  "routing_strategies_observed": [
+    "round-robin",
+    "weighted-round-robin",
+    "fill-first"
+  ],
+  "management_routes_observed_in_tagged_source": [
+    "GET /v0/management/config",
+    "GET /v0/management/debug",
+    "GET /v0/management/auth-files",
+    "GET /v0/management/auth-files/models",
+    "PATCH /v0/management/auth-files/status",
+    "GET /v0/management/codex-auth-url",
+    "GET /v0/management/antigravity-auth-url",
+    "GET /v0/management/get-auth-status",
+    "DELETE /v0/management/oauth-session"
+  ],
+  "client_routes_observed_in_tagged_source": [
+    "GET /v1/models",
+    "GET /v1/responses",
+    "POST /v1/responses",
+    "POST /v1/responses/compact",
+    "GET /v1beta/models",
+    "POST /v1beta/models/*action",
+    "GET /v1beta/models/*action"
+  ],
+  "oauth_callback_ports": {
+    "codex": 1455,
+    "antigravity": 51121,
+    "cli_override_flag": "-oauth-callback-port"
+  },
+  "disposable_probe": {
+    "host": "127.0.0.1",
+    "port": 18318,
+    "auth_files": 0,
+    "management_without_key_status": 401,
+    "management_wrong_key_status": 401,
+    "management_correct_key_status": 200,
+    "client_without_key_status": 401,
+    "client_correct_key_status": 200,
+    "listener_after_stop": false,
+    "process_after_stop": false
+  },
+  "limits": {
+    "provider_specific_response_shapes": "UNKNOWN_WITHOUT_PROVIDER_CREDENTIALS",
+    "credential_model_inventory_shape": "NOT_EXERCISED_WITHOUT_AUTH_FILES",
+    "dedicated_health_endpoint": "NOT_PROVEN"
+  }
+}

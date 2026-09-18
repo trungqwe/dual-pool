@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "captured_at": "2026-09-18T19:38:11Z",
+  "status": "PROBED",
+  "operating_system": {
+    "caption": "Microsoft Windows 10 Pro",
+    "version": "10.0.19045",
+    "build": "19045",
+    "architecture": "64-bit",
+    "locale_lcid": "0409",
+    "time_zone": "SE Asia Standard Time"
+  },
+  "shell": {
+    "name": "Windows PowerShell",
+    "version": "5.1.19041.6456"
+  },
+  "tools": {
+    "git": "2.55.0.windows.5",
+    "github_cli": "2.88.1",
+    "go": "go1.26.0 windows/amd64"
+  },
+  "github_auth": {
+    "status": "authenticated",
+    "token_material_recorded": false
+  },
+  "privacy": {
+    "literal_user_profile": false,
+    "path_placeholders": [
+      "%USERPROFILE%",
+      "%LOCALAPPDATA%",
+      "%APPDATA%",
+      "%TEMP%"
+    ]
+  }
+}

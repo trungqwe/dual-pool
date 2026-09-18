@@ -22,7 +22,7 @@ Use an upstream binary behind documented HTTP/config interfaces. A patch is allo
 
 Status: ACCEPTED.
 
-Run the same pinned executable twice with different ports, data roots, auth directories, API keys and management keys. This changes the earlier one-process concept in favor of structural provider isolation. The small process/memory cost is accepted because it removes cross-provider credential selection from the failure domain.
+Run the same pinned executable twice with different ports, data roots, auth directories, API keys and management keys. This changes the earlier one-process concept in favor of structural provider isolation. Under Poolbridge-managed state, each process receives a disjoint auth root and endpoint. Unexpected opposite-provider auth material is an integrity violation that must be detected and fail closed before provider traffic is allowed.
 
 ### ADR-003 — Windows-first CLI, no GUI
 
@@ -69,16 +69,16 @@ Poolbridge owns only named configuration keys. It records previous values, write
 
 ## Unresolved compatibility questions
 
-| ID | Unknown | Required proof | If false |
-|---|---|---|---|
-| U-001 | Exact Antigravity setting path/key and whether loopback HTTP Cloud Code URL is honored. | Before/after settings capture plus loopback request trace. | Stop Antigravity integration; no binary patch fallback. |
-| U-002 | Native upstream URL and full endpoint set needed for transparent passthrough. | Sanitized route inventory from a real session. | Stop; do not guess upstream routes. |
-| U-003 | Cloud Code request/response envelope permits lossless donor unwrap/rewrap. | Golden fixtures and byte/semantic diff. | Stop donor override. |
-| U-004 | Provider-specific Gemini endpoint and exact target model supported by pinned Google instance. | `/v1/models`, credential model endpoint and tiny generation. | Select only observed route/model or block. |
-| U-005 | Installed Codex version contains Astra and extension shares the intended config layer. | Version, bundled catalog and outbound request capture. | Upgrade supported client or exact-version fallback; no main-branch catalog. |
-| U-006 | Model picker retains `model_provider=dualpool_codex` when choosing Astra. | UI action plus request arrival on Codex loopback port. | Use a supported profile/default workflow or block dropdown acceptance; do not patch UI. |
-| U-007 | Installed Codex exposes a safe bundled-catalog export command. | Help output and command result for exact installed version. | Extract only from matching pinned artifact/source or omit fallback. |
-| U-008 | CLIProxyAPI health and provider-specific endpoint shapes for pinned release. | Generated compatibility manifest and contract tests. | Adapt through documented version surface or pin another tested release. |
+| ID | Unknown | Phase 0A status/evidence | Required proof | If false |
+|---|---|---|---|---|
+| U-001 | Exact Antigravity setting path/key and whether loopback HTTP Cloud Code URL is honored. | **PARTIAL / UNKNOWN** — installed version, settings candidate and static `jetski.cloudCodeUrl` identifier recorded in `evidence/2026-09-18T1930Z-phase-0a-compatibility-inventory/antigravity-discovery.json`; installed contributed schema does not declare the key and no mutation was made. | Phase 0B before/after settings capture plus loopback request trace. | Stop Antigravity integration; no binary patch fallback. |
+| U-002 | Native upstream URL and full endpoint set needed for transparent passthrough. | **UNKNOWN** — Phase 0A made no redirect or traffic capture. | Sanitized route inventory from a real Phase 0B session. | Stop; do not guess upstream routes. |
+| U-003 | Cloud Code request/response envelope permits lossless donor unwrap/rewrap. | **UNKNOWN** — Phase 0A made no request/response capture. | Phase 0B golden fixtures and byte/semantic diff. | Stop donor override. |
+| U-004 | Provider-specific Gemini endpoint and exact target model supported by pinned Google instance. | **UNKNOWN** — no provider account/OAuth or model request was allowed. Tagged routes are listed in `cliproxy-schema.json` but do not prove provider support. | `/v1/models`, credential model endpoint and tiny generation with an authorized account. | Select only observed route/model or block. |
+| U-005 | Installed Codex version contains Astra and extension shares the intended config layer. | **PARTIAL / UNKNOWN** — exact CLI `0.154.0` bundled/effective catalogs contain Astra; config candidate exists. Extension sharing and outbound transport were not tested. See `codex-catalog.json` and `versions.json`. | Phase 0B extension/config-layer and outbound Responses capture. | Upgrade supported client or exact-version fallback; no main-branch catalog. |
+| U-006 | Model picker retains `model_provider=dualpool_codex` when choosing Astra. | **UNKNOWN** — explicitly deferred to Phase 0B. | UI action plus request arrival on Codex loopback port. | Use a supported profile/default workflow or block dropdown acceptance; do not patch UI. |
+| U-007 | Installed Codex exposes a safe bundled-catalog export command. | **PROBED** — CLI `0.154.0` exposes `codex debug models --bundled`; Astra metadata was whitelisted into `codex-catalog.json`. | Re-run after each Codex version change. | Extract only from matching pinned artifact/source or omit fallback. |
+| U-008 | CLIProxyAPI health and provider-specific endpoint shapes for pinned release. | **PARTIAL / UNKNOWN** — `v7.3.7` integrity, config fields, registered routes, loopback bind and key enforcement were probed in `cliproxy-schema.json`; provider-specific response shapes and dedicated health semantics remain unproven. | Credentialed provider contract probes in a later authorized run. | Adapt through documented version surface or pin another tested release. |
 
 ## Decision review rule
 

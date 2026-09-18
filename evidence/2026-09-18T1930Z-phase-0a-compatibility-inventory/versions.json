@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "captured_at": "2026-09-18T19:38:11Z",
+  "status": "PROBED",
+  "codex": {
+    "cli_version": "0.154.0",
+    "cli_path": "%LOCALAPPDATA%\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+    "cli_sha256": "be96b992178b1e467c225800da0d65f2c86d5eba1ef0b14632f65db381cbdfde",
+    "vscode_extension_id": "openai.chatgpt",
+    "vscode_extension_version": "26.311.21342",
+    "vscode_extension_path": "%USERPROFILE%\\.vscode\\extensions\\openai.chatgpt-26.311.21342-win32-x64",
+    "vscode_extension_package_sha256": "54367299d49f49f3752897881693238075082f883a8d8add7ae90c6df1ab7cf2",
+    "codex_home": "%USERPROFILE%\\.codex",
+    "codex_home_source": "default because CODEX_HOME was not set",
+    "config_candidate": "%USERPROFILE%\\.codex\\config.toml",
+    "config_candidate_exists": true,
+    "config_contents_read": false
+  },
+  "antigravity": {
+    "product_version": "2.5.5",
+    "core_version": "1.107.0",
+    "bundled_extension_version": "0.2.0",
+    "executable_path": "%LOCALAPPDATA%\\Programs\\Antigravity IDE\\Antigravity IDE.exe",
+    "executable_sha256": "231d90772d0e26d4376e85bc35fb349c2341926cba84d800828791b33e1103ef"
+  },
+  "cliproxyapi_candidate": {
+    "version": "7.3.7",
+    "commit": "b773607e3e7756dc6020a291825e4eb08899595a",
+    "built_at": "2026-09-17T19:20:21Z",
+    "executable_sha256": "bb44c6fa6a30214a294bdf64cf7385aa7ff65982aebd501ae37dc6a62a227072"
+  }
+}

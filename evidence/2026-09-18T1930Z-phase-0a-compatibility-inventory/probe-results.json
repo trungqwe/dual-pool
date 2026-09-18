@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "results": [
+    {
+      "test_id": "P0A-REPO-001",
+      "status": "pass",
+      "assertions": [
+        "remote matches trungqwe/dual-pool",
+        "start worktree clean",
+        "no submodules",
+        "feature branch created from expected HEAD"
+      ],
+      "artifacts": [
+        "repo.json"
+      ]
+    },
+    {
+      "test_id": "P0A-ENV-001",
+      "status": "pass",
+      "assertions": [
+        "Windows/tool inventory captured",
+        "literal user profile removed"
+      ],
+      "artifacts": [
+        "environment.json",
+        "versions.json"
+      ]
+    },
+    {
+      "test_id": "P0A-PORT-001",
+      "status": "pass",
+      "assertions": [
+        "proposed ports 51074, 8317 and 8318 were free",
+        "tagged callback ports 1455 and 51121 were free",
+        "no foreign process terminated"
+      ],
+      "artifacts": [
+        "ports.json"
+      ]
+    },
+    {
+      "test_id": "P0A-CODEX-001",
+      "status": "pass",
+      "assertions": [
+        "installed CLI exposes supported bundled catalog export",
+        "canonical gpt-6-astra is present in bundled and effective catalogs",
+        "whitelisted Astra metadata captured without model messages or prompt content"
+      ],
+      "artifacts": [
+        "codex-catalog.json"
+      ]
+    },
+    {
+      "test_id": "P0A-AG-001",
+      "status": "pass",
+      "assertions": [
+        "installed version and settings candidate captured",
+        "static key candidate captured without reading or changing effective settings",
+        "loopback support remains UNKNOWN"
+      ],
+      "artifacts": [
+        "antigravity-discovery.json"
+      ]
+    },
+    {
+      "test_id": "P0A-SUP-001",
+      "status": "pass",
+      "assertions": [
+        "latest official release rechecked",
+        "Windows amd64 archive matches published checksum and GitHub asset digest",
+        "binary reports tag-matching version and commit"
+      ],
+      "artifacts": [
+        "cliproxy-schema.json"
+      ]
+    },
+    {
+      "test_id": "P0A-CPA-001",
+      "status": "pass",
+      "assertions": [
+        "second disposable run used independent CSPRNG 256-bit client and management keys",
+        "listener bound only to 127.0.0.1",
+        "missing and wrong management keys returned 401",
+        "correct management key returned 200",
+        "client API required its key",
+        "no auth file created",
+        "process and listener absent after stop"
+      ],
+      "notes": "The first disposable attempt used an unavailable PowerShell 5.1 static RNG API and was stopped cleanly; it is not acceptance evidence.",
+      "artifacts": [
+        "cliproxy-schema.json"
+      ]
+    },
+    {
+      "test_id": "P0A-CLEANUP-001",
+      "status": "pass",
+      "assertions": [
+        "disposable process absent",
+        "listeners 18317 and 18318 absent",
+        "external temporary root removed",
+        "effective application configuration unchanged"
+      ],
+      "artifacts": [
+        "SUMMARY.md"
+      ]
+    },
+    {
+      "test_id": "P0A-SEC-001",
+      "status": "pass",
+      "assertions": [
+        "all evidence JSON parses",
+        "no high-risk secret value pattern matched",
+        "no literal user-profile path matched",
+        "no email address matched",
+        "documentation links resolved",
+        "git diff whitespace check passed"
+      ],
+      "artifacts": [
+        "evidence-manifest.json"
+      ]
+    }
+  ]
+}

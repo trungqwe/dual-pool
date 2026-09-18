@@ -20,6 +20,7 @@ These invariants are release blockers. Tests must prove them; comments and inten
 - INV-POOL-05: An account is not eligible merely because OAuth succeeded.
 - INV-POOL-06: Disable/enable operations address an exact opaque auth identifier.
 - INV-POOL-07: No automatic cross-provider fallback exists.
+- INV-POOL-08: Unexpected opposite-provider auth material in either instance root is an integrity violation; startup and provider traffic fail closed until the root is clean.
 
 ## Protocol and routing
 
@@ -34,7 +35,7 @@ These invariants are release blockers. Tests must prove them; comments and inten
 
 ## Configuration
 
-- INV-CFG-01: No mutation occurs during compatibility probe.
+- INV-CFG-01: Phase 0A performs no mutation of effective Antigravity or Codex configuration. Phase 0B may perform only explicitly authorized, backed-up, reversible compatibility mutations under INV-CFG-02 through INV-CFG-07.
 - INV-CFG-02: A backup and content hash exist before the first mutation.
 - INV-CFG-03: Only registered owned keys can change.
 - INV-CFG-04: Writes use temp file, flush, atomic replace and post-parse verification.
@@ -57,6 +58,7 @@ These invariants are release blockers. Tests must prove them; comments and inten
 - INV-LOG-03: Session identity is an HMAC or salted hash truncated for correlation; raw values are forbidden.
 - INV-LOG-04: Email/account names are removed from committed evidence.
 - INV-LOG-05: Test fixtures are synthetic and contain sentinel secrets that scanners can detect.
+- INV-LOG-06: Raw captures, downloads, binaries, logs and temporary secret-bearing probe roots stay outside the repository; only explicitly sanitized and scanned evidence may enter `evidence/<run-id>/`.
 
 ## Enforcement
 

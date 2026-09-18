@@ -1,67 +1,72 @@
 # Current Handoff
 
-Last updated: 2026-09-18 19:19 UTC.
+Last updated: 2026-09-18 UTC.
 
 ## Current status
 
-Specification package prepared and initialized as a local Git repository on `main`. Runtime implementation has not started. No compatibility claim has been proven on the target Windows machine.
+Phase 0A non-destructive compatibility inventory is complete on branch `phase-0/compatibility-inventory`, pending final commit/push metadata. Runtime implementation has not started. No effective Antigravity/Codex configuration was changed and no provider account/OAuth flow was used.
 
-## Repository access status
+## Repository and delivery
 
-Target remote: `https://github.com/trungqwe/dual-pool`.
+- Target remote: `https://github.com/trungqwe/dual-pool.git`.
+- Start HEAD: `5e91df5f31531452a74444d171a7edb7db405573`.
+- Branch: `phase-0/compatibility-inventory`.
+- Phase 0A commit: `PENDING`.
+- Push/compare URL: `PENDING`.
+- Run report: `docs/reports/2026-09-18T1930Z-phase-0a-compatibility-inventory.md`.
+- Evidence: `evidence/2026-09-18T1930Z-phase-0a-compatibility-inventory/`.
 
-The target repository was verified through GitHub CLI as `trungqwe/dual-pool`, public, initially empty, and writable by the authenticated owner account. The local `origin` is `https://github.com/trungqwe/dual-pool.git`. Initial commit `2479feee050eaff3a11dbdadb68d956b7396b9f2` was pushed normally to `main`; this handoff update is the required follow-up metadata commit.
+## Phase 0A results
 
-## Current phase
+- Governance now separates non-destructive Phase 0A from reversible mutation-dependent Phase 0B.
+- Root `.gitignore` and `docs/06-COMPATIBILITY-PROBE.md` define raw → sanitize → scan → commit; sanitized evidence remains trackable.
+- Repository risk R-13 is resolved by authenticated inventory.
+- Observed platform is Microsoft Windows 10 Pro `10.0.19045` x64, not the Windows 11 target in the charter. Results are valid for this observed machine but do not satisfy a Windows 11 acceptance claim.
+- Proposed ports `51074`, `8317`, `8318` and candidate callback ports `1455`, `51121` were free at capture time.
 
-Phase 0 — Repository and compatibility audit.
+## Codex discovery
 
-## Completed in this package
+- CLI: `0.154.0`; exact command path/hash are sanitized in `versions.json`.
+- VS Code extension: `openai.chatgpt` `26.311.21342`.
+- Default Codex home: `%USERPROFILE%\.codex`; config candidate exists, but contents were not read or changed.
+- `codex debug models --bundled` is supported. Exact bundled/effective catalogs contain canonical `gpt-6-astra` with list visibility, API support, unified shell, code-only tool mode, and multi-agent v2 metadata.
+- Extension config sharing, outbound Responses transport, and picker/provider retention remain UNKNOWN for Phase 0B.
 
-- Project charter, requirements and non-goals.
-- Two-process provider-isolated architecture.
-- Trust invariants, threat model and rollback design.
-- Detailed compatibility probe and hard go/no-go gates.
-- Antigravity and Codex integration contracts.
-- Roadmap, master checklist, verification and negative-test matrices.
-- Agent workflow, report template, GitHub delivery protocol and master prompt.
+## Antigravity discovery
 
-## Not completed
+- Product version `2.5.5`, core `1.107.0`, bundled extension `0.2.0`.
+- Existing settings candidate: `%APPDATA%\Antigravity IDE\User\settings.json`; contents were not read or changed.
+- Installed static bundle contains `jetski.cloudCodeUrl`, but the contributed settings schema does not declare it. The key and loopback behavior remain unproven until Phase 0B.
 
-- No branch-protection policy exists yet; the previously empty repository has no established review workflow.
-- No target-machine version/path/port evidence.
-- No CLIProxyAPI release pin/checksum.
-- No Antigravity setting/route/envelope proof.
-- No Codex picker/provider-retention proof.
-- No Go code, tests, CI, binaries or live account actions.
-- No runtime implementation commit exists yet.
+## CLIProxyAPI candidate
 
-## Key architecture decision
+- Latest official release rechecked: `v7.3.7`, commit `b773607e3e7756dc6020a291825e4eb08899595a`.
+- Windows amd64 archive SHA-256: `da5466b81beb7c769b99e26a5f6f41d9999a07be7c36be170167f10a2a6ecfc7`; matches both published `checksums.txt` and GitHub asset digest.
+- Executable SHA-256: `bb44c6fa6a30214a294bdf64cf7385aa7ff65982aebd501ae37dc6a62a227072`.
+- Tagged config/source contains required isolation, management, routing/affinity, streaming, WebSocket, OAuth/inventory and Responses/Gemini route surfaces recorded in `cliproxy-schema.json`.
+- Credential-free disposable probe bound only `127.0.0.1`, enforced management/client keys, created no auth files, and stopped cleanly.
+- Provider-specific response shapes and dedicated health semantics remain UNKNOWN without later authorized credentialed probes.
 
-Use two instances of one pinned upstream CLIProxyAPI executable:
+## Unknown status
 
-- Codex instance: proposed `127.0.0.1:8317`, Codex-only auth root.
-- Google instance: proposed `127.0.0.1:8318`, Google/Antigravity-only auth root.
-- Antigravity bridge: proposed `127.0.0.1:51074`.
+- U-001: PARTIAL / UNKNOWN.
+- U-002: UNKNOWN.
+- U-003: UNKNOWN.
+- U-004: UNKNOWN.
+- U-005: PARTIAL / UNKNOWN.
+- U-006: UNKNOWN.
+- U-007: PROBED.
+- U-008: PARTIAL / UNKNOWN.
 
-Ports remain probe-dependent. This structure makes cross-provider credential selection impossible at the process/auth-directory boundary.
+Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md`.
 
-## Next exact action
+## Cleanup and security
 
-After the initial documentation push is confirmed, execute only Phase 0 from `06-COMPATIBILITY-PROBE.md`. Produce a new report under `docs/reports/`, update this handoff, and push only sanitized evidence.
+- Disposable CLIProxyAPI process and listeners are absent.
+- `%TEMP%` probe root containing archive, binary, source checkout, full catalogs, synthetic keys/configs and logs was removed after sanitization.
+- No application integration was enabled, no account connected, and no foreign process terminated.
+- JSON/link/privacy/secret/whitespace and final diff checks are recorded in the run report and `probe-results.json`.
 
-## Phase 0 blockers requiring the target machine
+## Exact next bounded objective
 
-- Effective Antigravity settings path/key and native routing schema.
-- Installed Codex/extension versions, effective config layer and bundled catalog.
-- Codex dropdown selection behavior with a custom provider.
-- Available ports and callback behavior.
-- Candidate CLIProxyAPI release artifact and exact versioned schema.
-
-## Do not do next
-
-- Do not implement runtime routing before probes.
-- Do not connect all accounts before one-account eligibility flow is proven.
-- Do not patch either third-party application.
-- Do not use a Codex catalog downloaded from a mismatched branch/version.
-- Do not push this standalone tree over an existing remote branch without merging/inventory.
+Phase 0B — run backed-up and reversible Codex custom-provider/picker and Antigravity redirect/passthrough/envelope experiments. Entry requires confirming whether this Windows 10 machine is the intended exploratory target or providing the Windows 11 target required by the charter. Continue to prohibit provider-account work except a separately authorized U-004 probe.

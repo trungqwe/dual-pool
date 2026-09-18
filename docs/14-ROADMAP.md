@@ -14,6 +14,10 @@ Deliver:
 - resolved/updated unknowns U-001 through U-008;
 - go/no-go recommendation and candidate `upstream.lock`.
 
+Phase 0A is non-destructive discovery: repository/environment/port/product inventory, safe installed-catalog discovery, and credential-free disposable CLIProxyAPI probing. It does not change effective Antigravity/Codex configuration or connect accounts.
+
+Phase 0B contains backed-up, reversible mutation-dependent compatibility experiments: Codex custom-provider transport and picker retention plus Antigravity redirect, passthrough and envelope round trip.
+
 Exit: all Phase 0 gates in `06-COMPATIBILITY-PROBE.md` pass or explicit blockers are documented. No product integration remains enabled.
 
 ## Phase 1 — Foundation and state safety

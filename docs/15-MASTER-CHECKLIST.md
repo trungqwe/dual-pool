@@ -12,18 +12,25 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ## Phase 0
 
-- [ ] Windows/architecture/version inventory captured.
-- [ ] Codex CLI/extension effective config path proven.
-- [ ] Matching Codex catalog captured; Astra descriptor validated.
+### Phase 0A — non-destructive discovery
+
+- [x] Windows/architecture/tool and installed product version inventory captured. Evidence: `evidence/2026-09-18T1930Z-phase-0a-compatibility-inventory/environment.json`, `versions.json`.
+- [x] Codex CLI/config candidate and extension inventory captured without reading or changing effective config. Evidence: `versions.json`.
+- [x] Exact installed Codex bundled/effective catalog export supported; Astra descriptor captured. Evidence: `codex-catalog.json`.
+- [x] Antigravity version, settings path candidate and static key candidate inventoried without mutation. Evidence: `antigravity-discovery.json`.
+- [x] Candidate CLIProxyAPI release/hash/config/routes and credential-free loopback/auth behavior probed. Evidence: `cliproxy-schema.json`, `probe-results.json`.
+- [x] Proposed and candidate callback port collision inventory captured. Evidence: `ports.json`.
+- [x] U-001 through U-008 reviewed with partial evidence kept open. Evidence: `docs/03-DECISIONS-AND-EVIDENCE.md`.
+
+### Phase 0B — reversible mutation-dependent compatibility
+
 - [ ] Codex custom provider sends Responses to loopback.
 - [ ] Codex picker retains desired provider route.
-- [ ] Antigravity setting path/key proven reversibly.
+- [ ] Antigravity setting path/key and loopback behavior proven reversibly.
 - [ ] Native route and schema inventory captured safely.
 - [ ] Transparent passthrough proven.
 - [ ] Donor native envelope round trip proven.
-- [ ] Candidate CLIProxyAPI version/schema/endpoints verified.
-- [ ] Port and callback collision inventory complete.
-- [ ] U-001 through U-008 resolved or explicitly BLOCKED.
+- [ ] U-001 through U-008 resolved or explicitly BLOCKED for Phase 0 exit.
 
 ## Foundation
 

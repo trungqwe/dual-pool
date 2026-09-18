@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "algorithm": "sha256",
+  "artifacts": {
+    "antigravity-discovery.json": "301b703b1411c2387160ba7127faf749037b165871e4aa746a14e8963e49f4cc",
+    "cliproxy-schema.json": "345e909c2476cbdd4a3f22778edf78f06702039e5856b25c03dc0316b9c5c180",
+    "codex-catalog.json": "acadabf351763342e60662f64e81d30f139961157798782dd11855e63c312702",
+    "environment.json": "ff52b4a756d0f0d10e8cacc2af61915aca45d7527460a75e89edcab2009fcb0b",
+    "ports.json": "c919200f740dd47290d11755d2546697a66dcb13f26bdf1964a0f17b346e37b8",
+    "repo.json": "1b4a14819cacceee080f9237c542c00130fd4490ceb46a5b002e88d5efe92237",
+    "versions.json": "b8c6f3d76fe569cbaea32c79f395e952ab4d8e1a3bafa56510d6f03e730845de"
+  },
+  "self_hash_excluded": true,
+  "mutable_run_records_excluded": [
+    "probe-results.json",
+    "SUMMARY.md"
+  ]
+}

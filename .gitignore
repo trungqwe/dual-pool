@@ -1,0 +1,50 @@
+# Phase 0 raw and disposable probe artifacts
+.probe/
+tmp/
+temp/
+downloads/
+artifacts/raw/
+evidence/raw/
+
+# Candidate upstream binaries and archives
+*.exe
+*.dll
+*.zip
+*.7z
+*.tar
+*.tar.gz
+
+# Runtime/log/capture artifacts
+*.log
+*.trace
+*.pcap
+*.pcapng
+*.har
+*.dmp
+diagnostics/
+local-data/
+data-root/
+
+# Credentials, auth records, and secret material
+auth/
+auths/
+*-auth.json
+auth.json
+credentials.json
+secrets.json
+*.secret
+*.token
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.*
+
+# Editor and OS-local files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+
+# Sanitized evidence/<run-id>/ remains intentionally trackable.

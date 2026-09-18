@@ -16,7 +16,7 @@ Scale: likelihood and impact are Low/Medium/High. Owner is the role responsible 
 | R-10 | Config parser rewrites user files | Medium | High | Golden preservation tests; conflict-aware patch/rollback | Config | Open |
 | R-11 | Updater executes tampered artifact | Low | Critical | Allowlist, checksum, optional signature, stage before execute | Security | Open |
 | R-12 | Subscription/provider policy changes | Medium | High | Surface terms/risk; pin behavior; no bypass promises | Owner | Open |
-| R-13 | Remote repo already has conflicting docs/code | High until inspected | High | Authenticated inventory and conflict-aware integration first | Delivery | Open |
+| R-13 | Remote repo already has conflicting docs/code | Low | High | Authenticated bootstrap and Phase 0A inventory confirmed the expected repository/history; reopen if remote history diverges | Delivery | Resolved — `evidence/2026-09-18T1930Z-phase-0a-compatibility-inventory/repo.json` |
 | R-14 | Real live tests leak content/secrets | Medium | Critical | Synthetic prompts, metadata-only evidence, scanners | QA/Security | Open |
 | R-15 | Windows process/ACL behavior differs across installs | Medium | High | Target build matrix and explicit ACL/process tests | Platform | Open |
 | R-16 | Catalog fallback overrides desired Codex catalog updates | Medium | Medium | Use only when necessary; exact-version full catalog; invalidate on update | Codex | Open |

@@ -24,6 +24,7 @@ Every implementation run must be small, reproducible, reviewable and safely hand
 - Never use live tokens/accounts in unit/CI fixtures.
 - Put exploratory artifacts outside tracked paths unless sanitized evidence is explicitly required.
 - Treat upstream failures as facts to document, not authorization to patch upstream.
+- During Phase 0A, keep all raw/download/binary/log/temp-root material outside the repository and do not mutate effective Antigravity/Codex configuration. Only sanitized, scanned derivatives may be committed.
 
 ## Verification sequence
 
@@ -62,7 +63,7 @@ Avoid pasting huge logs. Record concise excerpts and paths. Never commit raw liv
 6. Re-run critical fast checks against committed HEAD if practical.
 7. Verify `origin` URL and upstream branch.
 8. Push normally; never force.
-9. Record commit SHA and push result in report/handoff. If report must include the final SHA, use a second small `docs:` commit rather than amending a pushed commit.
+9. A run report becomes immutable once included in a pushed commit. It may retain `End HEAD: PENDING`; record final commit SHA, push result and compare/PR URL in `docs/18-HANDOFF.md` or a new append-only delivery receipt. Never amend or edit the pushed report merely to self-record its own SHA.
 
 ## Required stop conditions
 

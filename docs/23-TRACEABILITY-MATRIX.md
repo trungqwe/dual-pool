@@ -25,6 +25,11 @@ This initial matrix defines minimum test identities. Implementation must add exa
 | NFR-007/008 | BUILD-001, ARCH-001 | E3/review | Open |
 | NFR-009 | EVIDENCE-SCHEMA-001 | E3 | Open |
 | NFR-010 | PRIV-001 | E3/review | Open |
+| Phase 0A repository/environment/port discovery | P0A-REPO-001, P0A-ENV-001, P0A-PORT-001 | E2 | Probed — `evidence/2026-09-18T1930Z-phase-0a-compatibility-inventory/probe-results.json` |
+| ADR-006 installed Astra identity and safe export | P0A-CODEX-001 | E2 | Probed — `evidence/2026-09-18T1930Z-phase-0a-compatibility-inventory/codex-catalog.json` |
+| INV-NET-01/02/03 candidate behavior | P0A-CPA-001 | E2 | Candidate probed; production E3 gate remains open |
+| INV-PROC-04 candidate supply chain | P0A-SUP-001 | E2 | Candidate probed; production pin/promotion gate remains open |
+| INV-LOG-06 evidence boundary | P0A-SEC-001, P0A-CLEANUP-001 | E2/review | Probed — `evidence/2026-09-18T1930Z-phase-0a-compatibility-inventory/probe-results.json` |
 
 ## Update rule
 

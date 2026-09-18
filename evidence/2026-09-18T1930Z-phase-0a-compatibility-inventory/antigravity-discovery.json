@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T1930Z-phase-0a-compatibility-inventory",
+  "status": "PARTIAL",
+  "product_version": "2.5.5",
+  "core_version": "1.107.0",
+  "bundled_extension_version": "0.2.0",
+  "executable_path": "%LOCALAPPDATA%\\Programs\\Antigravity IDE\\Antigravity IDE.exe",
+  "settings_candidate": "%APPDATA%\\Antigravity IDE\\User\\settings.json",
+  "settings_candidate_exists": true,
+  "settings_contents_read": false,
+  "installed_static_identifiers": [
+    "cloudCodeUrl",
+    "jetski.cloudCodeUrl",
+    "CLOUD_CODE_URL",
+    "getCloudCodeUrl"
+  ],
+  "configuration_schema_declares_cloud_code_url": false,
+  "candidate_key": "jetski.cloudCodeUrl",
+  "candidate_key_status": "candidate_only_from_installed_static_bundle",
+  "loopback_http_honored": "UNKNOWN_PHASE_0B",
+  "native_upstream_and_routes": "UNKNOWN_PHASE_0B",
+  "native_envelope_round_trip": "UNKNOWN_PHASE_0B",
+  "effective_configuration_mutated": false
+}

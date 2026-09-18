@@ -12,7 +12,7 @@ flowchart TB
     CP --> CA["Codex OAuth accounts"]
 ```
 
-Only an exact donor generation request follows `BR -> GP`. Model catalog and non-donor requests follow `BR -> NATIVE`. No connection exists from Codex clients to the Google instance or from the bridge to the Codex instance.
+Only an exact donor generation request follows `BR -> GP`. Model catalog and non-donor requests follow `BR -> NATIVE`. Under Poolbridge-managed state, no connection exists from Codex clients to the Google instance or from the bridge to the Codex instance. Unexpected opposite-provider auth material is an integrity violation that must fail closed before provider traffic is allowed.
 
 ## Components
 
