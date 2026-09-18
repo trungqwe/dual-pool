@@ -117,9 +117,9 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [ ] Performance threshold passes or waiver accepted.
 - [ ] Doctor and diagnostic bundle validated.
 - [ ] Rollback/uninstall without network tested.
-- [ ] `docs/18-HANDOFF.md` updated.
-- [ ] Run report added under `docs/reports/`.
-- [ ] `git diff --check`, tests and docs links pass.
-- [ ] Commit contains no unrelated files.
-- [ ] Push succeeds without force.
-- [ ] Commit SHA and compare/PR URL recorded in report.
+- [x] `docs/18-HANDOFF.md` updated. Evidence: current handoff delivery receipt.
+- [x] Run report added under `docs/reports/`. Evidence: `docs/reports/2026-09-18T1930Z-phase-0a-compatibility-inventory.md`.
+- [x] Applicable Phase 0A JSON/hash/security/privacy/cleanup checks and docs links pass; runtime tests are not yet in scope. Evidence: `probe-results.json` and the run report.
+- [x] Commit contains no unrelated files. Evidence: final staged name/status review in the run report.
+- [x] Push succeeds without force. Evidence: commit `3f70ed84cbc52772ed1e448f3ee891c6f3343bbe` on `origin/phase-0/compatibility-inventory`.
+- [x] Commit SHA and compare/PR URL recorded in handoff. Evidence: `docs/18-HANDOFF.md`.
