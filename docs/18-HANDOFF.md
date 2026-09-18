@@ -12,6 +12,15 @@ Hash trước/sau của hai cấu hình bằng nhau; thứ tự trong result là
 
 Branch hiện hành: `phase-0/reversible-compatibility`; start HEAD `aa420da331c4dadab1443c2547f645e13f8eb1b6`. Delivery SHA và kết quả push được ghi bằng receipt sau commit. GitHub trả danh sách PR mở rỗng cho branch; run này không tạo PR.
 
+## Delivery receipt — Gate A v5
+
+- Commit implementation/evidence: `d36da495c5a8c68e4b644deaf5694c531b083546`.
+- Push `git push origin phase-0/reversible-compatibility`: PASS, remote tiến từ `aa420da` tới `d36da49`.
+- [Compare để review](https://github.com/trungqwe/dual-pool/compare/aa420da...d36da49); không phải PR đã tạo. `gh pr list --head phase-0/reversible-compatibility` trả danh sách rỗng.
+- Worktree sạch sau push implementation; receipt này là commit docs tiếp theo, không sửa report/evidence đã push.
+- Verifier sau commit: PASS, 32 JSON, 10 link nội bộ, 0 security match, hash và cleanup PASS.
+- Gate A PASS; phase tổng thể còn BLOCKED bởi các U-gate. Nhiệm vụ kế tiếp: user-assisted Codex extension picker/config-layer trong run riêng.
+
 ## Repository and delivery — lịch sử Phase 0A
 
 - Target remote: `https://github.com/trungqwe/dual-pool.git`.
