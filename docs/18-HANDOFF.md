@@ -10,7 +10,7 @@ Specification package prepared and initialized as a local Git repository on `mai
 
 Target remote: `https://github.com/trungqwe/dual-pool`.
 
-The target repository was verified through GitHub CLI as `trungqwe/dual-pool`, public, empty, and writable by the authenticated owner account. The local `origin` is `https://github.com/trungqwe/dual-pool.git`; the initial documentation commit and push are pending final verification in this run.
+The target repository was verified through GitHub CLI as `trungqwe/dual-pool`, public, initially empty, and writable by the authenticated owner account. The local `origin` is `https://github.com/trungqwe/dual-pool.git`. Initial commit `2479feee050eaff3a11dbdadb68d956b7396b9f2` was pushed normally to `main`; this handoff update is the required follow-up metadata commit.
 
 ## Current phase
 

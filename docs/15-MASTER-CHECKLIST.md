@@ -4,10 +4,10 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ## Governance
 
-- [ ] Repository remote, default branch and protection workflow verified.
-- [ ] Existing user changes inventoried and preserved.
-- [ ] All agents have read required documents.
-- [ ] Current phase and scope recorded in handoff.
+- [x] Repository remote and default branch verified; no protection workflow is configured yet. Evidence: `docs/reports/2026-09-18T1919Z-phase-0-github-bootstrap.md`.
+- [x] Existing user changes inventoried and preserved. Evidence: initial empty-remote inventory in `docs/reports/2026-09-18T1919Z-phase-0-github-bootstrap.md`.
+- [x] All agents have read required documents. Evidence: `docs/reports/2026-09-18T1919Z-phase-0-github-bootstrap.md`.
+- [x] Current phase and scope recorded in handoff. Evidence: `docs/18-HANDOFF.md`.
 - [ ] Requirements/ADRs/tests updated for any design change.
 
 ## Phase 0
