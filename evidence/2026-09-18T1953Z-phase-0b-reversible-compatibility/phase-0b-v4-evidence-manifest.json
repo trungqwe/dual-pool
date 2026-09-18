@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "test_id": "phase0b-v4-evidence-manifest",
+  "status": "PASS",
+  "gate_a": "FAIL",
+  "security_gate": "PASS",
+  "json_validation": "PASS",
+  "cleanup": "PASS",
+  "artifacts": [
+    {"path": "codex-cli-transport-v4-20260918T2115Z.json", "sha256": "96C07127EE4B1E609ED3A0466A69509D6395CC0AAF4B4B709B102431C75B4B17"},
+    {"path": "probe-results-v4.json", "sha256": "0080C8C0909E2B4435652E3C21D93ED18993DD9CED58DE5CCD18DADB744E4844"},
+    {"path": "security-gate-v4.json", "sha256": "0654F9C941B5C6AEEB279F123081DDCE864170FF98785C0B040E4FF7F6C3FD3E"}
+  ],
+  "current_status": "phase-0b-status-v3.json"
+}

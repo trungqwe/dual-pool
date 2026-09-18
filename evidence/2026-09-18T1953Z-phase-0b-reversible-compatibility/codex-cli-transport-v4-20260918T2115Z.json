@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "test_id": "P0B-CX-TRANSPORT-001",
+  "status": "FAIL",
+  "failure_classification": "HARNESS_RUNTIME_FAILURE",
+  "harness_selftest": {
+    "old_literal_backtick_sequence_has_lf_lf": false,
+    "v4_sequence_has_real_lf_lf": true,
+    "response_created_parses": true,
+    "response_completed_parses": true,
+    "content_type": "text/event-stream"
+  },
+  "observed_before_failure": {
+    "method": "POST",
+    "route": "/v1/responses",
+    "model": "gpt-6-astra",
+    "content_type": "application/json",
+    "authorization_header_present": true,
+    "secret_seen_at_expected_ingress": true,
+    "prompt_seen_at_expected_ingress": true,
+    "request_shape_recorded": true
+  },
+  "lifecycle": {
+    "result_persistence_completed": false,
+    "natural_exit": "UNRECORDED",
+    "timed_out": "UNRECORDED",
+    "killed_by_harness": "UNRECORDED",
+    "exit_code": "UNRECORDED"
+  },
+  "security": {
+    "sentinel_values_committed": false,
+    "raw_stdout_stderr_committed": false
+  },
+  "cleanup": {
+    "v4_temp_roots_removed": true,
+    "owned_recorder_listener_left": false,
+    "unrelated_listeners_touched": false
+  },
+  "next_action": "Repair v4 finalization/runtime exception before rerunning Gate A."
+}

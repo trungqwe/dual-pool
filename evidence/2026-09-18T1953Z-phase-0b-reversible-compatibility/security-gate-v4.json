@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "test_id": "phase0b-security-gate-v4",
+  "status": "PASS",
+  "started_at": "2026-09-18T2115Z",
+  "ended_at": "2026-09-18T2115Z",
+  "paths_actually_scanned": ["scripts/phase0b-codex-cli-transport-v4.ps1", "docs/reports/2026-09-18T2115Z-phase-0b-gate-a-harness-repair.md", "evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/"],
+  "pattern_classes": ["sentinel values", "Authorization/Cookie/Bearer values", "private keys", "email addresses", "literal user paths", "raw request/response bodies"],
+  "matches_by_category": {"sentinel": 0, "authorization_cookie_bearer": 0, "private_key": 0, "email": 0, "literal_user_path": 0, "raw_body": 0},
+  "match_count": 0
+}

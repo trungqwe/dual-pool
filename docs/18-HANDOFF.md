@@ -89,6 +89,15 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 - Cleanup: owned probe process/listener stopped; temporary v3 home removed; no user configuration or account/OAuth file changed.
 - Exact next objective: repair v3 bounded process lifecycle/response handling, rerun Gate A, and only then request the user-assisted Codex picker checkpoint.
 
+## Gate A harness repair continuation
+
+- Start commit: `a6a04adbd468b9aeeab6e90ac358e9b4019377a4`.
+- Current Gate A: `FAIL` — v4 reached the Responses request and passed the real SSE byte self-test, but the final harness result-persistence path failed; lifecycle result is explicitly `UNRECORDED`.
+- Current authoritative gate status remains `evidence/2026-09-18T1953Z-phase-0b-reversible-compatibility/phase-0b-status-v3.json`; v4 diagnostics are append-only and do not close U-005.
+- Historical/provisional transport PASS wording above is superseded by the current Gate A failure.
+- U-001..U-008 remain: `BLOCKED`, `BLOCKED`, `BLOCKED`, `BLOCKED`, `PARTIAL / UNKNOWN`, `BLOCKED`, `PROBED`, `PARTIAL / UNKNOWN`.
+- No picker or Antigravity probe ran. Exact next objective: repair the v4 finalization runtime exception, then rerun Gate A with a persisted natural-exit result.
+
 ## Exact next bounded objective
 
 Phase 0B — run backed-up and reversible Codex custom-provider/picker and Antigravity redirect/passthrough/envelope experiments. Entry requires confirming whether this Windows 10 machine is the intended exploratory target or providing the Windows 11 target required by the charter. Continue to prohibit provider-account work except a separately authorized U-004 probe.
