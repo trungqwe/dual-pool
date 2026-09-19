@@ -148,11 +148,7 @@ func TestStoreRejectsJunctionDirectory(t *testing.T) {
 		t.Fatalf("create junction: %v: %s", err, output)
 	}
 	defer os.Remove(linkDir)
-	store, err := NewStore(linkDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := store.SaveState(validState()); !errors.Is(err, ErrUnsafeArtifact) {
+	if _, err := NewStore(linkDir); !errors.Is(err, ErrUnsafeArtifact) {
 		t.Fatalf("junction accepted: %v", err)
 	}
 	entries, _ := os.ReadDir(realDir)

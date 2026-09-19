@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 )
 
 var (
@@ -70,6 +69,15 @@ func NewStore(stateDir string, options ...Option) (*Store, error) {
 	if err != nil || filepath.Clean(dir) != dir {
 		return nil, ErrUnsafeArtifact
 	}
+	info, err := os.Lstat(dir)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || isReparsePoint(dir) {
+		return nil, ErrUnsafeArtifact
+	}
+	resolved, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return nil, ErrUnsafeArtifact
+	}
+	dir = filepath.Clean(resolved)
 	store := &Store{dir: dir, replacer: windowsReplacer{}, transactionID: randomTransactionID}
 	for _, option := range options {
 		option(store)
@@ -399,10 +407,5 @@ func (store *Store) safeDirectory() error {
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || isReparsePoint(store.dir) {
 		return ErrUnsafeArtifact
 	}
-	resolved, err := filepath.EvalSymlinks(store.dir)
-	if err != nil || !samePath(resolved, store.dir) {
-		return ErrUnsafeArtifact
-	}
 	return nil
 }
-func samePath(a, b string) bool { return strings.EqualFold(filepath.Clean(a), filepath.Clean(b)) }
