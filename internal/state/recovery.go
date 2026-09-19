@@ -29,7 +29,7 @@ func (store *Store) recoverOne(kind documentKind) (recoveryResult, error) {
 	}
 	guard, err := store.locks.AcquireFile(store.targetPath(kind))
 	if err != nil {
-		return recoveryNone, err
+		return recoveryNone, storeLockError(err)
 	}
 	if err := store.safeDirectory(); err != nil {
 		_ = guard.Release()

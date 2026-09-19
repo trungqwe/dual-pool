@@ -48,6 +48,10 @@ Stop on identity ambiguity, unsafe artifact/reparse behavior, any deletion befor
 - Real product root touched: false. Foreign/real processes killed: false. Only test-owned child processes were terminated by parent fixtures.
 - Remote Source CI: PENDING until implementation push.
 
+### CI correction
+
+Initial Source CI run `35457912238` failed because a Store save against a symlink target surfaced the internal lock-package unsafe-artifact error instead of the Store's stable `ErrUnsafeArtifact`. The operation failed closed and touched no outside target. The Store boundary now maps that internal classification to its existing public error; all local gates were rerun before the correction push.
+
 ## Next run
 
 Windows secret-store interface and implementation decision/proof using synthetic secrets only.

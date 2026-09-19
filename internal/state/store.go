@@ -179,7 +179,7 @@ func (store *Store) save(kind documentKind, data []byte, semantic func([]byte) e
 	}
 	guard, err := store.locks.AcquireFile(store.targetPath(kind))
 	if err != nil {
-		return err
+		return storeLockError(err)
 	}
 	defer func() {
 		if releaseErr := guard.Release(); result == nil && releaseErr != nil {
@@ -325,6 +325,13 @@ func (store *Store) save(kind documentKind, data []byte, semantic func([]byte) e
 		return ErrPersistenceFailed
 	}
 	return nil
+}
+
+func storeLockError(err error) error {
+	if errors.Is(err, lockfile.ErrUnsafeLockArtifact) {
+		return ErrUnsafeArtifact
+	}
+	return err
 }
 
 func (store *Store) inject(point FaultPoint) error {
