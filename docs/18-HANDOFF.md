@@ -330,4 +330,5 @@ The first live shadow run exposed an observability defect: after terminal checkp
 
 - `verified_capabilities` now accepts only the seven names already backed by the Phase 0 candidate evidence. Unknown, duplicate and non-string verified names fail closed. The present `upstream.lock` is unchanged and valid.
 - `P0-LOCK-ALLOWLIST-001`: 5/5 focused tests, 53/53 full Node tests and `UPSTREAM_LOCK_VALID` PASS. This repairs the Phase 2 entry debt without claiming provider support or changing U-001..U-008.
-- Implementation commit/push: PENDING. Next authorized work: complete the bounded Phase 1 CLI/error/CI foundation on `phase-1/state-foundation` after carrying this repair forward.
+- Implementation commit: `c46c8f0e5160a5eb001108d0cc9a86c9ffefd3fe`. Remote `phase-0/reversible-compatibility` was verified at this SHA with `git ls-remote` after a fast-forward push. Git reported a local remote-tracking ref update error after the remote accepted the push; the remote SHA is authoritative.
+- PR: none requested. Next authorized work: complete the bounded Phase 1 CLI/error/CI foundation on `phase-1/state-foundation` after carrying this repair forward.
