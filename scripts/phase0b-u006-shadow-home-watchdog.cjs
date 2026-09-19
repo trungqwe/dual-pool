@@ -120,6 +120,7 @@ function launchProbe(executable, shadow, secret, launcher = spawn) { if (!execut
 function renderTargetPrompt(prompt, output = console) { output.log(`Phase 0B shadow Astra synthetic transport check.\nReply briefly.\n${prompt}`); }
 function classifyAuth(choice) { return choice === 'AUTH_OK' ? 'AUTH_OK' : 'FULL_CODEX_HOME_SHADOW_AUTH_NOT_RECOGNIZED'; }
 function classifyAstra(choice) { return choice === 'ASTRA_SELECTED' ? 'ASTRA_SELECTED' : 'AUTHENTICATED_ASTRA_NOT_VISIBLE'; }
+function isAllowedAnswer(choice, allowed) { return allowed.includes(choice); }
 function writeSafe(file, value, secret = '', prompt = '') { const text = JSON.stringify(value, null, 2) + '\n'; if (text.includes(secret) || text.includes(prompt) || /\b[A-Z]:[\\/]/i.test(text)) throw new Error('UNSAFE_EVIDENCE'); fs.mkdirSync(path.dirname(file), { recursive: true }); const stage = file + '.stage'; fs.writeFileSync(stage, text, { encoding: 'utf8', flag: 'wx' }); fs.renameSync(stage, file); }
 async function waitFor(predicate, timeout, code, interval = 250) { const deadline = Date.now() + timeout; while (Date.now() < deadline) { if (await predicate()) return; await sleep(interval); } throw new Error(code); }
 function cleanupShadow(root) { if (!safeSessionRoot(root)) throw new Error('UNSAFE_SHADOW_ROOT'); assertNoReparse(root); if (fs.existsSync(root)) fs.rmSync(root, { recursive: true, force: false }); return !fs.existsSync(root); }
@@ -131,12 +132,20 @@ async function main({ processCount = getAntigravityProcessCount, discoverExecuta
   const sessionRoot = path.join(os.tmpdir(), PREFIX + crypto.randomBytes(16).toString('hex')); const shadowHome = path.join(sessionRoot, 'codex-home'); const stateRoot = path.join(sessionRoot, 'state'); const recorderRoot = path.join(sessionRoot, 'recorder');
   const secret = 'SECRET_SENTINEL_' + crypto.randomBytes(24).toString('hex'); const prompt = 'ASTRA_PROMPT_SENTINEL_' + crypto.randomBytes(24).toString('hex');
   const result = { schema_version: 3, test_id: 'P0B-CX-SHADOW-HOME-001', policy: POLICY, real_config_before_sha256: runBaselineHash, real_config_after_sha256: null, real_config_mutation_capability: false, crash_requires_restore: false, auth_confirmed: false, astra_selected: false, target_request_captured: false, shadow_retained_for_safe_cleanup: false, normal_process_observed: false, status: 'BLOCKED' };
-  let recorder = null; let probeStarted = false; let probeClosed = false; let cleanupPass = false; let classification = 'RUNNING'; let heartbeatTimer = null;
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout }); const answer = async (message, allowed) => { console.log(message + '\n' + allowed.join(' / ')); return new Promise(resolve => rl.once('line', line => resolve(line.trim().toUpperCase()))); };
-  const writeState = stage => writeSafe(path.join(stateRoot, 'status.json'), { stage, policy: POLICY }, secret, prompt);
+  let recorder = null; let probeStarted = false; let probeClosed = false; let cleanupPass = false; let classification = 'RUNNING'; let heartbeatTimer = null; let currentStage = 'STARTING';
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const answer = async (message, allowed) => {
+    while (true) {
+      console.log(message + '\n' + allowed.join(' / '));
+      const choice = await new Promise(resolve => rl.once('line', line => resolve(line.trim().toUpperCase())));
+      if (isAllowedAnswer(choice, allowed)) return choice;
+      console.log('INVALID_CHECKPOINT_INPUT');
+    }
+  };
+  const writeState = stage => { currentStage = stage; writeSafe(path.join(stateRoot, 'status.json'), { stage, policy: POLICY }, secret, prompt); };
   const heartbeat = stage => { try { writeSafe(path.join(stateRoot, 'heartbeat.json'), { stage, watchdog_ready: true, heartbeat_unix_ms: Date.now() }, secret, prompt); } catch {} };
   try {
-    fs.mkdirSync(sessionRoot, { recursive: true }); acl(sessionRoot); fs.mkdirSync(stateRoot); fs.mkdirSync(recorderRoot); fs.mkdirSync(shadowHome); validateTopology(sessionRoot, shadowHome, stateRoot, recorderRoot); writeState('WATCHDOG_READY'); heartbeatTimer = setInterval(() => heartbeat('WAIT_PRIMARY_CLOSE'), 1000); heartbeat('WAIT_PRIMARY_CLOSE');
+    fs.mkdirSync(sessionRoot, { recursive: true }); acl(sessionRoot); fs.mkdirSync(stateRoot); fs.mkdirSync(recorderRoot); fs.mkdirSync(shadowHome); validateTopology(sessionRoot, shadowHome, stateRoot, recorderRoot); writeState('WATCHDOG_READY'); writeState('WAIT_PRIMARY_CLOSE'); heartbeatTimer = setInterval(() => heartbeat(currentStage), 1000); heartbeat(currentStage);
     result.initial_process_count = processCount(); result.executable_discovered = Boolean(discoverExecutable());
     console.log('[WATCHDOG_READY]'); console.log('[WAIT_PRIMARY_CLOSE]'); console.log('Shadow U-006 probe is ready.'); console.log('The REAL ~/.codex config will not be changed.'); console.log('Save your work and close all Antigravity windows normally. Keep this watchdog console open.');
     await waitFor(() => processCount() === 0, 20 * 60 * 1000, 'PRIMARY_CLOSE_TIMEOUT'); result.cold_source_quiescent = true; writeState('COLD_SOURCE_QUIESCENT');
@@ -151,8 +160,9 @@ async function main({ processCount = getAntigravityProcessCount, discoverExecuta
     if (capture.method !== 'POST' || capture.route !== '/v1/responses' || capture.model !== 'gpt-6-astra' || capture.model_exact_astra !== true || capture.auth_match_status !== 'PASS' || capture.prompt_match_status !== 'PASS' || capture.json_parse_status !== 'PASS' || capture.response_closed !== true || !capture.emitted_events.includes('response.created') || !capture.emitted_events.includes('response.completed')) throw new Error('SHADOW_WIRE_ACCEPTANCE_FAILED'); classification = 'PASS';
   } catch (error) { classification = error.message || 'SHADOW_RUN_FAILED'; }
   finally {
-    if (heartbeatTimer) clearInterval(heartbeatTimer); console.log('[CLOSE_PROBE]'); console.log('Đóng tất cả cửa sổ Antigravity probe bình thường. Không mở Antigravity lại cho đến khi thấy SHADOW_CLEANUP_PASS.');
+    writeState('CLOSE_PROBE'); heartbeat(currentStage); console.log('[CLOSE_PROBE]'); console.log('Đóng tất cả cửa sổ Antigravity probe bình thường. Không mở Antigravity lại cho đến khi thấy SHADOW_CLEANUP_PASS.');
     try { probeClosed = !probeStarted ? processCount() === 0 : await waitFor(() => processCount() === 0, 20 * 60 * 1000, 'PROBE_CLOSE_TIMEOUT').then(() => true); } catch (error) { classification = error.message || 'PROBE_CLOSE_TIMEOUT'; probeClosed = false; result.shadow_retained_for_safe_cleanup = true; }
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
     if (probeClosed) { stopRecorder(recorderRoot); try { await waitFor(() => !recorder || recorder.exitCode !== null, 5000, 'RECORDER_STOP_TIMEOUT'); } catch { classification = classification === 'PASS' ? 'RECORDER_STOP_TIMEOUT' : classification; } try { cleanupPass = cleanupShadow(sessionRoot); } catch { cleanupPass = false; } }
     result.shadow_cleanup_pass = cleanupPass; result.probe_closed = probeClosed; result.real_config_after_sha256 = sha256(realConfig); result.run_baseline_unchanged = result.real_config_after_sha256 === runBaselineHash; if (!result.run_baseline_unchanged) classification = 'REAL_CONFIG_CONCURRENT_DRIFT';
     if (cleanupPass && result.run_baseline_unchanged && probeClosed) { if (sha256(realConfig) !== runBaselineHash) classification = 'REAL_CONFIG_CONCURRENT_DRIFT'; console.log('[NORMAL_REOPEN]'); console.log('Hãy tự mở Antigravity bằng shortcut/Menu Start bình thường. Không mở từ watchdog.'); try { await waitFor(() => processCount() > 0, 5 * 60 * 1000, 'NORMAL_IDE_REOPEN_TIMEOUT'); result.normal_process_observed = true; } catch (error) { classification = error.message || 'NORMAL_IDE_REOPEN_TIMEOUT'; } if (result.normal_process_observed) { const normal = await answer('Codex bình thường đã mở lại và tài khoản/chat hoạt động bình thường?', ['NORMAL_IDE_OK', 'NORMAL_IDE_FAILED']); result.normal_ide_confirmation = normal; if (normal !== 'NORMAL_IDE_OK') classification = 'NORMAL_IDE_OWNER_REPORTED_FAILED'; if (sha256(realConfig) !== runBaselineHash) classification = 'REAL_CONFIG_CONCURRENT_DRIFT'; result.normal_hash_unchanged = sha256(realConfig) === runBaselineHash; } }
@@ -163,4 +173,4 @@ async function main({ processCount = getAntigravityProcessCount, discoverExecuta
 }
 
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { POLICY, sha256, parseTomlStructure, assessRealConfig, safeSessionRoot, safeChild, validateTopology, runPowerShell, getAntigravityProcessSnapshot, getAntigravityProcessCount, discoverAntigravityExecutable, applySessionAcl, copyOpaqueCodexHome, writeShadowConfig, probeEnvironment, launchProbe, renderTargetPrompt, classifyAuth, classifyAstra, writeSafe, waitFor, cleanupShadow, main };
+module.exports = { POLICY, sha256, parseTomlStructure, assessRealConfig, safeSessionRoot, safeChild, validateTopology, runPowerShell, getAntigravityProcessSnapshot, getAntigravityProcessCount, discoverAntigravityExecutable, applySessionAcl, copyOpaqueCodexHome, writeShadowConfig, probeEnvironment, launchProbe, renderTargetPrompt, classifyAuth, classifyAstra, isAllowedAnswer, writeSafe, waitFor, cleanupShadow, main };

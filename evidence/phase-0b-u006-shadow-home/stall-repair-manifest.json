@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "test_id": "P0B-CX-SHADOW-HOME-SAFETY-003-MANIFEST",
+  "files": [
+    { "path": "scripts/phase0b-u006-shadow-home-watchdog.cjs", "sha256": "309420725AAC0CD52FA7F2E7D0CCD7E0E526F1B8ACCCBC8F63181862E551A4BE", "size": 19989 },
+    { "path": "scripts/phase0b-u006-shadow-home-watchdog.test.cjs", "sha256": "0566E7C41696BC05C87D3FB7B816CC3A4CDBE151F92F552DAEDF34B070C4C077", "size": 8910 },
+    { "path": "docs/reports/2026-09-19T1320Z-phase-0b-shadow-watchdog-stall-repair.md", "sha256": "861E1C23E6C9CF8DF9928AEDAF2AB5FFE5619172A5BB7D39130023BD79A894E1", "size": 4966 },
+    { "path": "evidence/phase-0b-u006-shadow-home/stall-repair.json", "sha256": "67B192DFC0D6307553689A28F45C7C7E9166B17FE941E67C72A577B34A310732", "size": 514 },
+    { "path": "docs/15-MASTER-CHECKLIST.md", "sha256": "A034E70ABEF3531A8277E65653926D922C7E36E1A4CFA507C08D63932772952B", "size": 9912 },
+    { "path": "docs/18-HANDOFF.md", "sha256": "A61F5CD82928F8F2D8D99D2EC6B5CA4B509CF40DA369498F10E7154104C19942", "size": 31917 }
+  ]
+}

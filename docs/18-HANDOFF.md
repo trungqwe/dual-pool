@@ -283,3 +283,7 @@ Read-only assessment: current config SHA-256 `C15720CC37B0670D4EC1D0294DA5E067DD
 ### Shadow lifecycle safety repair — 2026-09-19
 
 At starting HEAD `7db2454`, SHADOW-009..013 were repaired. The watchdog now waits for voluntary primary closure, fails closed on process-query errors, applies a restricted TEMP ACL before copying, retains the shadow on probe-close timeout, and requires manual normal reopen plus `NORMAL_IDE_OK` and a final unchanged real-config hash before PASS. The external launcher and bounded cleanup helper are included. Safety tests: 20/20 PASS; live probe not yet run. Report: `reports/2026-09-19T1254Z-phase-0b-shadow-lifecycle-repair.md`.
+
+### Shadow watchdog stall correction — 2026-09-19
+
+The first live shadow run exposed an observability defect: after terminal checkpoint input, the watchdog entered its bounded probe-close wait but stopped heartbeat updates and left `status.json` at `WAIT_AUTH_CONFIRMATION`. Unknown or empty checkpoint input was also treated as a terminal failure. The repair tracks the current lifecycle stage, keeps heartbeat active through `CLOSE_PROBE`, and accepts only exact checkpoint tokens. Tests: 22/22 watchdog and 48/48 Node PASS. The old live session remains fail-closed with its shadow retained while the probe is alive; no second probe was launched. Report: `reports/2026-09-19T1320Z-phase-0b-shadow-watchdog-stall-repair.md`.

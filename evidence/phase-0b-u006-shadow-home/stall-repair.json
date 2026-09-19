@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "test_id": "P0B-CX-SHADOW-HOME-SAFETY-003",
+  "status": "PASS",
+  "starting_head": "b5c355777cf5568c8ec48fc237c956358ae334f8",
+  "primary_watchdog_disabled": true,
+  "real_config_mutation_capability": false,
+  "active_old_session_classification": "PROBE_CLOSE_WAIT_OBSERVABILITY_DEFECT",
+  "active_old_shadow_retained": true,
+  "second_live_probe_run": false,
+  "watchdog_tests": "22/22 PASS",
+  "all_node_tests": "48/48 PASS",
+  "node_syntax": "PASS",
+  "raw_values_persisted": false
+}
