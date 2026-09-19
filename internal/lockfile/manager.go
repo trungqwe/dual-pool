@@ -299,7 +299,15 @@ func openCanonical(path string) (*os.File, error) {
 	if err != nil {
 		return nil, ErrUnsafeLockArtifact
 	}
-	attributes, err := windows.GetFileAttributes(name)
+	attributeDeadline := time.Now().Add(250 * time.Millisecond)
+	var attributes uint32
+	for {
+		attributes, err = windows.GetFileAttributes(name)
+		if !errors.Is(err, windows.ERROR_ACCESS_DENIED) || time.Now().After(attributeDeadline) {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	if err != nil {
 		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) || errors.Is(err, windows.ERROR_DELETE_PENDING) {
 			return nil, errCanonicalGone

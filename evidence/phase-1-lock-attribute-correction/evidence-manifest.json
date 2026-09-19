@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "scope": "phase-1-lock-attribute-race-correction",
+  "result": "PASS_LOCAL_PENDING_REMOTE_CI",
+  "artifacts": [
+    "security-gate.json",
+    "test-result.json"
+  ],
+  "privacy": "CLASSIFICATIONS_AND_COUNTS_ONLY",
+  "contains_local_paths": false,
+  "contains_process_ids": false,
+  "contains_lock_records": false,
+  "contains_secrets": false
+}

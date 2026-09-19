@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "scope": "phase-1-lock-attribute-race-correction",
+  "result": "PASS_LOCAL_PENDING_REMOTE_CI",
+  "trigger_ci": 35461530713,
+  "trigger_stage": "canonical_attributes",
+  "checks": {
+    "focused_stale_reclaim_stress": "PASS_5_RUNS",
+    "go_fmt": "PASS",
+    "go_vet": "PASS",
+    "go_test": "PASS_72_FUNCTIONS",
+    "go_race": "PASS",
+    "go_build": "PASS",
+    "go_mod_verify": "PASS",
+    "wincred_integration": "PASS",
+    "phase_0_regression": "PASS_53_OF_53",
+    "upstream_lock": "UPSTREAM_LOCK_VALID"
+  },
+  "remote_ci": "PENDING_CORRECTION_PUSH"
+}

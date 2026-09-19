@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "result": "PASS_LOCAL_PENDING_REMOTE_CI",
+  "access_denied_retry_bound_ms": 250,
+  "persistent_access_denied_fails_closed": true,
+  "canonical_pathname_delete_present": false,
+  "handle_based_release_preserved": true,
+  "reparse_rejection_preserved": true,
+  "secret_store_behavior_changed": false,
+  "real_product_root_touched": false,
+  "provider_credentials_touched": false
+}
