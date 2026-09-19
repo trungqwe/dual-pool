@@ -25,6 +25,16 @@ Cập nhật cleanup lúc 02:51:37 UTC: người dùng đã xóa cả hai profil
 
 Last updated: 2026-09-18 UTC.
 
+## Incident correction — 2026-09-19
+
+The previous primary watchdog session is **ABORTED / DEAD**. Do not resume its session or write an `agent-approved` checkpoint. It reached `PROBE_CONFIG_ACTIVE`, `PRIMARY_RELAUNCHED_FOR_PROBE`, and `WAIT_AUTH_CONFIRMATION`; auth was lost, then the watchdog was stopped/rebooted before verified rollback. The real config consequently required the temporary `DUALPOOL_CODEX_KEY` on the next normal launch.
+
+The owner/Gemini recovery report says the verified backup was restored and normal Codex became usable again. This is `OWNER/GEMINI_REPORTED`, not independently verified in the repository correction. The current execution host is now available, but the current real config hash is different from the historical `1AE4...5470D` baseline; this is `UNKNOWN: REAL_CONFIG_BASELINE_DRIFT`. No automatic restore is permitted.
+
+Current policy: `REAL_USER_CONFIG_LIVE_MUTATION_DISABLED`. The ordinary `scripts/phase0b-u006-primary-watchdog.ps1` entrypoint now fails before any session, recorder, IDE, or config side effect with `PRIMARY_REAL_CONFIG_MUTATION_DISABLED`. The incident report is [here](reports/2026-09-19T0905Z-phase-0b-primary-watchdog-incident-audit.md), and the no-side-effect test is `scripts/phase0b-primary-watchdog-disabled.test.ps1`.
+
+U-006 remains **BLOCKED**. The next permitted design is a new shadow `CODEX_HOME` probe under `%TEMP%`; the real user Codex directory must never be modified. A future shadow watchdog must set `real_config_mutation_capability=false` and `crash_requires_restore=false`, delete only the shadow, print `SHADOW_CLEANUP_PASS`, and wait for the owner to open Antigravity normally. It must not auto-launch the normal IDE. Do not start that design in this incident correction commit.
+
 ## Current status
 
 Phase hiện tại: **Phase 0B**. Gate `P0B-CX-TRANSPORT-001` v5: **PASS**; recorder và Codex tự thoát với code 0, không timeout/forced kill. Phase 1 chưa bắt đầu. Gate CLI không đóng U-005/U-006.
