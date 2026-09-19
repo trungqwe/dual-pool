@@ -1,0 +1,12 @@
+{
+  "schema_version": "1",
+  "correction_id": "P0B-CX-U005-AUDIT-002",
+  "previous_picker_observation": "Astra absent",
+  "authentication_context": "ABSENT",
+  "previous_picker_interpretation": "NON_DIAGNOSTIC_FOR_ASTRA_ENTITLEMENT",
+  "u005": "PROBED",
+  "u005_scope": "Windows 10; openai.chatgpt 26.5730.61309; observed installed Antigravity/Codex runtime",
+  "basis": "temporary CODEX_HOME, provider, loopback Responses endpoint and synthetic child environment were the only observed provider-setting sources; the extension reached that loopback and matched synthetic auth and prompt",
+  "u006": "BLOCKED",
+  "model_mismatch": "separate unresolved model-selection question"
+}

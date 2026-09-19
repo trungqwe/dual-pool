@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "test_id": "P0B-CX-MODEL-RESOLUTION-001",
+  "status": "BLOCKED",
+  "classification": "AUTHENTICATED_PROBE_UNAVAILABLE",
+  "authentication_context_present": false,
+  "observation_source": "user-assisted",
+  "reason": "The isolated custom-provider Codex extension instance exposed no login UI; the user could not authenticate through the disposable profile without reusing the primary session.",
+  "picker": {"astra_visible": "NOT_RUN", "astra_selected": false},
+  "wire_proof": "NOT_RUN",
+  "u_status": {"U-001":"BLOCKED","U-002":"BLOCKED","U-003":"BLOCKED","U-004":"BLOCKED","U-005":"PROBED","U-006":"BLOCKED","U-007":"PROBED","U-008":"PARTIAL / UNKNOWN"},
+  "cleanup": {"temporary_root_exists_before_cleanup": true,"temporary_root_removed": true,"original_instance_survived": true,"auth_material_inspected": false}
+}

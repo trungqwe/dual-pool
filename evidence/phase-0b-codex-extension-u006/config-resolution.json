@@ -1,0 +1,40 @@
+{
+  "schema_version": "1",
+  "test_id": "P0B-CX-CONFIG-LAYER-001",
+  "u005_audit_result": "PROBED",
+  "qualification": {
+    "os": "Windows 10",
+    "extension": "openai.chatgpt 26.5730.61309",
+    "runtime": "installed Antigravity/Codex runtime observed on target machine"
+  },
+  "observed_source_chain": [
+    "Codex extension process",
+    "child environment CODEX_HOME and DUALPOOL_CODEX_KEY",
+    "temporary CODEX_HOME config.toml",
+    "model_provider dualpool_probe",
+    "temporary loopback Responses base_url"
+  ],
+  "runner_proof": {
+    "temporary_codex_home_argument": "PRESENT",
+    "temporary_model_provider_config": "PRESENT",
+    "temporary_loopback_base_url": "PRESENT",
+    "temporary_wire_api_responses": "PRESENT",
+    "synthetic_child_environment_key": "PRESENT",
+    "real_config_supplied_to_probe": "NOT_USED",
+    "real_settings_supplied_to_probe": "NOT_USED",
+    "auth_storage_copied_or_linked": false,
+    "other_provider_settings_source_observed": false
+  },
+  "wire_observation": {
+    "route": "POST /v1/responses",
+    "synthetic_auth_match": true,
+    "synthetic_prompt_match": true,
+    "json_parse": true,
+    "same_loopback_provider": true
+  },
+  "model_mismatch": {
+    "nominal_config_model": "gpt-5.6-sol",
+    "wire_model_resolution": "SEPARATE_UNRESOLVED_QUESTION",
+    "does_not_reopen_config_layer_proof": true
+  }
+}

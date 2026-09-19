@@ -46,3 +46,7 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 ## Phase 0B parser-repair addendum
 
 | P0B-CX-EXTENSION-PARSER-V2 | [v2 recorder](../scripts/phase0b-extension-recorder-v2.cjs), [v2 runner](../scripts/phase0b-codex-extension-baseline-v2.ps1), [v2 result](../evidence/phase-0b-codex-extension-v2/extension-baseline-20260919T040521877Z.json) | Parser/sanitizer and ingress controls PASS; overall gate BLOCKED by `BASELINE_MODEL_MISMATCH`; U-005 PARTIAL / UNKNOWN; U-006 BLOCKED |
+## Phase 0B authenticated-picker addendum
+
+| P0B-CX-CONFIG-LAYER-001 | [config-resolution](../evidence/phase-0b-codex-extension-u006/config-resolution.json), [U-005 correction](../evidence/phase-0b-codex-extension-u006/u005-audit-correction.json) | U-005 PROBED for observed Windows 10/runtime scope |
+| P0B-CX-MODEL-RESOLUTION-001 | [U-006 result](../evidence/phase-0b-codex-extension-u006/u006-result.json) | BLOCKED: AUTHENTICATED_PROBE_UNAVAILABLE; no picker or wire request run |

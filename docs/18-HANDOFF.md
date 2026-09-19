@@ -152,3 +152,10 @@ U-005 remains **PARTIAL / UNKNOWN**; U-006 remains **BLOCKED**. The original Ant
 - PR: not created; branch remains the configured Phase 0 branch.
 - Verification: `scripts/phase0b-verify-extension-v2.ps1` PASS; parser syntax, JSON validation, forbidden-metadata scan, cleanup, and `git diff --check` PASS.
 - Residual worktree changes are pre-existing probe-generated modifications in the historical Phase 0B evidence directory and were not staged or overwritten.
+## Latest authenticated-picker status — 2026-09-19
+
+The historical unauthenticated `ASTRA_NOT_VISIBLE` observation is corrected prospectively to `NON_DIAGNOSTIC_FOR_ASTRA_ENTITLEMENT`. Existing evidence proves the extension consumed temporary `CODEX_HOME`, `dualpool_probe`, a random loopback Responses endpoint, and the synthetic child environment key; U-005 is therefore **PROBED** for Windows 10, `openai.chatgpt 26.5730.61309`, and the observed installed Antigravity/Codex runtime. The separate baseline model mismatch does not reopen U-005.
+
+U-006 is **BLOCKED: AUTHENTICATED_PROBE_UNAVAILABLE**. The isolated custom-provider Probe had no Codex login UI, so the user could not authenticate through the disposable profile without reusing the primary session. No auth file, cookie, database, token, email, account ID, or billing data was inspected, copied, hashed, logged, or committed. The opaque temporary root was deleted after the user closed the Probe; the original IDE survived and real configuration hashes remained unchanged. Evidence: [result](../evidence/phase-0b-codex-extension-u006/u006-result.json), [security gate](../evidence/phase-0b-codex-extension-u006/security-gate.json), [manifest](../evidence/phase-0b-codex-extension-u006/evidence-manifest.json).
+
+Exact next task: obtain an official login-capable disposable Codex/Antigravity profile or a supported user-assisted authentication path, then rerun only the U-006 picker retention probe. Do not start Phase 1 or Cloud Code.

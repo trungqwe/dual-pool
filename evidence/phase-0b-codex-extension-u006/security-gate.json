@@ -1,0 +1,34 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "paths_actually_scanned":  [
+                                   "scripts/phase0b-extension-recorder-u006.cjs",
+                                   "scripts/phase0b-codex-extension-u006-authenticated.ps1",
+                                   "scripts/phase0b-verify-extension-u006.ps1",
+                                   "docs/reports/2026-09-19T0442Z-phase-0b-authenticated-picker.md",
+                                   "evidence/phase-0b-codex-extension-u006/model-runtime-inventory.json",
+                                   "evidence/phase-0b-codex-extension-u006/config-resolution.json",
+                                   "evidence/phase-0b-codex-extension-u006/u005-audit-correction.json",
+                                   "evidence/phase-0b-codex-extension-u006/u006-result.json"
+                               ],
+    "excluded_paths":  [
+                           "evidence/phase-0b-codex-extension-u006/evidence-manifest.json"
+                       ],
+    "exclusion_reason":  "Manifest is generated last and verified separately",
+    "positive_controls":  {
+                              "powershell_syntax":  "PASS",
+                              "absolute_path_scan":  "PASS",
+                              "diff_check":  "PASS",
+                              "secret_privacy_scan":  "PASS",
+                              "node_syntax":  "PASS",
+                              "json":  "PASS"
+                          },
+    "u005":  "PROBED",
+    "u006":  "BLOCKED",
+    "classification":  "AUTHENTICATED_PROBE_UNAVAILABLE",
+    "cleanup":  {
+                    "original_instance_survived":  true,
+                    "auth_material_inspected":  false,
+                    "temporary_root_removed":  true
+                }
+}

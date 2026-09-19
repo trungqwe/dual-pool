@@ -1,0 +1,51 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "artifacts":  [
+                      {
+                          "path":  "scripts/phase0b-extension-recorder-u006.cjs",
+                          "sha256":  "06E3908C38AD7CEF65A11A02A90B9DA2ED7630789BB03DBB9CDFBBAAE6C6BE33",
+                          "size":  3180
+                      },
+                      {
+                          "path":  "scripts/phase0b-codex-extension-u006-authenticated.ps1",
+                          "sha256":  "97AC154B92A0A08D663DD5A653A292C136F5D7777E70C481A314702B9F2C8718",
+                          "size":  9472
+                      },
+                      {
+                          "path":  "scripts/phase0b-verify-extension-u006.ps1",
+                          "sha256":  "34FB943585555F458B933B3AC5DA2B3BF22792CDDBC638EE496237F0EB0CD3EE",
+                          "size":  3115
+                      },
+                      {
+                          "path":  "docs/reports/2026-09-19T0442Z-phase-0b-authenticated-picker.md",
+                          "sha256":  "C57A9A94AD2D538C4687C188EFFDCF6129E6ECF94E00E3B34B41ADD174039D26",
+                          "size":  3844
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-extension-u006/model-runtime-inventory.json",
+                          "sha256":  "8C07B0AB054700BCB7CF8FA37FEE1AF7C3FE7CAFF67DF2DF01DA9BF0D5A23E79",
+                          "size":  1628
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-extension-u006/config-resolution.json",
+                          "sha256":  "8D8C7CC11396A7BDC0C1BD2886559FEA4303E67B8C166CBC0A2553E27BD82EF8",
+                          "size":  1359
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-extension-u006/u005-audit-correction.json",
+                          "sha256":  "DF2573B47A9D15736FA4FC6F8C6A10DE8E96B224F0A84A3C8907731EBF3EFE1F",
+                          "size":  679
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-extension-u006/u006-result.json",
+                          "sha256":  "F560E16D80916FDD46539330E6EE5EA6036C40DF1EE1D9829AA60CF419F68C91",
+                          "size":  847
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-extension-u006/security-gate.json",
+                          "sha256":  "A560C73F0E637E301AE7742BB5D2A9B48A3B990C23AFB1EEF46698C861AEF622",
+                          "size":  1833
+                      }
+                  ]
+}

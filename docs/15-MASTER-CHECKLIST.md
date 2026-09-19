@@ -128,3 +128,8 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] v2 parser self-tests and privacy-safe serializer checks pass.
 - [x] One isolated baseline request reached `POST /v1/responses`; route, auth, identity encoding, UTF-8, JSON, prompt, sanitizer, and response lifecycle passed.
 - [ ] Baseline model gate remains open: `BASELINE_MODEL_MISMATCH`; U-005 is PARTIAL / UNKNOWN and U-006 remains BLOCKED. Evidence: [v2 result](../evidence/phase-0b-codex-extension-v2/extension-baseline-20260919T040521877Z.json).
+## Phase 0B authenticated-picker addendum — 2026-09-19
+
+- [x] Corrected the unauthenticated Astra observation to `NON_DIAGNOSTIC_FOR_ASTRA_ENTITLEMENT`.
+- [x] Closed U-005 as `PROBED` for the observed Windows 10/runtime scope using existing config-layer evidence.
+- [ ] U-006 authenticated picker probe: `BLOCKED: AUTHENTICATED_PROBE_UNAVAILABLE`; the isolated custom-provider extension exposed no login UI and no real auth state was reused.

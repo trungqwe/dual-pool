@@ -1,0 +1,33 @@
+{
+  "schema_version": "1",
+  "test_id": "P0B-CX-MODEL-RESOLUTION-001",
+  "observation_scope": "Windows 10 observed runtime",
+  "versions": {
+    "antigravity_product_version": "UNKNOWN",
+    "antigravity_core_version": "1.107.0",
+    "antigravity_cli_version": "1.107.0",
+    "codex_extension_version": "26.5730.61309",
+    "codex_cli_version": "0.154.0"
+  },
+  "artifacts": {
+    "antigravity_executable_sha256": "231D90772D0E26D4376E85BC35FB349C2341926CBA84D800828791B33E1103EF",
+    "antigravity_core_package_sha256": "55A0F63D0FBB1022FAF98AFB31C62678D192F10073D5AA9F2637FC9CA63E3DAA",
+    "antigravity_cli_sha256": "08DF171EAE7FAA874EB55658F07CB90AE5CA5F6524A440A1172DEB9DEEA14159",
+    "codex_cli_sha256": "BE96B992178B1E467C225800DA0D65F2C86D5EBA1EF0B14632F65DB381CBDFDE",
+    "extension_manifest_sha256": "4591A66710C5639D0E153452EBB8773D919CF680929BAEE4BB60D30EB62E77D2"
+  },
+  "safe_model_identifiers": ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra"],
+  "installed_extension_findings": {
+    "extension_bundle_model_symbols": "PRESENT",
+    "webview_model_presets": "PRESENT",
+    "model_list_protocol_string": "PRESENT",
+    "config_read_protocol_string": "UNKNOWN",
+    "model_provider_field": "PRESENT",
+    "model_catalog_fallback_field": "NOT_OBSERVED",
+    "known_default_selection_symbol": "PRESENT"
+  },
+  "source_files": [
+    {"relative_path": "out/extension.js", "sha256": "UNRECORDED_IN_THIS_ARTIFACT", "findings": ["gpt-5.6-luna"]},
+    {"relative_path": "webview/assets/app-initial-CV-clQZf.js", "sha256": "UNRECORDED_IN_THIS_ARTIFACT", "findings": ["gpt-5.6-sol", "gpt-5.6-terra"]}
+  ]
+}
