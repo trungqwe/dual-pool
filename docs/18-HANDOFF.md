@@ -41,6 +41,13 @@ The shadow-only entrypoint is now `scripts/phase0b-u006-shadow-home-watchdog.cjs
 
 The current real config hash was observed as different from the historical baseline, so the shadow entrypoint will stop with `REAL_CONFIG_BASELINE_DRIFT` before copying or changing anything. This is `UNKNOWN`, not an authorization to overwrite the config. U-006 remains BLOCKED. A live shadow run requires a fresh read-only baseline decision and then owner interaction at auth/Astra checkpoints.
 
+### Delivery receipt — incident correction and shadow design
+
+- Incident correction: `a563d512be00e37a30b37a37dd387a7cb0cf003f`, pushed fast-forward from remote `37d568a`.
+- Shadow design: `e79f3ed53e6cec9eee7cb6c34281cb0338c236ce`, pushed fast-forward from `a563d51`.
+- Verification: disabled real-config entrypoint test PASS; shadow fixture tests 5/5 PASS; Node syntax, privacy scan, local links and `git diff --check` PASS.
+- Live U-006: not run. Current real-config baseline drift blocks it before shadow copy. No config/auth/session/history mutation was performed by these commits.
+
 ## Current status
 
 Phase hiện tại: **Phase 0B**. Gate `P0B-CX-TRANSPORT-001` v5: **PASS**; recorder và Codex tự thoát với code 0, không timeout/forced kill. Phase 1 chưa bắt đầu. Gate CLI không đóng U-005/U-006.
