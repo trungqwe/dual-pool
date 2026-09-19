@@ -1,0 +1,12 @@
+{
+  "run_id": "20260919T024618673Z",
+  "checked_at": "2026-09-19T02:51:37.9344426Z",
+  "observation_source": "user-deletion-followed-by-os-verification",
+  "temporary_directories_absent": true,
+  "remaining_probe_processes": 0,
+  "original_root_alive": true,
+  "real_config_unchanged": true,
+  "real_settings_unchanged": true,
+  "picker_classification": "ASTRA_NOT_VISIBLE",
+  "delivery_gate": "PENDING"
+}

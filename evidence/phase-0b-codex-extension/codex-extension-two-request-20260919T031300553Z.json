@@ -1,0 +1,50 @@
+{
+  "schema_version": "2",
+  "test_id": "P0B-CX-EXTENSION-TWO-REQUEST-001",
+  "run_id": "20260919T031300553Z",
+  "status": "BLOCKED",
+  "classification": "RECORDER_BODY_PARSE_FAILURE",
+  "observation_source": "recorder_plus_user_screenshot",
+  "environment": {
+    "antigravity_version": "1.107.0",
+    "extension_id": "openai.chatgpt",
+    "extension_version": "26.5730.61309",
+    "codex_cli_version": "0.154.0",
+    "initial_model_observed_by_user": "gpt-5.6-sol"
+  },
+  "baseline_request": {
+    "ordinal": 1,
+    "method": "POST",
+    "route": "/v1/responses",
+    "content_type": "application/json",
+    "content_encoding": "identity",
+    "authorization_header_present": true,
+    "body_parse_result": "failed_before_model_observation",
+    "body_persisted": false
+  },
+  "ui_observation": {
+    "baseline_prompt_sent": true,
+    "loopback_error_displayed": true,
+    "astra_picker_attempted": false,
+    "codex_authenticated_in_temporary_home": false
+  },
+  "astra_request": null,
+  "cleanup": {
+    "probe_process_absent": true,
+    "recorder_process_absent": true,
+    "temporary_root_removed": true,
+    "original_instance_survived": true,
+    "real_config_unchanged": true,
+    "real_settings_unchanged": true
+  },
+  "unknowns": {
+    "U-001": "BLOCKED",
+    "U-002": "BLOCKED",
+    "U-003": "BLOCKED",
+    "U-004": "BLOCKED",
+    "U-005": "PARTIAL / UNKNOWN",
+    "U-006": "BLOCKED",
+    "U-007": "PROBED",
+    "U-008": "PARTIAL / UNKNOWN"
+  }
+}

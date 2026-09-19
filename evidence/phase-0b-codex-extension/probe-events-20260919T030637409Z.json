@@ -1,0 +1,64 @@
+{
+    "schema_version":  "1",
+    "run_id":  "20260919T030637409Z",
+    "test_id":  "P0B-CX-EXTENSION-TWO-REQUEST-001",
+    "events":  [
+                   {
+                       "timestamp":  "2026-09-19T03:06:39.8881804Z",
+                       "event_type":  "PRECHECK_PASS",
+                       "metadata":  {
+                                        "initial_model_observed":  true,
+                                        "flags":  {
+                                                      "user_data_dir":  true,
+                                                      "new_window":  true,
+                                                      "extensions_dir":  true
+                                                  },
+                                        "protected_process_count":  23,
+                                        "astra_observed":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T03:06:40.0494876Z",
+                       "event_type":  "PARALLEL_SMOKE_PASS",
+                       "metadata":  {
+                                        "original_instance_alive":  true,
+                                        "different_process_tree_pending":  true,
+                                        "temporary_user_data_ready":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T03:06:40.0504900Z",
+                       "event_type":  "EXTENSION_ISOLATION_PASS",
+                       "metadata":  {
+                                        "manifest_hash_match":  true,
+                                        "temporary_extension_silo":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T03:06:40.5304379Z",
+                       "event_type":  "RECORDER_READY",
+                       "metadata":  {
+                                        "loopback_only":  true,
+                                        "two_request_target":  true,
+                                        "pid_owned":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T03:06:50.3226488Z",
+                       "event_type":  "PROBE_IDE_STARTED",
+                       "metadata":  {
+                                        "probe_root_pid":  32464,
+                                        "process_count":  8
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T03:06:50.3266497Z",
+                       "event_type":  "PARALLEL_SMOKE_PASS",
+                       "metadata":  {
+                                        "original_instance_alive":  true,
+                                        "temporary_user_data_populated":  true,
+                                        "different_process_tree":  true
+                                    }
+                   }
+               ]
+}

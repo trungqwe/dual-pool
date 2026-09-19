@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "phase": "0B",
+  "gate_a": "PASS",
+  "parallel_instance": "PASS",
+  "extension_isolation": "PASS",
+  "U-001": "BLOCKED",
+  "U-002": "BLOCKED",
+  "U-003": "BLOCKED",
+  "U-004": "BLOCKED",
+  "U-005": "PARTIAL / UNKNOWN",
+  "U-006": "BLOCKED",
+  "U-007": "PROBED",
+  "U-008": "PARTIAL / UNKNOWN",
+  "authoritative_result": "codex-extension-two-request-20260919T031615744Z.json",
+  "phase_1_started": false
+}

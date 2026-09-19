@@ -1,5 +1,26 @@
 # Current Handoff
 
+## Latest authoritative Phase 0B status — 2026-09-19
+
+Gate `P0B-CX-TRANSPORT-001` remains PASS. The two-request parallel extension probe is **BLOCKED: EXTENSION_PAYLOAD_NOT_PARSEABLE**: the temporary extension reached loopback `POST /v1/responses` with `application/json` and an Authorization header, but the request body could not be safely parsed without retaining raw content. No model or prompt sentinel was inferred. U-005 remains `PARTIAL / UNKNOWN`; U-006 remains `BLOCKED`; U-001..U-004 remain `BLOCKED`; U-007 is `PROBED`; U-008 is `PARTIAL / UNKNOWN`.
+
+The original Antigravity instance survived every probe. Temporary extension silo, user-data, `CODEX_HOME`, recorder and listener cleanup passed; real Codex and Antigravity settings hashes were unchanged. Evidence: [status](../evidence/phase-0b-codex-extension/phase-0b-status-extension.json), [result](../evidence/phase-0b-codex-extension/codex-extension-two-request-20260919T031615744Z.json), [security gate](../evidence/phase-0b-codex-extension/security-gate.json), [manifest](../evidence/phase-0b-codex-extension/evidence-manifest.json).
+
+No Phase 1 or Cloud Code work started. Exact next task: analyze the extension's Responses body framing/encoding using a sanitized structural parser, then repeat the two-request experiment only if the parser can prove model and sentinel fields without persisting raw content.
+
+## Cập nhật probe song song — 2026-09-19
+
+Lượt hai-request `20260919T031615744Z` đã nhận `POST /v1/responses` từ extension tới loopback với `application/json`, body 58.422 bytes và Authorization header. Body không parse được bằng JSON parser/frame parser an toàn; không lưu body và không suy ra model/sentinel. Kết quả là `BLOCKED: EXTENSION_PAYLOAD_NOT_PARSEABLE`; [evidence](../evidence/phase-0b-codex-extension/codex-extension-two-request-20260919T031615744Z.json). Probe đã cleanup, instance gốc còn sống, hash cấu hình thật không đổi.
+
+Cập nhật cleanup lúc 02:51:37 UTC: người dùng đã xóa cả hai profile tạm. Kiểm tra OS xác nhận hai thư mục vắng mặt, không còn process probe/recorder tương ứng, instance gốc vẫn sống và hai hash cấu hình thật không đổi. [Bằng chứng bổ sung](../evidence/phase-0b-codex-extension/cleanup-confirmation-20260919T025137Z.json) thay thế trạng thái cleanup chưa hoàn tất bên dưới; không sửa kết quả lịch sử. Delivery gate vẫn PENDING.
+
+- Run `20260919T024618673Z`: **BLOCKED: ASTRA_NOT_VISIBLE**. Người dùng xác nhận model ban đầu GPT-5.6-Sol, nhưng không thấy Astra trong picker.
+- [Kết quả probe](../evidence/phase-0b-codex-extension/codex-extension-picker-20260919T024618673Z.json) giữ nguyên trạng thái tại thời điểm recorder dừng. Sau đó người dùng đã đóng Probe; kiểm tra OS xác nhận PID 27420 không còn, PID gốc 30392 vẫn sống, hash Codex config và Antigravity settings không đổi.
+- Không có request capture. U-005 PARTIAL / UNKNOWN; U-006 BLOCKED; U-001..U-004 BLOCKED; U-007 PROBED theo bằng chứng CLI v5; U-008 PARTIAL / UNKNOWN.
+- Cleanup chưa hoàn tất: còn hai thư mục probe tạm của lượt timeout và lượt picker. Lệnh xóa bị automatic approval review từ chối (`blocked by policy`); không thử cơ chế khác để vượt chặn.
+- Chưa commit/push thay đổi của probe; chưa hoàn tất security scan, manifest và delivery gate. Không chuyển Phase 1.
+- Bước tiếp theo: hoàn tất cleanup hai profile tạm bằng thao tác người dùng, rồi kiểm tra catalog của runtime thực sự do extension sử dụng để điều tra Astra không hiển thị. Không suy ra catalog CLI là catalog của extension.
+
 Last updated: 2026-09-18 UTC.
 
 ## Current status

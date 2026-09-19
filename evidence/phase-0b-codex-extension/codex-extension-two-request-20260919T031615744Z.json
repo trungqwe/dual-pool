@@ -1,0 +1,65 @@
+{
+  "schema_version": "2",
+  "test_id": "P0B-CX-EXTENSION-TWO-REQUEST-001",
+  "run_id": "20260919T031615744Z",
+  "status": "BLOCKED",
+  "classification": "EXTENSION_PAYLOAD_NOT_PARSEABLE",
+  "environment": {
+    "antigravity_version": "1.107.0",
+    "extension_id": "openai.chatgpt",
+    "extension_version": "26.5730.61309",
+    "codex_cli_version": "0.154.0",
+    "initial_model": "gpt-5.6-sol"
+  },
+  "preflight": {
+    "parallel_instance": "PASS",
+    "temporary_extension_silo": "PASS",
+    "temporary_codex_home": "PASS",
+    "original_instance_protected": true
+  },
+  "baseline_request": {
+    "ordinal": 1,
+    "method": "POST",
+    "route": "/v1/responses",
+    "content_type": "application/json",
+    "content_encoding": "identity",
+    "body_length": 58422,
+    "body_sha256_recorded": true,
+    "body_prefix_hex_recorded": true,
+    "authorization_header_present": true,
+    "model_observed": false,
+    "sentinel_observed": false,
+    "body_persisted": false,
+    "response_closed": true
+  },
+  "astra_request": null,
+  "controls": {
+    "real_config_sha256_before": "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+    "real_config_sha256_after": "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+    "real_settings_sha256_before": "1AE12E9E48D8B139C0A3803A02844E27C0E7E1F3E9A7D9998EFDF348370C34A2",
+    "real_settings_sha256_after": "1AE12E9E48D8B139C0A3803A02844E27C0E7E1F3E9A7D9998EFDF348370C34A2"
+  },
+  "user_observation": {
+    "baseline_prompt_sent": true,
+    "astra_picker_reached": false,
+    "source": "user-assisted"
+  },
+  "cleanup": {
+    "probe_process_absent": true,
+    "recorder_process_absent": true,
+    "temporary_root_removed": true,
+    "original_instance_survived": true,
+    "real_config_unchanged": true,
+    "real_settings_unchanged": true
+  },
+  "unknowns": {
+    "U-001": "BLOCKED",
+    "U-002": "BLOCKED",
+    "U-003": "BLOCKED",
+    "U-004": "BLOCKED",
+    "U-005": "PARTIAL / UNKNOWN",
+    "U-006": "BLOCKED",
+    "U-007": "PROBED",
+    "U-008": "PARTIAL / UNKNOWN"
+  }
+}

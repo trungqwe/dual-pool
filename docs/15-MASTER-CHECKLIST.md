@@ -25,7 +25,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 ### Phase 0B — reversible mutation-dependent compatibility
 
 - [x] Codex CLI custom provider sends Responses to loopback; Gate A v5 PASS với natural exit, sentinel scan và cleanup. Evidence: [v5 result](../evidence/phase-0b-v5/codex-cli-transport-v5-20260918T212522665Z.json). Chưa chứng minh extension/config-layer hoặc Windows 11.
-- [ ] Codex picker retains desired provider route — `BLOCKED` pending user-assisted UI action.
+- [ ] Codex picker retains desired provider route — `BLOCKED`: the isolated two-request probe reached loopback, but the extension's JSON body was not safely parseable; no Astra request was accepted. Evidence: [two-request result](../evidence/phase-0b-codex-extension/codex-extension-two-request-20260919T031615744Z.json).
 - [ ] Antigravity setting path/key and loopback behavior proven reversibly.
 - [ ] Native route and schema inventory captured safely.
 - [ ] Transparent passthrough proven.

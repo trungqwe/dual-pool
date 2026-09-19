@@ -1,0 +1,69 @@
+{
+    "schema_version":  "1",
+    "test_id":  "P0B-CX-EXTENSION-001",
+    "run_id":  "20260919T021253229Z",
+    "status":  "BLOCKED",
+    "classification":  "USER_ASSISTED_PROBE_TIMEOUT",
+    "started_at":  "2026-09-19T02:12:53.2290722Z",
+    "ended_at":  "2026-09-19T02:27:54.1254711Z",
+    "environment":  {
+                        "astra_model":  "gpt-6-astra",
+                        "extension_id":  "openai.chatgpt",
+                        "extension_version":  "26.5730.61309",
+                        "antigravity_version":  "1.107.0",
+                        "initial_model":  "gpt-5.6-sol"
+                    },
+    "preflight":  {
+                      "flags":  {
+                                    "user_data_dir":  true,
+                                    "new_window":  true,
+                                    "extensions_dir":  true
+                                },
+                      "parallel_instance_pretest":  "PASS",
+                      "real_antigravity_processes_before":  23
+                  },
+    "isolation":  {
+                      "original_instance_remained_alive":  true,
+                      "probe_root_pid":  24936,
+                      "probe_user_data_is_temporary":  true,
+                      "temporary_codex_home":  true,
+                      "different_process_tree":  true
+                  },
+    "user_observation":  {
+                             "initial_model_matches":  null,
+                             "astra_selected_by_user":  null,
+                             "astra_visible":  null,
+                             "source":  "user-assisted"
+                         },
+    "request":  null,
+    "controls":  {
+                     "real_config_sha256_after":  "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+                     "real_antigravity_settings_unchanged":  true,
+                     "real_config_unchanged":  true,
+                     "real_antigravity_settings_sha256_after":  "1AE12E9E48D8B139C0A3803A02844E27C0E7E1F3E9A7D9998EFDF348370C34A2",
+                     "real_antigravity_settings_sha256_before":  "1AE12E9E48D8B139C0A3803A02844E27C0E7E1F3E9A7D9998EFDF348370C34A2",
+                     "real_config_sha256_before":  "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D"
+                 },
+    "cleanup":  {
+                    "recorder_listener_absent":  true,
+                    "synthetic_environment_not_persisted":  true,
+                    "probe_process_absent":  false,
+                    "temporary_root_removed":  false,
+                    "original_instance_survived":  true
+                },
+    "failure":  {
+                    "classification":  "USER_ASSISTED_PROBE_TIMEOUT",
+                    "exception_type":  "System.Management.Automation.RuntimeException",
+                    "stage":  "PRECHECK"
+                },
+    "unknowns":  {
+                     "U-004":  "BLOCKED",
+                     "U-007":  "PROBED",
+                     "U-005":  "PARTIAL / UNKNOWN",
+                     "U-003":  "BLOCKED",
+                     "U-002":  "BLOCKED",
+                     "U-008":  "PARTIAL / UNKNOWN",
+                     "U-001":  "BLOCKED",
+                     "U-006":  "BLOCKED"
+                 }
+}

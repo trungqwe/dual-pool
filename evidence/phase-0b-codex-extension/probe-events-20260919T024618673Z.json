@@ -1,0 +1,57 @@
+{
+    "schema_version":  "1",
+    "run_id":  "20260919T024618673Z",
+    "test_id":  "P0B-CX-EXTENSION-001",
+    "events":  [
+                   {
+                       "timestamp":  "2026-09-19T02:46:19.1221877Z",
+                       "event_type":  "PRECHECK_PASS",
+                       "metadata":  {
+                                        "flags":  {
+                                                      "user_data_dir":  true,
+                                                      "new_window":  true,
+                                                      "extensions_dir":  true
+                                                  },
+                                        "protected_process_count":  23,
+                                        "extension_version":  "26.5730.61309",
+                                        "initial_model_observed":  true,
+                                        "astra_observed":  true,
+                                        "extension_id":  "openai.chatgpt"
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T02:46:19.6455962Z",
+                       "event_type":  "RECORDER_READY",
+                       "metadata":  {
+                                        "loopback_only":  true,
+                                        "sse_lf_lf":  true,
+                                        "pid_owned":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T02:46:29.7850408Z",
+                       "event_type":  "PROBE_IDE_STARTED",
+                       "metadata":  {
+                                        "probe_root_pid":  27420,
+                                        "process_count":  10
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T02:46:29.7860855Z",
+                       "event_type":  "PARALLEL_PROCESS_CONFIRMED",
+                       "metadata":  {
+                                        "original_instance_remained_alive":  true,
+                                        "probe_user_data_is_temporary":  true,
+                                        "different_process_tree":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T02:47:41.5246157Z",
+                       "event_type":  "USER_INITIAL_MODEL_CONFIRMED",
+                       "metadata":  {
+                                        "observation_source":  "user-assisted",
+                                        "initial_model_matches":  true
+                                    }
+                   }
+               ]
+}

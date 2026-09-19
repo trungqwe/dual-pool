@@ -1,0 +1,12 @@
+{
+  "schema_version": "1",
+  "test_id": "P0B-CX-EXTENSION-TWO-REQUEST-001",
+  "authoritative_result": "codex-extension-two-request-20260919T031615744Z.json",
+  "status": "BLOCKED",
+  "classification": "EXTENSION_PAYLOAD_NOT_PARSEABLE",
+  "prior_results": [
+    "codex-extension-picker-20260919T024618673Z.json",
+    "codex-extension-two-request-20260919T031300553Z.json"
+  ],
+  "required_next_probe": "Capture a sanitized structural parse of the exact extension Responses body without persisting raw content."
+}

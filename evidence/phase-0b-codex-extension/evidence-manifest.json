@@ -1,0 +1,86 @@
+{
+    "schema_version":  "1",
+    "security":  "PASS",
+    "test_id":  "P0B-MANIFEST-EXT-001",
+    "sources":  [
+                    {
+                        "sha256":  "B796318CC5659FEF1EAC7AE86308BD159FD12231C62ED989DF8EFC4EC4BC299D",
+                        "path":  "scripts/phase0b-codex-extension-parallel.ps1"
+                    },
+                    {
+                        "sha256":  "FA23213A25C4C86A5FEDBF5CC6890D273221A1C89FC8F4DD4E423CEBBDBB57E3",
+                        "path":  "scripts/phase0b-extension-recorder.cjs"
+                    },
+                    {
+                        "sha256":  "6E7A58D00D2A327F900DAB47F3CDDC406E3CB81C08A10717CF61F2AD44C67C1C",
+                        "path":  "scripts/phase0b-verify-extension.ps1"
+                    }
+                ],
+    "artifacts":  [
+                      {
+                          "sha256":  "262091C717179D0D6E61C6C64258B13A25FD9E80D04796605407CC44AD4BD2F7",
+                          "path":  "cleanup-confirmation-20260919T025137Z.json"
+                      },
+                      {
+                          "sha256":  "11B9392A87407CA483177386B7F515686C53CE9E8C6AC64E3221451899C1DD45",
+                          "path":  "codex-extension-picker-20260919T021253229Z.json"
+                      },
+                      {
+                          "sha256":  "3A9A82EB3ED71E097AAE5B8079DC79EC59B734572761C162581D866815AE65FD",
+                          "path":  "codex-extension-picker-20260919T024618673Z.json"
+                      },
+                      {
+                          "sha256":  "560CCFB73D3BABE039133D8340D73A9C16E32A7B69018DADE3343DED425ECD54",
+                          "path":  "codex-extension-two-request-20260919T030637409Z.json"
+                      },
+                      {
+                          "sha256":  "D5D7453352364FC86267B3DC8D3A17A9FF53B888C462240528B2549906E36570",
+                          "path":  "codex-extension-two-request-20260919T031300553Z.json"
+                      },
+                      {
+                          "sha256":  "2555CFD70A68F4EFC88DB836165389F0BD2920D3D6AE1D4CCD7AB1D88CB88397",
+                          "path":  "codex-extension-two-request-20260919T031615744Z.json"
+                      },
+                      {
+                          "sha256":  "F2FF42CE51F73B7D1E6652696586DA7D8EE9FF5C7EAB1921F805A20C4E8047C2",
+                          "path":  "phase-0b-status-extension.json"
+                      },
+                      {
+                          "sha256":  "3E6B48E61A4CD289AFB5CF2143AC9C4C6DFE898040AA3B6F187A995E0B4944C4",
+                          "path":  "probe-events-20260919T021253229Z.json"
+                      },
+                      {
+                          "sha256":  "D730CD66A30C14007532ACA7DA631C68086D2A6C87361F659DAF152E1BE71EDA",
+                          "path":  "probe-events-20260919T024618673Z.json"
+                      },
+                      {
+                          "sha256":  "15AED5B8975135904A36C4F130E211ECCAEE3E16AFB1E4CED5BD6E905C078CE2",
+                          "path":  "probe-events-20260919T030637409Z.json"
+                      },
+                      {
+                          "sha256":  "5E19FC27F1827F2A407768ED3F9996B1F7C1D9F1B4C4003759EBDFEB3D693095",
+                          "path":  "probe-events-20260919T031300553Z.json"
+                      },
+                      {
+                          "sha256":  "FBD0D10098EDFDCF85F8118573E4712B1CB7D4B0FD6A94B28096B8F0CCB336D6",
+                          "path":  "probe-events-20260919T031615744Z.json"
+                      },
+                      {
+                          "sha256":  "45DBEF5FF8DB75F865A6F77F1BE408923A8460F322CC12548AB4D67265C73848",
+                          "path":  "probe-events-20260919T031828318Z.json"
+                      },
+                      {
+                          "sha256":  "C7EA82EB377EE37E492F4522B1AC76E42F4C6261D8B935738EC91ED937C1E376",
+                          "path":  "probe-results.json"
+                      },
+                      {
+                          "sha256":  "DC98A453F21670E891855EA7FAAA62A7A181DCA3B9225F74E5D746FC81163E2F",
+                          "path":  "security-gate.json"
+                      }
+                  ],
+    "control_hashes":  "PASS",
+    "cleanup":  "PASS",
+    "authoritative_result":  "codex-extension-two-request-20260919T031615744Z.json",
+    "generated_at":  "2026-09-19T03:27:40.6224367Z",
+    "status":  "PASS"
+}
