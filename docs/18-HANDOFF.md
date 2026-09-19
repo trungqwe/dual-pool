@@ -272,3 +272,11 @@ Watchdog mới đã được quan sát `WATCHDOG_READY`, Node PID 24088, parent 
 The initial shadow implementation was audited and SHADOW-001..008 were repaired. The watchdog now creates the required three-directory topology before checkpoints, enforces a cold source, uses the real Antigravity launch path with a sanitized child environment, waits for `armed.json`, displays the generated prompt, waits for `capture.json`, distinguishes auth loss from Astra absence, and uses a dynamic run-scoped real-config hash. The old primary watchdog remains hard-disabled.
 
 Read-only assessment: current config SHA-256 `C15720CC37B0670D4EC1D0294DA5E067DD7CF65437D2E5DF4C209A9411F5CD58`; TOML `PASS`; all probe markers `false`; historical equivalence not claimed. Owner-reported current Codex chat supports `CURRENT_WORKING_CONFIG_CANDIDATE`, but this run deliberately did not launch a live probe. Real config mutation: `false`. Tests: 15/15 PASS. Report: `reports/2026-09-19T1128Z-phase-0b-shadow-harness-repair.md`.
+### Delivery receipt — shadow U-006 harness repair
+
+- Implementation/evidence commit: `cafd9a3cf72be06dec1d7d457858048d4bf83ee9` (`fix(phase-0): repair shadow U-006 orchestration`).
+- Push: PASS to `origin/phase-0/reversible-compatibility`, fast-forward from `383c38b1b65da08ac4b3e87bfee841c1f411cd8b`.
+- Verification: 15/15 shadow tests PASS; Node syntax PASS; primary real-config mutation guard PASS; JSON/privacy/staged-secret/diff checks PASS.
+- Current real config was read-only assessed; SHA-256 remained `C15720CC37B0670D4EC1D0294DA5E067DD7CF65437D2E5DF4C209A9411F5CD58`; no probe marker was found; real config mutation was `false`.
+- Live U-006 was intentionally not run. No Antigravity process was launched, no auth was inspected, and no normal IDE was auto-launched.
+- Next action: only a separately authorized owner-assisted live shadow run. On auth loss, record `FULL_CODEX_HOME_SHADOW_AUTH_NOT_RECOGNIZED`; never return to real-config mutation.
