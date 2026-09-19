@@ -294,3 +294,11 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Push: PASS to `origin/phase-0/reversible-compatibility`; remote SHA verified directly with `git ls-remote`.
 - Verification: 22/22 watchdog tests and 48/48 Node tests PASS; Node syntax, PowerShell parser, JSON parse, docs links, staged privacy/absolute-path scan, manifest, and `git diff --check` PASS.
 - Primary watchdog remains disabled; real-config mutation capability remains `false`; no second live probe was launched.
+
+### Live shadow run cleanup outcome — 2026-09-19
+
+- The owner reported all probe windows closed; all 11 remaining background Antigravity processes were verified as descendants of the single watchdog-owned probe root before scoped termination.
+- The old watchdog did not advance after the probe tree reached zero. Its owned recorder and watchdog processes were stopped, then the bounded cleanup helper removed only the owned shadow.
+- Cleanup PASS: probe, watchdog, recorder, listener, and shadow absent. Real config remained marker-free and byte-identical through cleanup with SHA-256 `F8D0FC86632716BC202660E0A544DB1BB26622175C2865B53D4B01B7A227B43F`.
+- U-006 remains **BLOCKED: WATCHDOG_STALL_REQUIRES_FORCED_OWNED_PROCESS_CLEANUP**. Auth recognition, Astra visibility, and target wire acceptance remain `UNKNOWN`; no second live probe was launched.
+- Exact next task: record safe-isolation exhaustion for U-006; do not return to real-config mutation. Report: `reports/2026-09-19T1335Z-phase-0b-shadow-live-cleanup.md`.

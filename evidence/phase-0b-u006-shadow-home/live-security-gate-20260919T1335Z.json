@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "test_id": "P0B-CX-SHADOW-HOME-LIVE-001-SECURITY",
+  "status": "PASS_FOR_BLOCKED_CLEANUP",
+  "repository_privacy_scan": "PASS",
+  "absolute_path_scan": "PASS",
+  "real_config_mutation": false,
+  "real_config_baseline_unchanged": true,
+  "probe_absent_after_cleanup": true,
+  "watchdog_absent_after_cleanup": true,
+  "recorder_absent_after_cleanup": true,
+  "listener_absent_after_cleanup": true,
+  "shadow_absent_after_cleanup": true,
+  "normal_ide_manual_reopen": false,
+  "u006_promotion_allowed": false
+}
