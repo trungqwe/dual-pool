@@ -380,3 +380,20 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Delivery receipt: this scoped handoff commit; its SHA and final remote HEAD are verified after commit. Push: normal fast-forward. PR: not requested and not created.
 - Checklist movement is limited to atomic store and crash recovery. Global/per-file locks with PID identity, Windows secret-store review, product-root ACL initialization, and config backup/patch/rollback remain open.
 - Exact next Phase 1 task: global/per-file locks with PID identity and stale-lock recovery using TEMP-only integration tests.
+
+## Phase 1 PID-safe mutation locks — 2026-09-20
+
+- Implemented global and canonical per-file inter-process locks using strict JSON metadata, exclusive synced candidates, `MoveFileExW` installation without replacement, exact ownership release and bounded stale recovery.
+- Lock owner identity is PID plus raw 64-bit Windows process creation FILETIME plus canonical executable image. An exact live owner remains held even after expiry; dead, PID-reused and image-mismatched owners are recoverable only after byte-identical record reread and a second identity check. Invalid or unverifiable ownership fails closed.
+- Store `SaveState`, `SaveOwnership`, `Recover` and orphan cleanup now hold the corresponding per-document lock. The lock spans initial target inspection through CAS, `ReplaceFileW`/`MoveFileExW`, verification and cleanup. Read-only loads do not steal or recover locks.
+- Closed `LOCK-PRE-001` CAS/replace TOCTOU, `LOCK-PRE-002` orphan-candidate recovery race, and `LOCK-PRE-003` ignored backup safety error. The unsafe-backup regression preserves target, marker and candidate.
+- TEMP-only proof covers global subprocess contention/crash, Store writer contention at candidate creation and the former CAS/replace window, recover-versus-writer exclusion, stale lock recovery after abrupt exit, PID reuse, image mismatch, expired live owner, owner-query ambiguity, strict codec, release ownership, root/artifact junction rejection and per-file independence.
+- Implementation commits: `da473c916944e3871b9b9258d1429b8bef729a99` (`feat(phase-1): add PID-safe mutation locks`) and CI correction `4bfabf8dd7a6cf0cb5eb1a14dd9a3e49bbedb96b` (`fix(phase-1): preserve Store unsafe artifact errors`).
+- Initial Source CI `35457912238` failed because the Store exposed the internal lock unsafe-artifact classification for a symlink target. The operation failed closed; the correction restored the stable Store error boundary.
+- Corrected [Source CI run 35458034826](https://github.com/trungqwe/dual-pool/actions/runs/35458034826) PASS on `4bfabf8dd7a6cf0cb5eb1a14dd9a3e49bbedb96b`.
+- Local gates: 61 Go test functions, race, vet, build, module verification, 53/53 Phase 0 Node tests, `UPSTREAM_LOCK_VALID`, JSON/docs/privacy/secret/diff checks PASS. The atomic Store regression still covers 22 fault scenarios and two abrupt subprocess cases.
+- Stale matrix: live exact and live expired `HELD`; dead, PID reused and image mismatch `RECOVERED`; unverifiable and invalid record `BLOCKED`.
+- Real product root touched: false. Foreign/real process killed: false. Parent fixtures terminated only their own children. No owner image, local path, PID or operation ID was committed as evidence.
+- Global/per-file lock checklist item is complete. Phase 1 remains open for Windows secret-store review and config backup/patch/rollback.
+- Delivery receipt: this scoped handoff commit; its SHA, delivery CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA. PR: not requested and not created.
+- Exact next Phase 1 task: Windows secret-store interface plus implementation decision/proof using synthetic secrets only. Do not begin config mutation or provider lifecycle work.
