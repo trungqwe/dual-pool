@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -88,25 +89,25 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 	}
 	operation, err := m.operationID()
 	if err != nil || !hex32.MatchString(operation) {
-		return nil, ErrLockPersistence
+		return nil, persistenceAt("metadata")
 	}
 	created := m.now().UTC()
 	value := record{SchemaVersion: 1, Kind: kind, ResourceID: resource, OwnerPID: identity.PID, OwnerStartTime: identity.StartTime, OwnerImage: identity.Image, OperationID: operation, CreatedAt: created.Format(time.RFC3339Nano), ExpiresAt: created.Add(m.duration).Format(time.RFC3339Nano)}
 	payload, err := encodeRecord(value)
 	if err != nil {
-		return nil, ErrLockPersistence
+		return nil, persistenceAt("metadata")
 	}
 	path := filepath.Join(m.root, name)
 	contended := false
 	for attempt := 0; attempt < 4; attempt++ {
 		candidate := filepath.Join(m.root, "."+name+".candidate-"+operation)
 		if err = writeCandidate(candidate, payload); err != nil {
-			return nil, err
+			return nil, persistenceAt("candidate_write")
 		}
 		written, verifyErr := readPath(candidate)
 		if verifyErr != nil || !bytes.Equal(written.bytes, payload) || written.record != value {
 			_ = os.Remove(candidate)
-			return nil, ErrLockPersistence
+			return nil, persistenceAt("candidate_verify")
 		}
 		err = m.install(candidate, path)
 		_ = os.Remove(candidate) // only this attempt's non-authoritative candidate
@@ -116,7 +117,7 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 				continue
 			}
 			if openErr != nil {
-				return nil, openErr
+				return nil, stageLockError("ownership_open", openErr)
 			}
 			current, readErr := readHandle(file)
 			if readErr != nil || !bytes.Equal(current.bytes, payload) || current.record != value {
@@ -134,13 +135,13 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 			return nil, ErrLockHeld
 		}
 		if openErr != nil {
-			return nil, openErr
+			return nil, stageLockError("claim_open", openErr)
 		}
 		contended = true
 		existing, readErr := readHandle(file)
 		if readErr != nil {
 			_ = file.Close()
-			return nil, readErr
+			return nil, stageLockError("claim_read", readErr)
 		}
 		if existing.record.Kind != kind || existing.record.ResourceID != resource {
 			_ = file.Close()
@@ -166,16 +167,25 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 		}
 		if err = deleteByHandle(file); err != nil {
 			_ = file.Close()
-			return nil, err
+			return nil, persistenceAt("stale_delete")
 		}
 		if err = file.Close(); err != nil {
-			return nil, ErrLockPersistence
+			return nil, persistenceAt("stale_close")
 		}
 	}
 	if contended {
 		return nil, ErrLockHeld
 	}
 	return nil, ErrLockPersistence
+}
+
+func persistenceAt(stage string) error { return fmt.Errorf("%s: %w", stage, ErrLockPersistence) }
+
+func stageLockError(stage string, err error) error {
+	if errors.Is(err, ErrLockPersistence) {
+		return persistenceAt(stage)
+	}
+	return err
 }
 
 type readRecord struct {

@@ -484,7 +484,7 @@ func reclaimChild(role, class, root, target, prefix, id string) {
 	} else if errors.Is(err, ErrLockHeld) {
 		result = "held"
 	} else if errors.Is(err, ErrLockPersistence) {
-		result = "persistence"
+		result = err.Error()
 	} else if errors.Is(err, ErrLockOwnershipLost) {
 		result = "ownership_lost"
 	} else if errors.Is(err, ErrLockOwnerUnverifiable) {
