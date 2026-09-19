@@ -144,3 +144,11 @@ Phase 0B — user-assisted Codex extension picker/config-layer probe, trong mộ
 The v2 recorder self-tests PASS for valid/BOM JSON, invalid UTF-8, invalid JSON, gzip, identity decoding, hostile structure keys, and serializer redaction. The isolated baseline reached `POST /v1/responses` once with transport, auth, identity encoding, strict UTF-8, JSON parse, prompt sentinel, sanitizer, and response lifecycle all PASS. The gate is **BLOCKED: BASELINE_MODEL_MISMATCH** because the observed model is another `gpt-5.6-*` family member; its raw identifier was not persisted. This corrects the historical `EXTENSION_PAYLOAD_NOT_PARSEABLE` classification to **NOT PROVEN**. Evidence: [v2 result](../evidence/phase-0b-codex-extension-v2/extension-baseline-20260919T040521877Z.json), [audit correction](../evidence/phase-0b-codex-extension-v2/audit-correction.json).
 
 U-005 remains **PARTIAL / UNKNOWN**; U-006 remains **BLOCKED**. The original Antigravity instance survived, real Codex/Antigravity hashes were unchanged, and the temporary Probe/recorder/session were cleaned up. No picker, Astra, Cloud Code, Phase 1, OAuth, credential, binary, TLS, or hosts-file work was performed. Exact next task: inspect the installed extension/runtime model catalog read-only and explain the model-selection mismatch; do not persist raw request values or add a catalog fallback.
+
+## Delivery receipt
+
+- Implementation/evidence commit: `9c3709ffa1c606ad1e4e1c0c35850b69927a2ace` (`probe(phase-0): repair extension parser stages`).
+- Push: PASS to `origin/phase-0/reversible-compatibility`.
+- PR: not created; branch remains the configured Phase 0 branch.
+- Verification: `scripts/phase0b-verify-extension-v2.ps1` PASS; parser syntax, JSON validation, forbidden-metadata scan, cleanup, and `git diff --check` PASS.
+- Residual worktree changes are pre-existing probe-generated modifications in the historical Phase 0B evidence directory and were not staged or overwritten.
