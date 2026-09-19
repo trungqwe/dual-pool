@@ -43,3 +43,6 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | Antigravity setting/redirect | User-assisted reload and loopback discovery | BLOCKED |
 | Antigravity route/envelope | Depends on U-001 and U-002 | BLOCKED |
 | Credential-specific Gemini eligibility | Separately authorized provider probe | BLOCKED |
+## Phase 0B parser-repair addendum
+
+| P0B-CX-EXTENSION-PARSER-V2 | [v2 recorder](../scripts/phase0b-extension-recorder-v2.cjs), [v2 runner](../scripts/phase0b-codex-extension-baseline-v2.ps1), [v2 result](../evidence/phase-0b-codex-extension-v2/extension-baseline-20260919T040521877Z.json) | Parser/sanitizer and ingress controls PASS; overall gate BLOCKED by `BASELINE_MODEL_MISMATCH`; U-005 PARTIAL / UNKNOWN; U-006 BLOCKED |

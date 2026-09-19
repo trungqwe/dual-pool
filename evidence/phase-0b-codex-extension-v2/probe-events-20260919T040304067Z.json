@@ -1,0 +1,54 @@
+{
+    "schema_version":  "2",
+    "run_id":  "20260919T040304067Z",
+    "test_id":  "P0B-CX-EXTENSION-BASELINE-V2-001",
+    "events":  [
+                   {
+                       "timestamp":  "2026-09-19T04:03:06.5568795Z",
+                       "event_type":  "PRECHECK_PASS",
+                       "metadata":  {
+                                        "initial_model_observed":  true,
+                                        "flags":  {
+                                                      "user_data_dir":  true,
+                                                      "new_window":  true,
+                                                      "extensions_dir":  true
+                                                  },
+                                        "protected_process_count":  24
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T04:03:06.5598796Z",
+                       "event_type":  "EXTENSION_ISOLATION_PASS",
+                       "metadata":  {
+                                        "temporary_silo":  true,
+                                        "manifest_hash_match":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T04:03:07.0615924Z",
+                       "event_type":  "RECORDER_READY",
+                       "metadata":  {
+                                        "loopback_only":  true,
+                                        "self_test_pass":  true,
+                                        "one_request_only":  true
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T04:03:17.1731741Z",
+                       "event_type":  "PROBE_IDE_STARTED",
+                       "metadata":  {
+                                        "original_instance_alive":  true,
+                                        "probe_root_pid":  62628,
+                                        "process_count":  10
+                                    }
+                   },
+                   {
+                       "timestamp":  "2026-09-19T04:04:00.3738935Z",
+                       "event_type":  "BASELINE_USER_ACTION",
+                       "metadata":  {
+                                        "observation_source":  "user-assisted",
+                                        "request_ordinal":  1
+                                    }
+                   }
+               ]
+}

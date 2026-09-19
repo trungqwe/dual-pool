@@ -1,0 +1,125 @@
+{
+    "schema_version":  "3",
+    "test_id":  "P0B-CX-EXTENSION-BASELINE-V2-001",
+    "run_id":  "20260919T035921989Z",
+    "status":  "PASS",
+    "classification":  "PASS",
+    "started_at":  "2026-09-19T03:59:21.9894036Z",
+    "ended_at":  "2026-09-19T04:02:21.9929839Z",
+    "environment":  {
+                        "extension_id":  "openai.chatgpt",
+                        "model":  "gpt-5.6-sol",
+                        "extension_version":  "26.5730.61309"
+                    },
+    "preflight":  {
+                      "flags":  {
+                                    "user_data_dir":  true,
+                                    "new_window":  true,
+                                    "extensions_dir":  true
+                                },
+                      "extension_manifest_hash_match":  true
+                  },
+    "isolation":  {
+                      "temporary_extension_silo":  true,
+                      "temporary_codex_home":  true,
+                      "probe_root_pid":  62216,
+                      "original_instance_remained_alive":  true,
+                      "temporary_user_data":  true
+                  },
+    "user_observation":  {
+                             "baseline_sent":  true,
+                             "source":  "user-assisted"
+                         },
+    "baseline_request":  {
+                             "schema_version":  "3",
+                             "ordinal":  1,
+                             "method":  "POST",
+                             "route":  "/v1/responses",
+                             "transport_body_received":  true,
+                             "raw_length":  58589,
+                             "content_encoding":  "identity",
+                             "content_decode_status":  "PASS",
+                             "utf8_status":  "PASS",
+                             "body_root_type":  "object",
+                             "model_extract_status":  "PASS",
+                             "model_observed":  "REDACTED",
+                             "auth_match_status":  "PASS",
+                             "prompt_match_status":  "PASS",
+                             "shape_summary_status":  "PASS",
+                             "response_content_type":  "text/event-stream",
+                             "emitted_events":  [
+                                                    "response.created",
+                                                    "response.output_text.delta",
+                                                    "response.completed"
+                                                ],
+                             "response_closed":  true,
+                             "json_parse_status":  "PASS",
+                             "model_match_status":  "FAIL",
+                             "shape_summary":  {
+                                                   "status":  "PASS",
+                                                   "root_type":  "object",
+                                                   "allowed_paths":  [
+                                                                         "client_metadata",
+                                                                         "include",
+                                                                         "input",
+                                                                         "input[].content",
+                                                                         "input[].content[].text",
+                                                                         "input[].content[].type",
+                                                                         "input[].role",
+                                                                         "input[].tools",
+                                                                         "input[].tools[].*.*.*.*.*.*.*.*.*.type",
+                                                                         "input[].tools[].*.*.*.*.*.*.*.type",
+                                                                         "input[].tools[].*.*.*.*.*.*.type",
+                                                                         "input[].tools[].*.*.*.*.type",
+                                                                         "input[].tools[].*.*.*.type",
+                                                                         "input[].tools[].*.type",
+                                                                         "input[].tools[].type",
+                                                                         "input[].type",
+                                                                         "model",
+                                                                         "parallel_tool_calls",
+                                                                         "prompt_cache_key",
+                                                                         "reasoning",
+                                                                         "store",
+                                                                         "stream",
+                                                                         "text",
+                                                                         "text.*.*.$schema",
+                                                                         "text.*.*.*.*.type",
+                                                                         "text.*.*.type",
+                                                                         "text.*.type",
+                                                                         "tool_choice"
+                                                                     ],
+                                                   "redacted_key_count":  75,
+                                                   "redacted_object_count":  43,
+                                                   "max_depth":  14,
+                                                   "node_count":  161
+                                               }
+                         },
+    "controls":  {
+                     "real_settings_sha256_before":  "1AE12E9E48D8B139C0A3803A02844E27C0E7E1F3E9A7D9998EFDF348370C34A2",
+                     "real_settings_sha256_after":  "1AE12E9E48D8B139C0A3803A02844E27C0E7E1F3E9A7D9998EFDF348370C34A2",
+                     "real_config_sha256_after":  "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+                     "real_settings_unchanged":  true,
+                     "installed_extension_manifest_sha256_before":  "4591A66710C5639D0E153452EBB8773D919CF680929BAEE4BB60D30EB62E77D2",
+                     "real_config_sha256_before":  "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+                     "installed_extension_manifest_sha256_after":  "4591A66710C5639D0E153452EBB8773D919CF680929BAEE4BB60D30EB62E77D2",
+                     "real_config_unchanged":  true,
+                     "installed_extension_unchanged":  true
+                 },
+    "cleanup":  {
+                    "recorder_listener_absent":  true,
+                    "probe_process_absent":  true,
+                    "temporary_root_removed":  true,
+                    "original_instance_survived":  true
+                },
+    "failure":  null,
+    "unknowns":  {
+                     "U-004":  "BLOCKED",
+                     "U-007":  "PROBED",
+                     "U-005":  "PROBED",
+                     "U-003":  "BLOCKED",
+                     "U-002":  "BLOCKED",
+                     "U-008":  "PARTIAL / UNKNOWN",
+                     "U-001":  "BLOCKED",
+                     "U-006":  "BLOCKED"
+                 }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "1",
+  "correction_id": "P0B-CX-AUDIT-001",
+  "previous_observation": {
+    "method": "POST",
+    "route": "/v1/responses",
+    "content_type": "application/json",
+    "content_encoding": "identity",
+    "decoded_body_length": 58422,
+    "authorization_header_present": true
+  },
+  "previous_classification": "EXTENSION_PAYLOAD_NOT_PARSEABLE",
+  "audit_correction": "NOT PROVEN",
+  "reason": "The historical parseFramedJson and shape stages shared one catch, so a structural sanitizer failure could be reported as a JSON/encoding failure.",
+  "current_interpretation": "RECORDER_PARSE_STAGE_AMBIGUOUS"
+}

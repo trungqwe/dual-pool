@@ -139,3 +139,8 @@ Exact evidence and required next proof are in `docs/03-DECISIONS-AND-EVIDENCE.md
 ## Exact next bounded objective
 
 Phase 0B — user-assisted Codex extension picker/config-layer probe, trong một run độc lập với backup/hash/restore. Windows 10 hiện tại chỉ chứng minh compatibility thăm dò; acceptance Windows 11 vẫn mở. U-004 cần ủy quyền credential-specific riêng.
+## Latest parser-repair status — 2026-09-19
+
+The v2 recorder self-tests PASS for valid/BOM JSON, invalid UTF-8, invalid JSON, gzip, identity decoding, hostile structure keys, and serializer redaction. The isolated baseline reached `POST /v1/responses` once with transport, auth, identity encoding, strict UTF-8, JSON parse, prompt sentinel, sanitizer, and response lifecycle all PASS. The gate is **BLOCKED: BASELINE_MODEL_MISMATCH** because the observed model is another `gpt-5.6-*` family member; its raw identifier was not persisted. This corrects the historical `EXTENSION_PAYLOAD_NOT_PARSEABLE` classification to **NOT PROVEN**. Evidence: [v2 result](../evidence/phase-0b-codex-extension-v2/extension-baseline-20260919T040521877Z.json), [audit correction](../evidence/phase-0b-codex-extension-v2/audit-correction.json).
+
+U-005 remains **PARTIAL / UNKNOWN**; U-006 remains **BLOCKED**. The original Antigravity instance survived, real Codex/Antigravity hashes were unchanged, and the temporary Probe/recorder/session were cleaned up. No picker, Astra, Cloud Code, Phase 1, OAuth, credential, binary, TLS, or hosts-file work was performed. Exact next task: inspect the installed extension/runtime model catalog read-only and explain the model-selection mismatch; do not persist raw request values or add a catalog fallback.

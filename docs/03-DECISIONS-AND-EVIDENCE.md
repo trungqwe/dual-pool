@@ -83,3 +83,6 @@ Poolbridge owns only named configuration keys. It records previous values, write
 ## Decision review rule
 
 Any ADR change must include: motivation, alternatives, security impact, migration, rollback, changed requirements/tests, and owner approval. An agent may propose but must not silently reverse an accepted ADR.
+## Phase 0B parser-repair correction — 2026-09-19
+
+The historical `EXTENSION_PAYLOAD_NOT_PARSEABLE` label is **NOT PROVEN**: the old recorder used one broad catch around decode, JSON parse, model extraction, and shape sanitization. The v2 recorder separates those stages. The authoritative v2 result is `BASELINE_MODEL_MISMATCH`: transport, auth, identity encoding, strict UTF-8, JSON parse, prompt sentinel, and sanitizer passed, while the observed request was another `gpt-5.6-*` family member than the isolated baseline. U-005 remains **PARTIAL / UNKNOWN**. See [audit correction](../evidence/phase-0b-codex-extension-v2/audit-correction.json) and [v2 result](../evidence/phase-0b-codex-extension-v2/extension-baseline-20260919T040521877Z.json).

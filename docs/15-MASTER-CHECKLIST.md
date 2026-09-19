@@ -123,3 +123,8 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Commit contains no unrelated files. Evidence: final staged name/status review in the run report.
 - [x] Push succeeds without force. Evidence: commit `3f70ed84cbc52772ed1e448f3ee891c6f3343bbe` on `origin/phase-0/compatibility-inventory`.
 - [x] Commit SHA and compare/PR URL recorded in handoff. Evidence: `docs/18-HANDOFF.md`.
+## Phase 0B parser-repair addendum — 2026-09-19
+
+- [x] v2 parser self-tests and privacy-safe serializer checks pass.
+- [x] One isolated baseline request reached `POST /v1/responses`; route, auth, identity encoding, UTF-8, JSON, prompt, sanitizer, and response lifecycle passed.
+- [ ] Baseline model gate remains open: `BASELINE_MODEL_MISMATCH`; U-005 is PARTIAL / UNKNOWN and U-006 remains BLOCKED. Evidence: [v2 result](../evidence/phase-0b-codex-extension-v2/extension-baseline-20260919T040521877Z.json).

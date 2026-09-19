@@ -1,0 +1,28 @@
+{
+    "schema_version":  "2",
+    "status":  "PASS",
+    "paths_actually_scanned":  [
+                                   "scripts/phase0b-extension-recorder-v2.cjs",
+                                   "scripts/phase0b-codex-extension-baseline-v2.ps1",
+                                   "scripts/phase0b-verify-extension-v2.ps1",
+                                   "docs/reports/2026-09-19T0400Z-phase-0b-extension-parser-repair.md",
+                                   "evidence/phase-0b-codex-extension-v2/audit-correction.json",
+                                   "evidence\\phase-0b-codex-extension-v2\\extension-baseline-20260919T040521877Z.json"
+                               ],
+    "positive_controls":  {
+                              "parser_syntax":  "PASS",
+                              "json_schema":  "PASS",
+                              "forbidden_metadata_field_scan":  "PASS",
+                              "diff_check":  "PASS"
+                          },
+    "authoritative_result":  "extension-baseline-20260919T040521877Z.json",
+    "classification":  "BASELINE_MODEL_MISMATCH",
+    "u005":  "PARTIAL / UNKNOWN",
+    "u006":  "BLOCKED",
+    "cleanup":  {
+                    "recorder_listener_absent":  true,
+                    "probe_process_absent":  true,
+                    "temporary_root_removed":  true,
+                    "original_instance_survived":  true
+                }
+}
