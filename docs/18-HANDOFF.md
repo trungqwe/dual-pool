@@ -469,5 +469,6 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Local verification: 88 Go test functions; `go test`, race, vet, build and module verification PASS; config Apply fault matrix 11 points, rollback matrix 8 points, three abrupt subprocess crash cases; CFG-001..004 PASS.
 - Regression: synthetic WinCred exact cleanup PASS; lock handle/stale race and state-store suites PASS; Phase 0 Node 53/53 PASS; `UPSTREAM_LOCK_VALID`.
 - Push: PASS, normal fast-forward to `origin/phase-1/state-foundation`; no force push.
-- Delivery commit/CI and final remote HEAD: PENDING below.
+- Delivery receipt commit: `bea5e26`; delivery Source CI PASS, run `35464468373`.
+- Remote HEAD after the receipt: `bea5e26`, verified equal to local before this append-only receipt closure.
 - Phase 1 remains open. Exact next task: **Phase 1 — exit reconciliation and remaining-foundation gate audit**.
