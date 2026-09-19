@@ -1,139 +1,25 @@
 'use strict';
-const fs = require('node:fs');
-const path = require('node:path');
-const os = require('node:os');
-const crypto = require('node:crypto');
-const { spawn } = require('node:child_process');
-const readline = require('node:readline');
-
-const EXPECTED_REAL_CONFIG_SHA256 = '1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D';
-const POLICY = Object.freeze({ real_config_mutation_capability: false, crash_requires_restore: false });
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-function sha256(file) {
-  return fs.existsSync(file) ? crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').toUpperCase() : 'ABSENT';
-}
-
-function safeTempRoot(root) {
-  const temp = path.resolve(os.tmpdir());
-  const resolved = path.resolve(root);
-  return path.dirname(resolved).toLowerCase() === temp.toLowerCase() &&
-    /^dual-pool-u006-shadow-[a-f0-9]{32}$/.test(path.basename(resolved));
-}
-
-function copyOpaqueCodexHome(source, shadow) {
-  if (!fs.existsSync(source) || !fs.statSync(source).isDirectory()) throw new Error('CODEX_HOME_SOURCE_ABSENT');
-  if (!safeTempRoot(shadow)) throw new Error('UNSAFE_SHADOW_ROOT');
-  if (fs.existsSync(shadow)) throw new Error('SHADOW_ROOT_ALREADY_EXISTS');
-  fs.mkdirSync(shadow, { recursive: true });
-  fs.cpSync(source, shadow, { recursive: true, force: false, errorOnExist: false });
-  if (!fs.existsSync(path.join(shadow, 'config.toml'))) throw new Error('SHADOW_CONFIG_ABSENT');
-  return { source_untouched: true, shadow_created: true };
-}
-
-function writeShadowConfig(shadow, port) {
-  if (!safeTempRoot(shadow)) throw new Error('UNSAFE_SHADOW_ROOT');
-  if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('INVALID_RECORDER_PORT');
-  const config = path.join(shadow, 'config.toml');
-  const staged = config + '.shadow-stage-' + crypto.randomBytes(8).toString('hex');
-  const text = '# Dual Pool shadow-only U-006 probe\nmodel_provider = "dualpool_probe"\n\n' +
-    '[model_providers.dualpool_probe]\nname = "Dual Pool U-006 shadow"\n' +
-    `base_url = "http://127.0.0.1:${port}/v1"\nwire_api = "responses"\nenv_key = "DUALPOOL_CODEX_KEY"\n`;
-  fs.writeFileSync(staged, text, { encoding: 'utf8', flag: 'wx' });
-  fs.renameSync(staged, config);
-  return { shadow_config_modified: true, real_config_mutation_capability: false };
-}
-
-function probeEnvironment(base, shadow, secret) {
-  const env = { ...base };
-  for (const name of ['ELECTRON_RUN_AS_NODE', 'CODEX_HOME', 'DUALPOOL_CODEX_KEY', 'NODE_OPTIONS']) delete env[name];
-  env.CODEX_HOME = shadow;
-  env.DUALPOOL_CODEX_KEY = secret;
-  return env;
-}
-
-function writeSafe(file, value, secret, prompt) {
-  const text = JSON.stringify(value, null, 2) + '\n';
-  if (text.includes(secret) || text.includes(prompt) || /\b[A-Z]:[\\/]/i.test(text)) throw new Error('UNSAFE_EVIDENCE');
-  const staged = file + '.stage';
-  fs.writeFileSync(staged, text, { encoding: 'utf8', flag: 'wx' });
-  fs.renameSync(staged, file);
-}
-
-async function waitFor(predicate, timeout, code) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) { if (await predicate()) return; await sleep(500); }
-  throw new Error(code);
-}
-
-function cleanupShadow(shadow) {
-  if (!safeTempRoot(shadow)) throw new Error('UNSAFE_SHADOW_ROOT');
-  if (fs.existsSync(shadow)) fs.rmSync(shadow, { recursive: true, force: false });
-  return !fs.existsSync(shadow);
-}
-
-async function main() {
-  const repo = path.resolve(__dirname, '..');
-  const realHome = path.join(os.homedir(), '.codex');
-  const realConfig = path.join(realHome, 'config.toml');
-  const observedHash = sha256(realConfig);
-  if (observedHash !== EXPECTED_REAL_CONFIG_SHA256) throw new Error('REAL_CONFIG_BASELINE_DRIFT');
-  if (!fs.existsSync(realHome)) throw new Error('REAL_CODEX_HOME_ABSENT');
-  const ownedShadow = path.join(os.tmpdir(), 'dual-pool-u006-shadow-' + crypto.randomBytes(16).toString('hex'));
-  const secret = 'SECRET_SENTINEL_' + crypto.randomBytes(24).toString('hex');
-  const prompt = 'ASTRA_PROMPT_SENTINEL_' + crypto.randomBytes(24).toString('hex');
-  let recorder = null, probe = null, port = null, capture = null, classification = 'RUNNING';
-  const result = { schema_version: 1, test_id: 'P0B-CX-SHADOW-HOME-001', primary_profile_used: true,
-    policy: POLICY, real_config_before_sha256: observedHash, real_config_after_sha256: null,
-    real_config_mutation_capability: false, crash_requires_restore: false, auth_confirmed: false,
-    astra_selected: false, target_request_captured: false, target_model: null, status: 'BLOCKED' };
-  const stateDir = path.join(ownedShadow, '.dualpool-state');
-  const writeState = stage => writeSafe(path.join(stateDir, 'status.json'), { stage, policy: POLICY }, secret, prompt);
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const answer = async (message, allowed) => {
-    console.log(message + '\n' + allowed.join(' / '));
-    return new Promise(resolve => rl.once('line', line => resolve(line.trim().toUpperCase())));
-  };
-  try {
-    writeState('PRECHECK'); copyOpaqueCodexHome(realHome, ownedShadow); fs.mkdirSync(stateDir, { recursive: true }); writeState('PRECHECK_COPY_COMPLETE');
-    writeState('SHADOW_HOME_READY');
-    const recorderScript = path.join(repo, 'scripts', 'phase0b-primary-recorder.cjs');
-    const recorderRoot = path.join(ownedShadow, '.dualpool-recorder'); fs.mkdirSync(recorderRoot);
-    recorder = spawn(process.execPath, [recorderScript], { windowsHide: true, stdio: 'ignore',
-      env: { ...process.env, P0B_PRIMARY_ROOT: recorderRoot, P0B_PRIMARY_SECRET: secret, P0B_PRIMARY_PROMPT: prompt } });
-    await waitFor(() => fs.existsSync(path.join(recorderRoot, 'ready.json')), 15000, 'RECORDER_NOT_READY');
-    const ready = JSON.parse(fs.readFileSync(path.join(recorderRoot, 'ready.json'), 'utf8')); port = ready.port;
-    writeShadowConfig(ownedShadow, port); writeState('SHADOW_CONFIG_ACTIVE');
-    const authChoice = await answer('Mở Codex trong probe và xác nhận tài khoản thường dùng.', ['AUTH_OK', 'AUTH_LOST']);
-    if (authChoice !== 'AUTH_OK') throw new Error('FULL_CODEX_HOME_SHADOW_AUTH_NOT_RECOGNIZED');
-    result.auth_confirmed = true; result.auth_checkpoint = 'OWNER_CONFIRMED';
-    const astraChoice = await answer('Chọn GPT-6 Astra, chưa gửi prompt.', ['ASTRA_SELECTED', 'ASTRA_NOT_VISIBLE']);
-    if (astraChoice !== 'ASTRA_SELECTED') throw new Error('FULL_CODEX_HOME_SHADOW_AUTH_NOT_RECOGNIZED');
-    result.astra_selected = true;
-    fs.writeFileSync(path.join(recorderRoot, 'arm'), ''); writeState('WAIT_ASTRA_SENTINEL');
-    console.log('Gửi đúng một prompt có sentinel hiển thị trong console.');
-    await waitFor(() => fs.existsSync(path.join(recorderRoot, 'capture-u006.json')), 10 * 60 * 1000, 'TARGET_REQUEST_TIMEOUT');
-    capture = JSON.parse(fs.readFileSync(path.join(recorderRoot, 'capture-u006.json'), 'utf8'));
-    result.target_request_captured = true; result.target_model = capture.model;
-    if (capture.model_exact_astra !== true || capture.auth_match_status !== 'PASS' ||
-      capture.prompt_match_status !== 'PASS' || capture.response_closed !== true) throw new Error('SHADOW_WIRE_ACCEPTANCE_FAILED');
-    classification = 'PASS';
-  } catch (error) { classification = error.message; }
-  finally {
-    try { rl.close(); } catch {}
-    console.log('Đóng probe-mode Antigravity trước khi dọn shadow.');
-    if (probe) await waitFor(() => probe.exitCode !== null, 20 * 60 * 1000, 'PROBE_CLOSE_TIMEOUT');
-    if (recorder && recorder.exitCode === null) { try { recorder.kill(); } catch {} }
-    result.shadow_cleanup_pass = cleanupShadow(ownedShadow);
-    result.real_config_after_sha256 = sha256(realConfig);
-    result.classification = classification; result.status = classification === 'PASS' && result.shadow_cleanup_pass ? 'PASS' : 'BLOCKED';
-    const evidence = path.join(repo, 'evidence', 'phase-0b-u006-shadow-home'); fs.mkdirSync(evidence, { recursive: true });
-    writeSafe(path.join(evidence, 'shadow-result.json'), result, secret, prompt);
-    console.log(result.shadow_cleanup_pass ? 'SHADOW_CLEANUP_PASS' : 'SHADOW_CLEANUP_FAILED');
-    console.log('Hãy tự mở Antigravity bằng shortcut/Menu Start bình thường.');
-  }
-  process.exitCode = result.status === 'PASS' ? 0 : 1;
-}
-
-if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { POLICY, sha256, safeTempRoot, copyOpaqueCodexHome, writeShadowConfig, probeEnvironment, cleanupShadow };
+const fs=require('node:fs');const path=require('node:path');const os=require('node:os');const crypto=require('node:crypto');const {spawn,spawnSync}=require('node:child_process');const readline=require('node:readline');
+const POLICY=Object.freeze({real_config_mutation_capability:false,crash_requires_restore:false});const PREFIX='dual-pool-u006-shadow-';const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function sha256(file){return fs.existsSync(file)?crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').toUpperCase():'ABSENT';}
+function safeSessionRoot(root){const r=path.resolve(root);return path.dirname(r).toLowerCase()===path.resolve(os.tmpdir()).toLowerCase()&&new RegExp('^'+PREFIX+'[a-f0-9]{32}$').test(path.basename(r));}
+function safeChild(parent,child){if(!safeSessionRoot(parent))return false;const p=path.resolve(parent),c=path.resolve(child);return c!==p&&c.startsWith(p+path.sep)&&(!fs.existsSync(c)||!fs.lstatSync(c).isSymbolicLink());}
+function assertNoReparse(root){if(fs.existsSync(root)&&fs.lstatSync(root).isSymbolicLink())throw new Error('UNSAFE_REPARSE_POINT');}
+function validateTopology(root,home,state,recorder){if(!safeSessionRoot(root)||![home,state,recorder].every(p=>safeChild(root,p)))throw new Error('UNSAFE_SHADOW_TOPOLOGY');assertNoReparse(root);}
+function parseTomlStructure(text){const script=['import json,sys,tomllib,re','data=tomllib.loads(sys.stdin.buffer.read().decode("utf-8"))','providers=data.get("model_providers",{})','allow={"gpt-6-astra","gpt-5.6-sol","gpt-5.6-luna"}','models=[]','def walk(v):','  if isinstance(v,dict):','    for k,x in v.items():','      if isinstance(x,str) and x in allow: models.append(x)','      walk(x)','  elif isinstance(v,list):','    for x in v: walk(x)','walk(data)','names=[k for k in providers if re.fullmatch(r"[A-Za-z0-9_.-]{1,80}",k)]','print(json.dumps({"top_level_keys":sorted(k for k in data if re.fullmatch(r"[A-Za-z0-9_.-]{1,80}",k)),"provider_table_names":sorted(names),"allowlisted_model_slugs":sorted(set(models))},separators=(",",":")))'].join('\n');const r=spawnSync(process.env.PYTHON||'python',['-c',script],{input:text,encoding:'utf8',windowsHide:true});if(r.status!==0)return{toml_parse:'FAIL',parse_error:'TOML_PARSE_FAILED'};try{return{toml_parse:'PASS',...JSON.parse(r.stdout)}}catch{return{toml_parse:'FAIL',parse_error:'TOML_STRUCTURE_OUTPUT_INVALID'};}}
+function assessRealConfig(file){if(!fs.existsSync(file))throw new Error('REAL_CONFIG_ABSENT');const text=fs.readFileSync(file,'utf8');const structure=parseTomlStructure(text);const forbidden={dualpool_probe_present:/dualpool_probe/i.test(text),DUALPOOL_CODEX_KEY_present:/DUALPOOL_CODEX_KEY/.test(text),known_old_probe_loopback_provider_present:/dualpool_probe/i.test(text)||(/127\.0\.0\.1|localhost/i.test(text)&&/wire_api\s*=\s*["']responses["']/i.test(text))};const clean=structure.toml_parse==='PASS'&&!Object.values(forbidden).some(Boolean);return{current_sha256:sha256(file),...structure,forbidden_probe_markers:forbidden,raw_values_persisted:false,current_working_config_candidate:clean};}
+function copyOpaqueCodexHome(source,shadow,copyImpl=null){if(!fs.existsSync(source)||!fs.statSync(source).isDirectory())throw new Error('CODEX_HOME_SOURCE_ABSENT');const root=path.dirname(shadow);if(!safeSessionRoot(root)||!safeChild(root,shadow))throw new Error('UNSAFE_SHADOW_ROOT');if(fs.existsSync(shadow))throw new Error('SHADOW_ROOT_ALREADY_EXISTS');if(copyImpl)copyImpl(source,shadow);else{const r=spawnSync('robocopy',[source,shadow,'/E','/COPY:DAT','/DCOPY:DAT','/XJ','/R:0','/W:0','/NFL','/NDL','/NJH','/NJS','/NP'],{stdio:'ignore',windowsHide:true});if(r.error||r.status===null||r.status>7)throw new Error('SHADOW_CODEX_HOME_COPY_FAILED');}if(!fs.existsSync(path.join(shadow,'config.toml')))throw new Error('SHADOW_CONFIG_ABSENT');return{source_untouched:true,shadow_created:true,copy_complete:true};}
+function writeShadowConfig(shadow,port){if(!fs.existsSync(shadow))throw new Error('UNSAFE_SHADOW_HOME');if(!Number.isInteger(port)||port<1024||port>65535)throw new Error('INVALID_RECORDER_PORT');const file=path.join(shadow,'config.toml'),stage=file+'.shadow-stage-'+crypto.randomBytes(8).toString('hex'),text='# Dual Pool shadow-only U-006 probe\nmodel_provider = "dualpool_probe"\n\n[model_providers.dualpool_probe]\nname = "Dual Pool U-006 shadow"\n'+`base_url = "http://127.0.0.1:${port}/v1"\nwire_api = "responses"\nenv_key = "DUALPOOL_CODEX_KEY"\n`;fs.writeFileSync(stage,text,{encoding:'utf8',flag:'wx'});fs.renameSync(stage,file);if(parseTomlStructure(text).toml_parse!=='PASS')throw new Error('SHADOW_CONFIG_TOML_INVALID');return{shadow_config_modified:true,real_config_mutation_capability:false};}
+function probeEnvironment(base,shadow,secret){const env={...base};for(const n of ['ELECTRON_RUN_AS_NODE','CODEX_HOME','DUALPOOL_CODEX_KEY','NODE_OPTIONS','VSCODE_IPC_HOOK_CLI'])delete env[n];env.CODEX_HOME=shadow;env.DUALPOOL_CODEX_KEY=secret;return env;}
+function writeSafe(file,value,secret='',prompt=''){const text=JSON.stringify(value,null,2)+'\n';if(text.includes(secret)||text.includes(prompt)||/\b[A-Z]:[\\/]/i.test(text))throw new Error('UNSAFE_EVIDENCE');fs.mkdirSync(path.dirname(file),{recursive:true});const stage=file+'.stage';fs.writeFileSync(stage,text,{encoding:'utf8',flag:'wx'});fs.renameSync(stage,file);}
+async function waitFor(predicate,timeout,code,interval=250){const deadline=Date.now()+timeout;while(Date.now()<deadline){if(await predicate())return;await sleep(interval);}throw new Error(code);}
+function getAntigravityProcessCount(){const r=spawnSync('powershell.exe',['-NoProfile','-Command',"(Get-Process -Name 'Antigravity IDE' -ErrorAction SilentlyContinue | Measure-Object).Count"],{encoding:'utf8',windowsHide:true});const n=Number.parseInt((r.stdout||'').trim(),10);return Number.isFinite(n)?n:0;}
+function findAntigravityExecutable(){const c=path.join(process.env.LOCALAPPDATA||'','Programs','Antigravity IDE','Antigravity IDE.exe');return fs.existsSync(c)?c:null;}
+function launchProbe(executable,shadow,secret,launcher=spawn){if(!executable||!fs.existsSync(executable))throw new Error('ANTIGRAVITY_EXECUTABLE_NOT_FOUND');const child=launcher(executable,['--new-window'],{env:probeEnvironment(process.env,shadow,secret),detached:true,stdio:'ignore',windowsHide:true});child.unref?.();return child;}
+function renderTargetPrompt(prompt,output=console){output.log(`Phase 0B shadow Astra synthetic transport check.\nReply briefly.\n${prompt}`);}
+function classifyAuth(choice){return choice==='AUTH_OK'?'AUTH_OK':'FULL_CODEX_HOME_SHADOW_AUTH_NOT_RECOGNIZED';}function classifyAstra(choice){return choice==='ASTRA_SELECTED'?'ASTRA_SELECTED':'AUTHENTICATED_ASTRA_NOT_VISIBLE';}
+function cleanupShadow(root){if(!safeSessionRoot(root))throw new Error('UNSAFE_SHADOW_ROOT');assertNoReparse(root);if(fs.existsSync(root))fs.rmSync(root,{recursive:true,force:false});return!fs.existsSync(root);}
+function stopRecorder(root){if(root){try{fs.writeFileSync(path.join(root,'stop'),'');}catch{}}}
+async function main({processCount=getAntigravityProcessCount,launcher=spawn}={}){const repo=path.resolve(__dirname,'..'),realHome=path.join(os.homedir(),'.codex'),realConfig=path.join(realHome,'config.toml'),baseline=assessRealConfig(realConfig);if(!baseline.current_working_config_candidate)throw new Error('CURRENT_CONFIG_PROBE_CONTAMINATION');const runBaselineHash=baseline.current_sha256,sessionRoot=path.join(os.tmpdir(),PREFIX+crypto.randomBytes(16).toString('hex')),shadowHome=path.join(sessionRoot,'codex-home'),stateRoot=path.join(sessionRoot,'state'),recorderRoot=path.join(sessionRoot,'recorder'),secret='SECRET_SENTINEL_'+crypto.randomBytes(24).toString('hex'),prompt='ASTRA_PROMPT_SENTINEL_'+crypto.randomBytes(24).toString('hex'),result={schema_version:2,test_id:'P0B-CX-SHADOW-HOME-001',policy:POLICY,real_config_before_sha256:runBaselineHash,real_config_after_sha256:null,real_config_mutation_capability:false,crash_requires_restore:false,auth_confirmed:false,astra_selected:false,target_request_captured:false,status:'BLOCKED'};let recorder=null,classification='RUNNING';const rl=readline.createInterface({input:process.stdin,output:process.stdout}),answer=async(message,allowed)=>{console.log(message+'\n'+allowed.join(' / '));return new Promise(resolve=>rl.once('line',line=>resolve(line.trim().toUpperCase())));},writeState=stage=>writeSafe(path.join(stateRoot,'status.json'),{stage,policy:POLICY},secret,prompt);try{fs.mkdirSync(sessionRoot,{recursive:true});fs.mkdirSync(stateRoot);fs.mkdirSync(recorderRoot);fs.mkdirSync(shadowHome);validateTopology(sessionRoot,shadowHome,stateRoot,recorderRoot);writeState('PRECHECK');if(processCount()!==0)throw new Error('COLD_SOURCE_NOT_QUIESCENT');if(sha256(realConfig)!==runBaselineHash)throw new Error('REAL_CONFIG_CONCURRENT_DRIFT');fs.rmSync(shadowHome,{recursive:true,force:true});copyOpaqueCodexHome(realHome,shadowHome);writeState('COLD_COPY_COMPLETE');const recorderScript=path.join(repo,'scripts','phase0b-primary-recorder.cjs');recorder=spawn(process.execPath,[recorderScript],{windowsHide:true,stdio:'ignore',env:{...process.env,P0B_PRIMARY_ROOT:recorderRoot,P0B_PRIMARY_SECRET:secret,P0B_PRIMARY_PROMPT:prompt}});await waitFor(()=>fs.existsSync(path.join(recorderRoot,'ready.json')),15000,'RECORDER_NOT_READY');const ready=JSON.parse(fs.readFileSync(path.join(recorderRoot,'ready.json'),'utf8'));writeShadowConfig(shadowHome,ready.port);writeState('SHADOW_CONFIG_ACTIVE');if(sha256(realConfig)!==runBaselineHash)throw new Error('REAL_CONFIG_CONCURRENT_DRIFT');const probe=launchProbe(findAntigravityExecutable(),shadowHome,secret,launcher);await waitFor(()=>processCount()>0,30000,'PROBE_IDE_NOT_ALIVE');writeState('PROBE_LAUNCHED');const auth=await answer('Mở Codex trong probe và xác nhận tài khoản/session thường dùng.',['AUTH_OK','AUTH_LOST']);classification=classifyAuth(auth);if(classification!=='AUTH_OK')throw new Error(classification);result.auth_confirmed=true;const astra=await answer('Mở model picker, chọn GPT-6 Astra, chưa gửi prompt.',['ASTRA_SELECTED','ASTRA_NOT_VISIBLE']);classification=classifyAstra(astra);if(classification!=='ASTRA_SELECTED')throw new Error(classification);result.astra_selected=true;fs.writeFileSync(path.join(recorderRoot,'arm'),'');writeState('WAIT_RECORDER_ARM');await waitFor(()=>fs.existsSync(path.join(recorderRoot,'armed.json'))&&JSON.parse(fs.readFileSync(path.join(recorderRoot,'armed.json'),'utf8')).armed===true,15000,'RECORDER_ARM_TIMEOUT');renderTargetPrompt(prompt);writeState('WAIT_TARGET_CAPTURE');await waitFor(()=>fs.existsSync(path.join(recorderRoot,'capture.json')),10*60*1000,'TARGET_REQUEST_TIMEOUT');const capture=JSON.parse(fs.readFileSync(path.join(recorderRoot,'capture.json'),'utf8'));result.target_request_captured=true;result.target_model=capture.model;result.recorder_acceptance={method:capture.method,route:capture.route,model_exact_astra:capture.model_exact_astra,auth_match_status:capture.auth_match_status,prompt_match_status:capture.prompt_match_status,json_parse_status:capture.json_parse_status,response_closed:capture.response_closed,emitted_events:capture.emitted_events};if(capture.method!=='POST'||capture.route!=='/v1/responses'||capture.model_exact_astra!==true||capture.auth_match_status!=='PASS'||capture.prompt_match_status!=='PASS'||capture.json_parse_status!=='PASS'||capture.response_closed!==true||!capture.emitted_events.includes('response.created')||!capture.emitted_events.includes('response.completed'))throw new Error('SHADOW_WIRE_ACCEPTANCE_FAILED');classification='PASS';}catch(error){classification=error.message||'SHADOW_RUN_FAILED';}finally{console.log('Đóng tất cả cửa sổ Antigravity probe bình thường rồi trả lời PROBE_CLOSED.');try{await waitFor(()=>processCount()===0,20*60*1000,'PROBE_CLOSE_TIMEOUT');}catch(error){if(classification==='PASS')classification=error.message;}stopRecorder(recorderRoot);try{await waitFor(()=>!recorder||recorder.exitCode!==null,5000,'RECORDER_STOP_TIMEOUT');}catch{}try{result.shadow_cleanup_pass=cleanupShadow(sessionRoot);}catch{result.shadow_cleanup_pass=false;}result.real_config_after_sha256=sha256(realConfig);result.run_baseline_unchanged=result.real_config_after_sha256===runBaselineHash;result.classification=classification;result.status=classification==='PASS'&&result.shadow_cleanup_pass&&result.run_baseline_unchanged?'PASS':'BLOCKED';const normal=await answer('Hãy tự mở Antigravity bằng shortcut/Menu Start bình thường rồi xác nhận.',['NORMAL_IDE_OK','NORMAL_IDE_FAILED']);result.normal_ide_confirmation=normal;result.normal_ide_hash_unchanged=sha256(realConfig)===runBaselineHash;const evidence=path.join(repo,'evidence','phase-0b-u006-shadow-home');writeSafe(path.join(evidence,'shadow-result.json'),result,secret,prompt);console.log(result.shadow_cleanup_pass?'SHADOW_CLEANUP_PASS':'SHADOW_CLEANUP_FAILED');console.log('Không tự mở IDE bình thường; hãy dùng shortcut/Menu Start.');rl.close();}process.exitCode=result.status==='PASS'?0:1;return result;}
+if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
+module.exports={POLICY,sha256,parseTomlStructure,assessRealConfig,safeSessionRoot,safeChild,validateTopology,copyOpaqueCodexHome,writeShadowConfig,probeEnvironment,getAntigravityProcessCount,findAntigravityExecutable,launchProbe,renderTargetPrompt,classifyAuth,classifyAstra,cleanupShadow,waitFor,main};

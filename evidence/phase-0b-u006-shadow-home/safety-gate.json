@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "test_id": "P0B-CX-SHADOW-HOME-SAFETY-001",
+  "status": "PASS_FOR_REPAIR_GATE_LIVE_NOT_RUN",
+  "real_config_mutation_capability": false,
+  "crash_requires_restore": false,
+  "old_primary_watchdog_disabled": true,
+  "expanded_fixture_tests": "15/15 PASS",
+  "node_syntax": "PASS",
+  "real_config_mutated": false,
+  "live_probe_run": false,
+  "live_eligibility": "DEFERRED_PENDING_SEPARATE_OWNER_GO_AHEAD",
+  "required_live_preconditions": {"dynamic_baseline_unchanged_immediately_before_copy": "NOT_RUN", "cold_source_quiescent": "NOT_RUN", "shadow_copy": "NOT_RUN", "recorder_ready": "NOT_RUN", "probe_launch": "NOT_RUN"},
+  "raw_values_persisted": false
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "test_id": "P0B-CX-SHADOW-HOME-BASELINE-001",
+  "current_sha256": "C15720CC37B0670D4EC1D0294DA5E067DD7CF65437D2E5DF4C209A9411F5CD58",
+  "historical_clean_backup_sha256": "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+  "incident_probe_backup_sha256": "E699E3262CB1051ADE1B74E491AEF315692127111928C152BEC304E0900DC2A2",
+  "toml_parse": "PASS",
+  "forbidden_probe_markers": {"dualpool_probe_present": false, "DUALPOOL_CODEX_KEY_present": false, "known_old_probe_loopback_provider_present": false},
+  "safe_structural_summary": {"top_level_keys": ["agents", "desktop", "experimental_realtime_webrtc_call_base_url", "features", "hooks", "marketplaces", "mcp_servers", "model", "model_reasoning_effort", "notify", "openai_base_url", "plugins", "profiles", "project_doc_max_bytes", "projects", "service_tier", "shell_environment_policy", "tui", "windows"], "provider_table_names": [], "allowlisted_model_slugs": []},
+  "raw_values_persisted": false,
+  "current_working_config_candidate": true,
+  "current_working_baseline_accepted": true,
+  "acceptance_basis": "OWNER_REPORTED_CURRENT_CODEX_CHAT_OPEN",
+  "historical_equivalence": "NOT_CLAIMED"
+}

@@ -1,44 +1,20 @@
 'use strict';
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { POLICY, sha256, safeTempRoot, copyOpaqueCodexHome, writeShadowConfig, probeEnvironment, cleanupShadow } = require('./phase0b-u006-shadow-home-watchdog.cjs');
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const os=require('node:os');const path=require('node:path');
+const mod=require('./phase0b-u006-shadow-home-watchdog.cjs');
+const tempSession=()=>path.join(os.tmpdir(),'dual-pool-u006-shadow-'+('b'.repeat(32)));
 
-test('policy proves real config cannot be part of crash recovery', () => {
-  assert.equal(POLICY.real_config_mutation_capability, false);
-  assert.equal(POLICY.crash_requires_restore, false);
-});
-
-test('opaque full-home fixture copy leaves source bytes unchanged', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-pool-shadow-fixture-'));
-  const source = path.join(root, 'source'), shadow = path.join(os.tmpdir(), 'dual-pool-u006-shadow-' + 'a'.repeat(32));
-  fs.mkdirSync(source, { recursive: true }); fs.writeFileSync(path.join(source, 'config.toml'), 'original');
-  fs.writeFileSync(path.join(source, 'opaque-state.bin'), Buffer.from([0, 1, 2, 3]));
-  try {
-    const before = sha256(path.join(source, 'config.toml')); copyOpaqueCodexHome(source, shadow);
-    writeShadowConfig(shadow, 12345);
-    assert.equal(sha256(path.join(source, 'config.toml')), before);
-    assert.match(fs.readFileSync(path.join(shadow, 'config.toml'), 'utf8'), /dualpool_probe/);
-    assert.equal(fs.readFileSync(path.join(shadow, 'opaque-state.bin'))[2], 2);
-  } finally { cleanupShadow(shadow); fs.rmSync(root, { recursive: true, force: true }); }
-});
-
-test('probe environment isolates shadow and removes stale probe variables', () => {
-  const env = probeEnvironment({ CODEX_HOME: 'real', DUALPOOL_CODEX_KEY: 'old', ELECTRON_RUN_AS_NODE: '1', PATH: 'keep' }, 'shadow', 'synthetic');
-  assert.equal(env.CODEX_HOME, 'shadow'); assert.equal(env.DUALPOOL_CODEX_KEY, 'synthetic');
-  assert.equal(env.ELECTRON_RUN_AS_NODE, undefined); assert.equal(env.PATH, 'keep');
-});
-
-test('unsafe roots cannot be copied or cleaned', () => {
-  assert.equal(safeTempRoot(path.join(os.tmpdir(), 'wrong-root')), false);
-  assert.throws(() => cleanupShadow(path.join(os.tmpdir(), 'wrong-root')), /UNSAFE_SHADOW_ROOT/);
-});
-
-test('script has no primary transaction or normal relaunch path', () => {
-  const text = fs.readFileSync(path.join(__dirname, 'phase0b-u006-shadow-home-watchdog.cjs'), 'utf8');
-  assert.equal(text.includes('phase0b-primary-transaction'), false);
-  assert.equal(text.includes('manualNormal'), false);
-  assert.match(text, /SHADOW_CLEANUP_PASS/);
-});
+test('policy has no real-config mutation or restore dependency',()=>{assert.deepEqual(mod.POLICY,{real_config_mutation_capability:false,crash_requires_restore:false});});
+test('topology guards require owned session root and contained children',()=>{const root=tempSession();assert.equal(mod.safeSessionRoot(root),true);assert.equal(mod.safeChild(root,path.join(root,'codex-home')),true);assert.equal(mod.safeChild(root,os.tmpdir()),false);assert.equal(mod.safeSessionRoot(path.join(os.tmpdir(),'wrong-root')),false);});
+test('state directories are created before the first state write',()=>{const text=fs.readFileSync(path.join(__dirname,'phase0b-u006-shadow-home-watchdog.cjs'),'utf8');assert.ok(text.indexOf("fs.mkdirSync(stateRoot)")<text.indexOf("writeState('PRECHECK')"));assert.match(text,/mkdirSync\(recorderRoot\)/);});
+test('opaque fixture copy leaves source bytes unchanged',()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'dual-pool-shadow-fixture-'));const source=path.join(root,'source'),session=tempSession(),shadow=path.join(session,'codex-home');fs.mkdirSync(source,{recursive:true});fs.writeFileSync(path.join(source,'config.toml'),'original');fs.writeFileSync(path.join(source,'opaque-state.bin'),Buffer.from([0,1,2,3]));try{const before=mod.sha256(path.join(source,'config.toml'));mod.copyOpaqueCodexHome(source,shadow,(s,d)=>fs.cpSync(s,d,{recursive:true}));assert.equal(mod.sha256(path.join(source,'config.toml')),before);assert.equal(fs.readFileSync(path.join(source,'opaque-state.bin'))[2],2);mod.writeShadowConfig(shadow,12345);assert.match(fs.readFileSync(path.join(shadow,'config.toml'),'utf8'),/dualpool_probe/);}finally{if(fs.existsSync(session))fs.rmSync(session,{recursive:true,force:true});fs.rmSync(root,{recursive:true,force:true});}});
+test('cold copy is blocked while an IDE is present',()=>{const text=fs.readFileSync(path.join(__dirname,'phase0b-u006-shadow-home-watchdog.cjs'),'utf8');assert.match(text,/if\(processCount\(\)!==0\)throw new Error\('COLD_SOURCE_NOT_QUIESCENT'\)/);});
+test('run baseline is dynamic and historical hash is not an execution gate',()=>{const text=fs.readFileSync(path.join(__dirname,'phase0b-u006-shadow-home-watchdog.cjs'),'utf8');assert.doesNotMatch(text,/EXPECTED_REAL_CONFIG_SHA256|1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D/);assert.match(text,/const runBaselineHash=baseline\.current_sha256/);assert.match(text,/REAL_CONFIG_CONCURRENT_DRIFT/);});
+test('launch receives shadow CODEX_HOME and synthetic key without inherited execution variables',()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'dual-pool-launch-'));const exe=path.join(root,'Antigravity IDE.exe');fs.writeFileSync(exe,'fixture');let seen=null;const child={unref(){}};try{mod.launchProbe(exe,'shadow-home','synthetic',(file,args,options)=>{seen={file,args,options};return child;});assert.equal(seen.options.env.CODEX_HOME,'shadow-home');assert.equal(seen.options.env.DUALPOOL_CODEX_KEY,'synthetic');assert.equal(seen.options.env.ELECTRON_RUN_AS_NODE,undefined);assert.equal(seen.options.env.NODE_OPTIONS,undefined);assert.equal(seen.options.env.VSCODE_IPC_HOOK_CLI,undefined);assert.deepEqual(seen.args,['--new-window']);}finally{fs.rmSync(root,{recursive:true,force:true});}});
+test('probe launch never supplies temporary user-data-dir',()=>{const text=fs.readFileSync(path.join(__dirname,'phase0b-u006-shadow-home-watchdog.cjs'),'utf8');assert.doesNotMatch(text,/user-data-dir/);});
+test('recorder contract uses armed.json and capture.json',()=>{const text=fs.readFileSync(path.join(__dirname,'phase0b-u006-shadow-home-watchdog.cjs'),'utf8');assert.match(text,/armed\.json/);assert.match(text,/capture\.json/);assert.doesNotMatch(text,/capture-u006\.json/);});
+test('target prompt renderer emits the generated sentinel',()=>{let rendered='';mod.renderTargetPrompt('ASTRA_PROMPT_SENTINEL_fixture',{log(value){rendered+=value;}});assert.match(rendered,/Phase 0B shadow Astra synthetic transport check/);assert.match(rendered,/ASTRA_PROMPT_SENTINEL_fixture/);});
+test('classification keeps authenticated Astra absence distinct from auth loss',()=>{assert.equal(mod.classifyAuth('AUTH_LOST'),'FULL_CODEX_HOME_SHADOW_AUTH_NOT_RECOGNIZED');assert.equal(mod.classifyAstra('ASTRA_NOT_VISIBLE'),'AUTHENTICATED_ASTRA_NOT_VISIBLE');});
+test('cleanup refuses unsafe roots',()=>{assert.throws(()=>mod.cleanupShadow(path.join(os.tmpdir(),'wrong-root')),/UNSAFE_SHADOW_ROOT/);});
+test('normal IDE launch path is absent and no primary transaction is referenced',()=>{const text=fs.readFileSync(path.join(__dirname,'phase0b-u006-shadow-home-watchdog.cjs'),'utf8');assert.doesNotMatch(text,/phase0b-primary-transaction|manualNormal|launchNormal/);assert.match(text,/Không tự mở IDE bình thường/);});
+test('main orchestration checks real hash before copy and after probe',()=>{const text=fs.readFileSync(path.join(__dirname,'phase0b-u006-shadow-home-watchdog.cjs'),'utf8');const checks=[...text.matchAll(/sha256\(realConfig\)!==runBaselineHash/g)].map(m=>m.index);assert.ok(checks.length>=2);});
+test('assessment records only sanitized structure and marker booleans',()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'dual-pool-assess-'));const file=path.join(root,'config.toml');fs.writeFileSync(file,'model_provider = "official"\n[model_providers.official]\nmodel = "gpt-6-astra"\n');try{const a=mod.assessRealConfig(file);assert.equal(a.toml_parse,'PASS');assert.equal(a.raw_values_persisted,false);assert.deepEqual(a.forbidden_probe_markers,{dualpool_probe_present:false,DUALPOOL_CODEX_KEY_present:false,known_old_probe_loopback_provider_present:false});assert.deepEqual(a.allowlisted_model_slugs,['gpt-6-astra']);}finally{fs.rmSync(root,{recursive:true,force:true});}});
