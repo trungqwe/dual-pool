@@ -97,6 +97,7 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 		return nil, ErrLockPersistence
 	}
 	path := filepath.Join(m.root, name)
+	contended := false
 	for attempt := 0; attempt < 4; attempt++ {
 		candidate := filepath.Join(m.root, "."+name+".candidate-"+operation)
 		if err = writeCandidate(candidate, payload); err != nil {
@@ -124,13 +125,17 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 			}
 			return &Guard{path: path, record: value, bytes: payload, file: file}, nil
 		}
+		if !errors.Is(err, windows.ERROR_ALREADY_EXISTS) && !errors.Is(err, windows.ERROR_FILE_EXISTS) {
+			return nil, ErrLockPersistence
+		}
+		contended = true
 
 		file, openErr := openCanonical(path)
 		if errors.Is(openErr, errCanonicalGone) {
 			if attempt < 3 {
 				continue
 			}
-			return nil, ErrLockPersistence
+			return nil, ErrLockHeld
 		}
 		if openErr != nil {
 			return nil, openErr
@@ -169,6 +174,9 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 		if err = file.Close(); err != nil {
 			return nil, ErrLockPersistence
 		}
+	}
+	if contended {
+		return nil, ErrLockHeld
 	}
 	return nil, ErrLockPersistence
 }
@@ -271,7 +279,7 @@ var errCanonicalGone = errors.New("canonical lock disappeared")
 
 func openCanonical(path string) (*os.File, error) {
 	entry, err := os.Lstat(path)
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || errors.Is(err, windows.ERROR_DELETE_PENDING) {
 		return nil, errCanonicalGone
 	}
 	if err != nil {
@@ -286,7 +294,7 @@ func openCanonical(path string) (*os.File, error) {
 	}
 	attributes, err := windows.GetFileAttributes(name)
 	if err != nil {
-		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) {
+		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) || errors.Is(err, windows.ERROR_DELETE_PENDING) {
 			return nil, errCanonicalGone
 		}
 		return nil, ErrLockPersistence
@@ -299,7 +307,7 @@ func openCanonical(path string) (*os.File, error) {
 		if errors.Is(err, windows.ERROR_SHARING_VIOLATION) || errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
 			return nil, ErrLockHeld
 		}
-		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) {
+		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) || errors.Is(err, windows.ERROR_DELETE_PENDING) {
 			return nil, errCanonicalGone
 		}
 		return nil, ErrLockPersistence
