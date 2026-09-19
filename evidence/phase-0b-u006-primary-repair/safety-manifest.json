@@ -1,0 +1,106 @@
+{
+  "schema_version": 2,
+  "artifacts": [
+    {
+      "path": "scripts/phase0b-primary-evidence.cjs",
+      "sha256": "5b387babed52c558ac18c9e719c5fdc366c2b8c52fc87c8cde84db864bc1ae3f",
+      "size": 2751,
+      "git_lf_sha256": "5b387babed52c558ac18c9e719c5fdc366c2b8c52fc87c8cde84db864bc1ae3f"
+    },
+    {
+      "path": "scripts/phase0b-primary-evidence.test.cjs",
+      "sha256": "ad286f5072ec4e6053953b6f5ffa978b3ada5a0214e681cbe6c08f81edec04b6",
+      "size": 2312,
+      "git_lf_sha256": "ad286f5072ec4e6053953b6f5ffa978b3ada5a0214e681cbe6c08f81edec04b6"
+    },
+    {
+      "path": "scripts/phase0b-primary-recorder.cjs",
+      "sha256": "9c3541bff1f6c14b2118a69647482337c93426f68212cefcaa837dcdb96e1fe3",
+      "size": 5969,
+      "git_lf_sha256": "9c3541bff1f6c14b2118a69647482337c93426f68212cefcaa837dcdb96e1fe3"
+    },
+    {
+      "path": "scripts/phase0b-primary-recorder.test.cjs",
+      "sha256": "e6d1c8ce0dd18be8d003b5ac99b2bbbaaf4e932b06e7474661d05c818768701e",
+      "size": 3056,
+      "git_lf_sha256": "e6d1c8ce0dd18be8d003b5ac99b2bbbaaf4e932b06e7474661d05c818768701e"
+    },
+    {
+      "path": "scripts/phase0b-primary-watchdog.cjs",
+      "sha256": "4fc9a581643241f7214cfdde64b420ba56136aa6045dc83c5f99b1ef1a2fbd09",
+      "size": 14344,
+      "git_lf_sha256": "4fc9a581643241f7214cfdde64b420ba56136aa6045dc83c5f99b1ef1a2fbd09"
+    },
+    {
+      "path": "scripts/phase0b-primary-watchdog.test.cjs",
+      "sha256": "6d53d0c5864e7df89ea1b8b180c4ced404c38cbd7789fbb50ceff6599e43e6a8",
+      "size": 3229,
+      "git_lf_sha256": "6d53d0c5864e7df89ea1b8b180c4ced404c38cbd7789fbb50ceff6599e43e6a8"
+    },
+    {
+      "path": "scripts/phase0b-primary-transaction.ps1",
+      "sha256": "29b3ee545995cd452638f9c671bdc6f7385271d484e45cbb7f417980e8143e4d",
+      "size": 7738,
+      "git_lf_sha256": "29b3ee545995cd452638f9c671bdc6f7385271d484e45cbb7f417980e8143e4d"
+    },
+    {
+      "path": "scripts/phase0b-primary-transaction.test.ps1",
+      "sha256": "2e7f7f49d15a04fbbc28dea83f924c092872eff794189b01820c14cc4fd2a4e4",
+      "size": 3411,
+      "git_lf_sha256": "2e7f7f49d15a04fbbc28dea83f924c092872eff794189b01820c14cc4fd2a4e4"
+    },
+    {
+      "path": "scripts/phase0b-u006-primary-watchdog.ps1",
+      "sha256": "cf97654606e91a4b93efe8ecef9c86c44e701778fb44dd26fbfaeda2d9c246ee",
+      "size": 202,
+      "git_lf_sha256": "cf97654606e91a4b93efe8ecef9c86c44e701778fb44dd26fbfaeda2d9c246ee"
+    },
+    {
+      "path": "scripts/phase0b-u006-primary-restore.ps1",
+      "sha256": "c2984848cf11db132840513d21b4924c8f31a2b6ca4d2582c1049030018bf32b",
+      "size": 480,
+      "git_lf_sha256": "c2984848cf11db132840513d21b4924c8f31a2b6ca4d2582c1049030018bf32b"
+    },
+    {
+      "path": "scripts/phase0b-verify-primary-profile.ps1",
+      "sha256": "e84af550a541f2fef3bc57b8630343fcf2dbef497c917929ba32cc9e2b06cd25",
+      "size": 255,
+      "git_lf_sha256": "e84af550a541f2fef3bc57b8630343fcf2dbef497c917929ba32cc9e2b06cd25"
+    },
+    {
+      "path": "scripts/phase0b-verify-primary-repair.cjs",
+      "sha256": "ce2690b26ca2110d6713b438453b73006b6a836fcae3e22ba82a393cb2bd12eb",
+      "size": 4712,
+      "git_lf_sha256": "ce2690b26ca2110d6713b438453b73006b6a836fcae3e22ba82a393cb2bd12eb"
+    },
+    {
+      "path": "docs/reports/2026-09-19T0814Z-phase-0b-primary-audit.md",
+      "sha256": "6d11c5dc9fd38986779b196481ac0b5a6ac3456de354cffcb01055be6b45c395",
+      "size": 4452,
+      "git_lf_sha256": "6d11c5dc9fd38986779b196481ac0b5a6ac3456de354cffcb01055be6b45c395"
+    },
+    {
+      "path": "docs/reports/2026-09-19T0840Z-phase-0b-primary-repair.md",
+      "sha256": "a9035b0c505539facb24bb209bb374d97b2b764bc2ee22fbd1eaffc31ac6386b",
+      "size": 3653,
+      "git_lf_sha256": "a9035b0c505539facb24bb209bb374d97b2b764bc2ee22fbd1eaffc31ac6386b"
+    },
+    {
+      "path": "docs/18-HANDOFF.md",
+      "sha256": "030f99e5c107952e97025f71228ab1cbc512b628acc54634b1f649e336d249f9",
+      "size": 23746,
+      "git_lf_sha256": "030f99e5c107952e97025f71228ab1cbc512b628acc54634b1f649e336d249f9"
+    },
+    {
+      "path": "docs/15-MASTER-CHECKLIST.md",
+      "sha256": "ee4afc618d69503d27c2735b8ef30ea0ba7ba4152474f8322a72d15a7534376d",
+      "size": 8708,
+      "git_lf_sha256": "ee4afc618d69503d27c2735b8ef30ea0ba7ba4152474f8322a72d15a7534376d"
+    },
+    {
+      "path": "evidence/phase-0b-u006-primary-repair/safety-gate.json",
+      "sha256": "dd14828749ac17b17b621445d26cca412ea13bca0c6a153d5d8ccf8fa2b3d93e",
+      "size": 1190
+    }
+  ]
+}

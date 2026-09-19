@@ -214,3 +214,21 @@ Exact next task: obtain an official login-capable disposable Codex/Antigravity p
 - Remote push: PASS to `origin/phase-0/reversible-compatibility` as a fast-forward from `4f57f8a402be282cbefff802de6473c167e6735a`.
 - Local tracking-ref update: `UNKNOWN` because the Windows filesystem rejected Git's local ref lock/unlink operation; the remote branch was verified by the successful push output.
 - Next run remains U-006 only after a supported normal Antigravity relaunch path is available.
+
+## Correction sau audit — 2026-09-19T0814Z
+
+Verifier primary cũ ghi sẵn cleanup/restore PASS và bỏ qua một số exit code. Hai trường settings/extension unchanged đã sửa thủ công nhưng không có after hash nên là UNKNOWN. Config before/after nhất quán trong record, không phải kiểm tra live mới.
+
+Verifier mới trả exit 1 và liệt kê bằng chứng thiếu. Watchdog chặn trước side effect với `PRIMARY_PROBE_DISABLED_PENDING_SAFETY_REPAIR`. Tests: 10/10 PASS; U-006 BLOCKED. Xem [audit](reports/2026-09-19T0814Z-phase-0b-primary-audit.md).
+
+Bước tiếp: sửa compare-and-swap, kiểm tra backup trước restore, checkpoint ngoài IDE, recorder readiness và SSE; kiểm thử fixture trước khi bỏ chặn. Người dùng tự mở IDE sau restore. Probe launcher phải truyền synthetic key riêng cho process tree, không phụ thuộc agent chat.
+
+Local HEAD vẫn `4f57f8a`, remote đã xác nhận `54f9744`; không stage toàn bộ các file hiện unstaged/untracked. Audit chưa commit/push vì safety gate fail.
+
+## Tiếp tục đã được cho phép — primary repair
+
+Owner cho phép tự sửa và kiểm thử đến PASS; chỉ gọi hỗ trợ khi cần thao tác tài khoản/IDE. Safety gate mới PASS: 25 Node tests, 12 assertion transaction. Xem [report sửa](reports/2026-09-19T0840Z-phase-0b-primary-repair.md). Guard cũ đã được thay bằng kiểm tra safety gate + hash manifest trước khi mở session. Gate này chỉ chứng minh fixture safety; U-006 chưa PASS.
+
+Session dự kiến dưới TEMP: `dual-pool-u006-primary-729d99527ecc4b049ae56e53944418f0`. Main watchdog là `scripts/phase0b-primary-watchdog.cjs`; wrapper PowerShell gọi nó. Console nhận checkpoint độc lập; agent chỉ ghi `agent-approved` sau khi xác minh PID/heartbeat. Không gửi ASTRA_SENT qua chat: recorder tự phát hiện prompt sau khi chọn Astra. Sau restore PASS, người dùng tự mở IDE bằng shortcut; watchdog không tự mở normal IDE.
+
+Khi quay lại: đọc result mới tại `evidence/phase-0b-u006-primary-repair/result-*.json`; nếu chưa có, đọc status/heartbeat của đúng session TEMP. Không mở lại probe thứ hai. Nếu restore chưa PASS, giữ backup và dùng recovery helper khi IDE đã đóng. Không đọc auth.
