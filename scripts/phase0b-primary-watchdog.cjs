@@ -12,6 +12,13 @@ function ideEnvironment(source,key) {
   return env;
 }
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function secureSession(session) {
+  const command="$sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value; & icacls.exe $env:P0B_SESSION /inheritance:r /grant:r ('*'+$sid+':(OI)(CI)F') '*S-1-5-18:(OI)(CI)F'; if($LASTEXITCODE){exit $LASTEXITCODE}";
+  const acl=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',command],
+    {windowsHide:true,encoding:'utf8',env:{...process.env,P0B_SESSION:session}});
+  if(acl.status!==0)throw new Error('SESSION_ACL_FAILED');
+  const check=path.join(session,'.acl-check');fs.writeFileSync(check,'',{flag:'wx'});fs.unlinkSync(check);
+}
 async function waitFor(predicate,timeout,code,interval=1000) {
   const end=Date.now()+timeout;
   do {if(await predicate())return;await sleep(interval);} while(Date.now()<end);
@@ -66,9 +73,7 @@ async function main(session) {
   if(fs.existsSync(session))throw new Error('SESSION_ALREADY_EXISTS');
   fs.mkdirSync(session);
   // Restrict local-only backup access before any backup can exist.
-  const acl=spawnSync('icacls.exe',[session,'/inheritance:r','/grant:r',`${os.userInfo().username}:(OI)(CI)F`,'SYSTEM:(OI)(CI)F'],
-    {windowsHide:true,encoding:'utf8'});
-  if(acl.status!==0)throw new Error('SESSION_ACL_FAILED');
+  secureSession(session);
   const run=path.basename(session).replace('dual-pool-u006-primary-','');
   const runId=new Date().toISOString().replace(/[-:.]/g,'');
   const config=path.join(os.homedir(),'.codex','config.toml');
@@ -213,4 +218,4 @@ async function main(session) {
 if(require.main===module)main(process.argv[2]).catch(e=>{
   console.error(/^[A-Z][A-Z0-9_]+$/.test(e.message)?e.message:'WATCHDOG_FATAL_BACKUP_RETAINED');process.exitCode=1;
 });
-module.exports={ideEnvironment,waitFor,runProbe};
+module.exports={ideEnvironment,waitFor,runProbe,secureSession};

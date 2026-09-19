@@ -27,15 +27,15 @@
     },
     {
       "path": "scripts/phase0b-primary-watchdog.cjs",
-      "sha256": "4fc9a581643241f7214cfdde64b420ba56136aa6045dc83c5f99b1ef1a2fbd09",
-      "size": 14344,
-      "git_lf_sha256": "4fc9a581643241f7214cfdde64b420ba56136aa6045dc83c5f99b1ef1a2fbd09"
+      "sha256": "bd291e80773f285d4daf4d53367603e88e954df264032087e0204f13b81badd0",
+      "size": 14755,
+      "git_lf_sha256": "bd291e80773f285d4daf4d53367603e88e954df264032087e0204f13b81badd0"
     },
     {
       "path": "scripts/phase0b-primary-watchdog.test.cjs",
-      "sha256": "6d53d0c5864e7df89ea1b8b180c4ced404c38cbd7789fbb50ceff6599e43e6a8",
-      "size": 3229,
-      "git_lf_sha256": "6d53d0c5864e7df89ea1b8b180c4ced404c38cbd7789fbb50ceff6599e43e6a8"
+      "sha256": "38506e8a30e7d72923667d7ed43739036e38fda76006948bda92f7b5ae112311",
+      "size": 3676,
+      "git_lf_sha256": "38506e8a30e7d72923667d7ed43739036e38fda76006948bda92f7b5ae112311"
     },
     {
       "path": "scripts/phase0b-primary-transaction.ps1",
@@ -87,9 +87,9 @@
     },
     {
       "path": "docs/18-HANDOFF.md",
-      "sha256": "f6b89b6d68bd0927a484ab912f1040b41334d5f8576ca594ce750675fd4a1d6c",
-      "size": 24390,
-      "git_lf_sha256": "f6b89b6d68bd0927a484ab912f1040b41334d5f8576ca594ce750675fd4a1d6c"
+      "sha256": "c93b7ce9039e86e6b18031eeb2e28f22daafb77dc8dc9ab21e05a8ab84ab7c3b",
+      "size": 25423,
+      "git_lf_sha256": "c93b7ce9039e86e6b18031eeb2e28f22daafb77dc8dc9ab21e05a8ab84ab7c3b"
     },
     {
       "path": "docs/15-MASTER-CHECKLIST.md",
@@ -99,7 +99,7 @@
     },
     {
       "path": "evidence/phase-0b-u006-primary-repair/safety-gate.json",
-      "sha256": "dd14828749ac17b17b621445d26cca412ea13bca0c6a153d5d8ccf8fa2b3d93e",
+      "sha256": "3d38bb6b51aebc68ffabd22b5f7b6afa65729b947ea3e467387ad4e71799120e",
       "size": 1190
     }
   ]

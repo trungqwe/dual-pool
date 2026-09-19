@@ -238,3 +238,9 @@ Khi quay lại: đọc result mới tại `evidence/phase-0b-u006-primary-repair
 - Implementation: `10305afd80fdfa7a3d62f61c65a2657df9cc5088`; push PASS tới `origin/phase-0/reversible-compatibility` bằng checkout delivery riêng, commit/push Git thông thường.
 - Safety fixture gate PASS; hash artifact đã kiểm tra cả working tree và staged Git blob trước commit. U-006 live vẫn chưa được xác nhận.
 - Workspace chính giữ nguyên residue và local ref cũ; không pull/reset trên workspace chính khi chưa đối chiếu các thay đổi đã push. Checkout delivery nằm dưới TEMP với basename `dual-pool-delivery-729d99527ecc4b049ae56e53944418f0`.
+
+### Startup correction và checkpoint đang chờ
+
+Lần startup đầu dừng ở ACL thư mục TEMP, trước backup/mutation. Config thật vẫn có hash `1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D`. Đã sửa cấp quyền theo Windows SID và bổ sung test đọc/ghi thật sau ACL: gate hiện 26 Node tests + 12 assertion transaction PASS. Thư mục startup thất bại rỗng đã được dọn; không có backup/auth trong đó.
+
+Watchdog mới đã được quan sát `WATCHDOG_READY`, Node PID 24088, parent console PID 84276 đúng process sở hữu, heartbeat cập nhật; transaction chưa tồn tại. Sau agent handshake, trạng thái tiếp theo là WAIT_PRIMARY_CLOSE. User cần giữ console này mở, đóng IDE tự nguyện, làm auth/Astra checkpoint tại console; không gửi checkpoint vào chat trong thời gian provider probe hoạt động. Sau restore PASS, user tự mở IDE bình thường. Dùng đúng session đã ghi ở trên, không mở watchdog trùng.

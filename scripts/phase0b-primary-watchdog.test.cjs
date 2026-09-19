@@ -1,6 +1,13 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {runProbe,ideEnvironment,waitFor}=require('./phase0b-primary-watchdog.cjs');
+const {runProbe,ideEnvironment,waitFor,secureSession}=require('./phase0b-primary-watchdog.cjs');
+test('actual private session ACL permits owner file operations',()=>{
+  const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'dual-pool-acl-test-'));
+  try{secureSession(root);const file=path.join(root,'check');fs.writeFileSync(file,'fixture');
+    assert.equal(fs.readFileSync(file,'utf8'),'fixture');fs.unlinkSync(file);
+  }finally{fs.rmdirSync(root);}
+});
 function fixture(fault) {
   const calls=[];const io={};
   for(const name of ['ready','closePrimary','prepare','startRecorder','activate','launchProbe','confirmAuth',

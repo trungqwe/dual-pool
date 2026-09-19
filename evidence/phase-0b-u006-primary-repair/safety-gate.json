@@ -4,7 +4,7 @@
   "status": "PASS",
   "scope": "FIXTURE_SAFETY_ONLY",
   "u006": "BLOCKED_PENDING_LIVE_PROBE",
-  "node_tests": 25,
+  "node_tests": 26,
   "transaction_assertions": 12,
   "syntax": "PASS",
   "privacy": "PASS",
