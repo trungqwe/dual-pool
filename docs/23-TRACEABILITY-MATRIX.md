@@ -117,3 +117,15 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P1-LOCK-STALE-RACE-001: simultaneous stale reclaim has one owner | [subprocess stress](../internal/lockfile/manager_test.go), [race result](../evidence/phase-1-lock-handle-correction/stale-reclaim-race.json) | PASS; 50 global and 50 per-file iterations, zero multiple owners |
 | P1-LOCK-HANDLE-RELEASE-001: release deletes exact owned object by handle | [lock manager](../internal/lockfile/manager.go), [correction gate](../evidence/phase-1-lock-handle-correction/security-gate.json) | PASS; no canonical pathname deletion |
 | P1-LOCK-HANDLE-CONTENTION-001: share mode blocks competing mutation/delete | [handle tests](../internal/lockfile/manager_test.go), [race result](../evidence/phase-1-lock-handle-correction/stale-reclaim-race.json) | PASS on Windows TEMP fixtures |
+
+## Phase 1 Windows secret store
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P1-SECRET-STORE-API-001: closed four-purpose registry, validation and safe errors | [unit tests](../internal/secretstore/store_test.go), [result](../evidence/phase-1-secret-store/test-result.json) | Local PASS; remote CI pending |
+| P1-SECRET-CREDMAN-001: generic local-machine exact-target CRUD and replacement | [WinCred integration](../internal/secretstore/windows_test.go), [decision](../evidence/phase-1-secret-store/decision.json) | Local Windows PASS; remote CI pending |
+| P1-SECRET-CROSS-PROCESS-001: child process reads exact credential without secret transport | [WinCred integration](../internal/secretstore/windows_test.go), [result](../evidence/phase-1-secret-store/test-result.json) | Local Windows PASS; remote CI pending |
+| P1-SECRET-ISOLATION-001: four synthetic values remain purpose-isolated | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | Local Windows PASS; does not complete product-key generation |
+| P1-SECRET-CLEANUP-001: exact pre/post cleanup and idempotent delete | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | Local Windows PASS; no enumeration |
+| P1-SECRET-NO-ENUMERATION-001: production has no broad credential API | [source gate](../internal/secretstore/store_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS |
+| P1-SECRET-NO-PROVIDER-TOKEN-001: store owns no provider credential | [source gate](../internal/secretstore/store_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS; FR-005 preserved |

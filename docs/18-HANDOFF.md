@@ -423,3 +423,15 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Final behavior in `55d9a130122e6f41f45d24b0e213ce89c5ed1591` bounds ambiguous `CreateFileW` access-denied retries to 250 ms. Persistent access denial remains `ErrLockPersistence`; a completed transition is reclassified from the next concrete handle outcome.
 - Corrected final [Source CI run 35460361030](https://github.com/trungqwe/dual-pool/actions/runs/35460361030) PASS on `22fcedaf3fa0bdd306592c7e40aed16685fc8e99`.
 - Delivery commit: this addendum commit. Its SHA, CI and final remote HEAD are verified after commit.
+
+## Phase 1 Windows secret-store implementation — 2026-09-20
+
+- Added a closed `internal/secretstore` interface for exactly four Poolbridge-owned client/management keys. Production target names are fixed, versioned and non-secret; arbitrary targets and credential enumeration are not exposed.
+- Selected Windows Credential Manager `CRED_TYPE_GENERIC` with `CRED_PERSIST_LOCAL_MACHINE`. Current-user DPAPI remains a viable alternative but was not selected because it requires Poolbridge to own an encrypted file lifecycle. DPAPI machine scope is rejected because it broadens decryption to other users on the machine.
+- `Put` copies and wipes temporary input, writes the exact target, reads it back and constant-time verifies before success. `Get` returns a fresh Go-owned copy after wiping and freeing the native read buffer. Delete is exact and idempotent.
+- Local real-Windows tests use only random synthetic values in unique exact test namespaces. They prove CRUD, replacement, missing behavior, four-purpose isolation, selective cleanup and same-user child-process read without transporting the secret through argv, environment, output or files.
+- The Windows user account is the trust boundary. This backend avoids plaintext persistent files but does not defend against malicious code already running with equivalent access in the owning user context.
+- Local implementation gates: 72 Go test functions, WinCred integration, vet, build, module verification, 53/53 Phase 0 Node tests and `UPSTREAM_LOCK_VALID` PASS. Race result and repository evidence/security gates are recorded in the run report. Remote CI remains pending until the implementation push.
+- Real product root touched: false. Provider credentials touched: false. Synthetic credentials are registered for exact cleanup. The checklist remains open until remote CI passes; four distinct strong product secrets remains open until product initialization exists.
+- Report: `docs/reports/2026-09-19T1821Z-phase-1-windows-secret-store.md`. Evidence: `evidence/phase-1-secret-store/`.
+- Exact next Phase 1 task after delivery: config backup/patch/rollback engine using synthetic fixtures only. Do not begin it in this run.

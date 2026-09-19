@@ -54,6 +54,14 @@ Status: ACCEPTED.
 
 Poolbridge owns only named configuration keys. It records previous values, writes atomically and restores only its own changes.
 
+### ADR-008 — Windows Credential Manager for Poolbridge-owned keys
+
+Status: ACCEPTED.
+
+V1 stores exactly the Codex client, Codex management, Google client and Google management keys as `CRED_TYPE_GENERIC` credentials in the current user's credential set with `CRED_PERSIST_LOCAL_MACHINE`. Production uses a fixed versioned target registry and only exact `CredWriteW`, `CredReadW` and `CredDeleteW` operations; credential enumeration is outside the design. This avoids a Poolbridge-owned ciphertext file and its durability, ACL, format, backup and deletion lifecycle.
+
+Current-user DPAPI is a viable alternative but is not selected. `CRED_PERSIST_LOCAL_MACHINE` means subsequent logon sessions of the same user on the same computer; it is distinct from DPAPI `CRYPTPROTECT_LOCAL_MACHINE`, which allows any user on the computer to decrypt and is rejected as the default. The Windows user account is the trust boundary: WinCred does not protect against malicious code already running with equivalent access in the owning user context. Poolbridge never stores or parses provider OAuth/access/refresh tokens.
+
 ## Verified upstream capabilities
 
 | Claim | Class | Evidence | Consequence |

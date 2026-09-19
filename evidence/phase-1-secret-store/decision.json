@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "backend": "windows_credential_manager",
+  "credential_type": "generic",
+  "persistence": "local_machine",
+  "credential_set": "current_user",
+  "purpose_count": 4,
+  "target_registry": "fixed_versioned",
+  "enumeration": false,
+  "dpapi_current_user": "viable_not_selected",
+  "dpapi_machine_scope": "rejected",
+  "provider_tokens_owned": false,
+  "same_user_malware_protection_claimed": false
+}

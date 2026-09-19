@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "scope": "phase-1-windows-secret-store",
+  "result": "PASS_LOCAL_PENDING_REMOTE_CI",
+  "artifacts": [
+    "decision.json",
+    "test-result.json",
+    "security-gate.json"
+  ],
+  "privacy": "CLASSIFICATIONS_AND_COUNTS_ONLY",
+  "contains_secrets": false,
+  "contains_secret_hashes": false,
+  "contains_credential_targets": false,
+  "contains_usernames": false,
+  "contains_local_paths": false,
+  "contains_process_ids": false
+}

@@ -51,6 +51,14 @@
 - Redaction operates on structured header/config fields and known secret types before serialization.
 - `--debug` may add timing/schema metadata, never payloads or secret values.
 
+### Poolbridge key storage
+
+V1 stores only four Poolbridge-generated local keys in Windows Credential Manager: client and management keys for the Codex and Google instances. They use generic credentials, fixed non-secret versioned target names, local-machine persistence within the current user's credential set, and exact target CRUD. Poolbridge does not enumerate the credential set and does not own provider OAuth, access or refresh tokens.
+
+The Windows user account is the trust boundary. Credential Manager prevents plaintext secret files and ordinary cross-user access, but generic credentials can be read by processes with equivalent access in the owning Windows user context. Target names are metadata and intentionally non-secret. Temporary Go and native read buffers are wiped where practical to bound plaintext lifetime; this is best effort and does not guarantee erasure of every historical compiler/runtime copy.
+
+Credential Manager `CRED_PERSIST_LOCAL_MACHINE` is not DPAPI machine scope. The former persists for later sessions of the same user on the same computer. DPAPI `CRYPTPROTECT_LOCAL_MACHINE` permits any user on that computer to decrypt and is rejected for default Poolbridge protection.
+
 ## File permissions
 
 On Windows, generated secret-containing files and backups must have ACL inheritance reviewed and access limited to the current user plus required system principals. The installer does not run elevated by default and must not broaden ACLs to `Users` or `Everyone`.
