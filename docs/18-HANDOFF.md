@@ -309,3 +309,12 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Push: PASS to `origin/phase-0/reversible-compatibility`; remote SHA verified directly with `git ls-remote`.
 - Security gate and manifest: PASS. No raw secret, user path, PID, port, SID, auth state, session content, or prompt value was committed.
 - PR: not created; direct delivery to the configured Phase 0 branch was requested.
+
+## Phase 0 closure — 2026-09-19
+
+- Phase 0 status: **PASS_WITH_BLOCKERS**. The roadmap permits exit when unresolved compatibility gates are explicitly documented.
+- GO: Phase 1 fixture-only foundation and later credential-free lifecycle scaffolding after Phase 1.
+- NO-GO: live Antigravity integration, Codex picker integration, provider promotion, and release acceptance.
+- Candidate upstream: CLIProxyAPI `v7.3.7`, commit `b773607e3e7756dc6020a291825e4eb08899595a`; deterministic metadata and hashes are in `upstream.lock`. `config_adapter_version` remains `UNIMPLEMENTED`.
+- Preserved blockers: U-001..004 and U-006 `BLOCKED`; U-008 `PARTIAL_UNKNOWN`; U-005 and U-007 `PROBED`.
+- Exact next task: Phase 1 — create the Go CLI skeleton, version output, stable error envelope, and initial unit-test/CI foundation. No live IDE/provider integration.

@@ -30,7 +30,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [ ] Native route and schema inventory captured safely.
 - [ ] Transparent passthrough proven.
 - [ ] Donor native envelope round trip proven.
-- [ ] U-001 through U-008 resolved or explicitly BLOCKED for Phase 0 exit.
+- [x] U-001 through U-008 resolved or explicitly classified for Phase 0 exit; U-008 remains `PARTIAL_UNKNOWN` and blocks provider promotion. Evidence: `evidence/phase-0-closure.json`.
 
 ## Foundation
 
@@ -46,7 +46,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ## CLIProxyAPI lifecycle
 
-- [ ] `upstream.lock` populated with verified artifact.
+- [x] Candidate `upstream.lock` populated with independently verified Windows artifact metadata; provider support remains unverified. Evidence: `evidence/phase-0-closure.json`.
 - [ ] Download checksum mismatch fails closed.
 - [ ] Version/config adapter mismatch fails closed.
 - [ ] Codex and Google configs have disjoint paths/keys/ports.

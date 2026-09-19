@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "test_id": "P0-CLOSURE-001",
+  "status": "PASS_WITH_BLOCKERS",
+  "phase": "Phase 0",
+  "recommendation": {
+    "phase_1_foundation": "GO",
+    "credential_free_phase_2_scaffolding": "GO_AFTER_PHASE_1",
+    "antigravity_live_integration": "NO_GO",
+    "codex_picker_live_integration": "NO_GO",
+    "release_promotion": "NO_GO"
+  },
+  "unknowns": {
+    "U-001": "BLOCKED",
+    "U-002": "BLOCKED",
+    "U-003": "BLOCKED",
+    "U-004": "BLOCKED",
+    "U-005": "PROBED",
+    "U-006": "BLOCKED",
+    "U-007": "PROBED",
+    "U-008": "PARTIAL_UNKNOWN"
+  },
+  "candidate_upstream_lock": "upstream.lock",
+  "candidate_upstream_version": "7.3.7",
+  "candidate_config_adapter": "UNIMPLEMENTED",
+  "real_user_config_live_mutation_disabled": true,
+  "phase_1_constraints": [
+    "fixture_only_config_transactions",
+    "no_live_antigravity_or_codex_integration",
+    "no_provider_capability_claim_from_candidate_lock",
+    "blocked_gates_remain_fail_closed"
+  ]
+}
