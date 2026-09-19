@@ -460,3 +460,14 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Product-root/backup ACL acceptance and full end-to-end `LOG-001` remain open. Phase 1 is not closed.
 - Delivery SHA/CI/remote receipt will be appended after observable CI.
 - Exact next task after delivery: **Phase 1 — exit reconciliation and remaining-foundation gate audit**.
+
+### Delivery receipt — Phase 1 config transaction engine
+
+- Implementation commit: `d536440a014303e065382778320806bf62b928fd`.
+- Scoped corrections: `96c5e8447be3d4c8e25be376c1b374791c0fb1ef` (Windows resolved-path casing), `31dd089afb06742c14988dd23dae4743a0776db2` (safe CI diagnostic coverage), and `5949e77` (accept a verified resolved TEMP parent without requiring lexical identity).
+- Implementation/correction Source CI: PASS, run `35464385962`, on `5949e77`.
+- Local verification: 88 Go test functions; `go test`, race, vet, build and module verification PASS; config Apply fault matrix 11 points, rollback matrix 8 points, three abrupt subprocess crash cases; CFG-001..004 PASS.
+- Regression: synthetic WinCred exact cleanup PASS; lock handle/stale race and state-store suites PASS; Phase 0 Node 53/53 PASS; `UPSTREAM_LOCK_VALID`.
+- Push: PASS, normal fast-forward to `origin/phase-1/state-foundation`; no force push.
+- Delivery commit/CI and final remote HEAD: PENDING below.
+- Phase 1 remains open. Exact next task: **Phase 1 — exit reconciliation and remaining-foundation gate audit**.
