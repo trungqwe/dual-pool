@@ -183,7 +183,7 @@ func persistenceAt(stage string) error { return fmt.Errorf("%s: %w", stage, ErrL
 
 func stageLockError(stage string, err error) error {
 	if errors.Is(err, ErrLockPersistence) {
-		return persistenceAt(stage)
+		return fmt.Errorf("%s: %w", stage, err)
 	}
 	return err
 }
@@ -290,7 +290,7 @@ func openCanonical(path string) (*os.File, error) {
 		return nil, errCanonicalGone
 	}
 	if err != nil {
-		return nil, ErrLockPersistence
+		return nil, persistenceAt("canonical_lstat")
 	}
 	if entry.IsDir() || entry.Mode()&os.ModeSymlink != 0 {
 		return nil, ErrUnsafeLockArtifact
@@ -304,7 +304,7 @@ func openCanonical(path string) (*os.File, error) {
 		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) || errors.Is(err, windows.ERROR_DELETE_PENDING) {
 			return nil, errCanonicalGone
 		}
-		return nil, ErrLockPersistence
+		return nil, persistenceAt("canonical_attributes")
 	}
 	if attributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 || attributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0 {
 		return nil, ErrUnsafeLockArtifact
@@ -325,7 +325,7 @@ func openCanonical(path string) (*os.File, error) {
 		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) || errors.Is(err, windows.ERROR_DELETE_PENDING) {
 			return nil, errCanonicalGone
 		}
-		return nil, ErrLockPersistence
+		return nil, persistenceAt("canonical_create")
 	}
 	var info windows.ByHandleFileInformation
 	if err = windows.GetFileInformationByHandle(handle, &info); err != nil || info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 || info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0 {
