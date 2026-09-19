@@ -397,3 +397,20 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Global/per-file lock checklist item is complete. Phase 1 remains open for Windows secret-store review and config backup/patch/rollback.
 - Delivery receipt: this scoped handoff commit; its SHA, delivery CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA. PR: not requested and not created.
 - Exact next Phase 1 task: Windows secret-store interface plus implementation decision/proof using synthetic secrets only. Do not begin config mutation or provider lifecycle work.
+
+## Phase 1 handle-safe lock correction — 2026-09-20
+
+- Corrected HIGH finding `LOCK-HANDLE-001`: stale reclamation and Guard release no longer delete a canonical lock by pathname. Every successful Guard retains an exclusive handle to the exact canonical file object.
+- Ownership/claim handles use `CreateFileW` with `GENERIC_READ | DELETE`, share mode `0`, `OPEN_EXISTING`, and `FILE_FLAG_OPEN_REPARSE_POINT`. Records are read and strictly validated through that handle.
+- Proven stale locks and intentional Guard releases use `SetFileInformationByHandle(FileDispositionInfo)` before closing the same handle. Ordinary ownership has no delete-on-close flag, so an abrupt process exit leaves metadata for successor verification.
+- Candidate creation, sync, close, strict verification and `MoveFileExW` install without replacement remain intact. Acquisition returns success only after exclusive-open and exact through-handle verification.
+- Subprocess stress ran 50 simultaneous stale-reclaim iterations for global locks and 50 for per-file locks: 100/100 single-owner iterations, zero multiple-owner iterations. Additional local debugging stress ran 2,000 iterations without recurrence.
+- Source CI `35459353622` and `35459554699` retained mutual exclusion but exposed rare Windows delete-pending/install error classifications as persistence. The correction treats delete-pending as transient and classifies an install race from the subsequent canonical handle outcome instead of the `MoveFileExW` error alone.
+- Implementation chain: `909e138c386d4eb228d41eabff7d44a8c1b41fd8`, `ee473e100ef1f0fec5351411654c746df855a23f`, and final correction `4e9868cdd2ef81e1fd855f7319a5387f051dce2d`.
+- Corrected [Source CI run 35459721683](https://github.com/trungqwe/dual-pool/actions/runs/35459721683) PASS on `4e9868cdd2ef81e1fd855f7319a5387f051dce2d`.
+- Verification: 64 Go test functions PASS; race instrumentation PASS in short mode; vet, build and module verification PASS; 22 Store fault scenarios and two Store crash subprocess cases remain PASS; 53/53 Phase 0 Node tests and `UPSTREAM_LOCK_VALID` PASS.
+- Static deletion gate PASS: production lock code uses pathname removal only for the current attempt's non-authoritative candidate. No canonical pathname delete remains in stale reclaim or Guard release.
+- Real product root touched: false. Foreign process killed: false. Tests terminate only their own fixture children. Evidence contains counts/classifications only.
+- Global/per-file lock checklist status: PASS. The Phase 2 child-process/PID-file lifecycle remains open.
+- Delivery receipt: this scoped handoff commit; its SHA, delivery CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA. PR: not requested and not created.
+- Exact next Phase 1 task: Windows secret-store interface and implementation decision/proof using synthetic secrets only.
