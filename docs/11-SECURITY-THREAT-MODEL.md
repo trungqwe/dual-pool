@@ -70,4 +70,6 @@ The project manages credentials the user legitimately authorizes. It must not cr
 
 ## Security release gate
 
+Concurrent stale reclaimers cannot remove a successor's canonical lock by pathname. Each owner or reclaimer must hold an exclusive handle to the exact canonical file object; stale and normal-release deletion use handle disposition only after record and process-identity checks.
+
 Release is blocked if any listener is non-loopback, management works without a key, a secret sentinel appears in logs/evidence/ZIP, opposite-pool credentials are visible to an instance, updater accepts a checksum mismatch, or rollback can overwrite concurrent user edits.

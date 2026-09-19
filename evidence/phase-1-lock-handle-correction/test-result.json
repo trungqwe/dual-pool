@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "scope": "phase-1-lock-handle-correction",
+  "result": "PASS",
+  "go_test_functions": 64,
+  "lock_test_functions": 12,
+  "atomic_store_fault_scenarios": 22,
+  "atomic_store_crash_subprocess_cases": 2,
+  "checks": {
+    "go_fmt": "PASS",
+    "go_test": "PASS",
+    "go_race": "PASS_SHORT_MODE",
+    "go_vet": "PASS",
+    "go_build": "PASS",
+    "go_mod_verify": "PASS",
+    "phase_0_regression": "PASS_53_OF_53",
+    "upstream_lock": "UPSTREAM_LOCK_VALID"
+  },
+  "fixture_boundary": "TEMP_ONLY",
+  "remote_ci": "PENDING_IMPLEMENTATION_PUSH"
+}

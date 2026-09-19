@@ -33,6 +33,7 @@ Every external response parser must have malformed, oversized, missing-field, un
 - Verify ports, keys, config and account inventories never cross.
 - Patch temporary Antigravity/Codex config fixtures and prove unrelated content preservation.
 - Kill/restart child processes and recover stale journals/PIDs.
+- Synchronize two subprocesses against one stale global lock and one stale per-file lock for 50 iterations each; require exactly one authoritative Guard, handle contention while held, and zero multiple-owner iterations.
 - Stage update and simulate checksum/startup failure.
 
 ### Live compatibility

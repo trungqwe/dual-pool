@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +12,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/sys/windows"
 )
 
 type fakeInspector struct {
@@ -47,6 +50,19 @@ func fixtureManager(t *testing.T, inspector *fakeInspector, ids ...string) *Mana
 	return m
 }
 
+func seedGlobalRecord(t *testing.T, m *Manager, identity ProcessIdentity, operation string) []byte {
+	t.Helper()
+	created := m.now().UTC()
+	payload, err := encodeRecord(record{SchemaVersion: 1, Kind: kindGlobal, ResourceID: "global", OwnerPID: identity.PID, OwnerStartTime: identity.StartTime, OwnerImage: identity.Image, OperationID: operation, CreatedAt: created.Format(time.RFC3339Nano), ExpiresAt: created.Add(m.duration).Format(time.RFC3339Nano)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(m.root, "global.lock"), payload, 0600); err != nil {
+		t.Fatal(err)
+	}
+	return payload
+}
+
 func TestGlobalLockLiveExpiryReleaseAndStaleRecovery(t *testing.T) {
 	identity := fixtureIdentity()
 	inspector := &fakeInspector{values: map[uint32]ProcessIdentity{identity.PID: identity}, errs: map[uint32]error{}}
@@ -55,14 +71,20 @@ func TestGlobalLockLiveExpiryReleaseAndStaleRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	before, _ := os.ReadFile(guard.path)
+	before := append([]byte(nil), guard.bytes...)
 	m.now = func() time.Time { return time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC) }
 	if _, err = m.AcquireGlobal(); !errors.Is(err, ErrLockHeld) {
 		t.Fatalf("expired live owner stolen: %v", err)
 	}
-	after, _ := os.ReadFile(guard.path)
-	if !bytes.Equal(before, after) {
+	after, readErr := readHandle(guard.file)
+	if readErr != nil || !bytes.Equal(before, after.bytes) {
 		t.Fatal("live lock changed")
+	}
+	if err = guard.Release(); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(guard.path, before, 0600); err != nil {
+		t.Fatal(err)
 	}
 	identity.StartTime++
 	inspector.set(identity)
@@ -78,7 +100,7 @@ func TestGlobalLockLiveExpiryReleaseAndStaleRecovery(t *testing.T) {
 	}
 }
 
-func TestReleasePreservesChangedCanonicalLock(t *testing.T) {
+func TestOwnershipHandleBlocksCanonicalMutation(t *testing.T) {
 	identity := fixtureIdentity()
 	inspector := &fakeInspector{values: map[uint32]ProcessIdentity{identity.PID: identity}, errs: map[uint32]error{}}
 	m := fixtureManager(t, inspector, "00112233445566778899aabbccddeeff")
@@ -86,18 +108,39 @@ func TestReleasePreservesChangedCanonicalLock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	changed := guard.record
-	changed.OperationID = "11223344556677889900aabbccddeeff"
-	payload, _ := encodeRecord(changed)
-	if err = os.WriteFile(guard.path, payload, 0600); err != nil {
+	if err = os.WriteFile(guard.path, []byte("changed"), 0600); err == nil {
+		t.Fatal("canonical lock was writable while Guard was alive")
+	}
+	if err = guard.Release(); err != nil {
 		t.Fatal(err)
 	}
-	if err = guard.Release(); !errors.Is(err, ErrLockOwnershipLost) {
-		t.Fatalf("changed lock released: %v", err)
+	if _, err = os.Stat(guard.path); !os.IsNotExist(err) {
+		t.Fatalf("handle-backed release did not remove canonical lock: %v", err)
 	}
-	after, err := os.ReadFile(guard.path)
-	if err != nil || !bytes.Equal(after, payload) {
-		t.Fatal("changed canonical lock was removed or altered")
+}
+
+func TestReturnedGuardHoldsExclusiveCanonicalHandle(t *testing.T) {
+	m, err := NewManager(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	guard, err := m.AcquireGlobal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer guard.Release()
+	path, _ := windows.UTF16PtrFromString(guard.path)
+	for name, access := range map[string]uint32{"write": windows.GENERIC_WRITE, "delete": windows.DELETE} {
+		t.Run(name, func(t *testing.T) {
+			handle, openErr := windows.CreateFile(path, access, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+			if openErr == nil {
+				windows.CloseHandle(handle)
+				t.Fatal("canonical lock accepted an incompatible open while Guard was alive")
+			}
+			if !errors.Is(openErr, windows.ERROR_SHARING_VIOLATION) {
+				t.Fatalf("unexpected open classification: %v", openErr)
+			}
+		})
 	}
 }
 
@@ -107,10 +150,7 @@ func TestPIDReuseImageMismatchAndUnverifiable(t *testing.T) {
 			identity := fixtureIdentity()
 			f := &fakeInspector{values: map[uint32]ProcessIdentity{identity.PID: identity}, errs: map[uint32]error{}}
 			m := fixtureManager(t, f, "00112233445566778899aabbccddeeff", "11223344556677889900aabbccddeeff")
-			_, err := m.AcquireGlobal()
-			if err != nil {
-				t.Fatal(err)
-			}
+			seedGlobalRecord(t, m, identity, "00112233445566778899aabbccddeeff")
 			mutate(f, identity)
 			guard, err := m.AcquireGlobal()
 			if err != nil {
@@ -123,17 +163,42 @@ func TestPIDReuseImageMismatchAndUnverifiable(t *testing.T) {
 		identity := fixtureIdentity()
 		f := &fakeInspector{values: map[uint32]ProcessIdentity{identity.PID: identity}, errs: map[uint32]error{}}
 		m := fixtureManager(t, f, "00112233445566778899aabbccddeeff", "11223344556677889900aabbccddeeff")
-		guard, _ := m.AcquireGlobal()
-		before, _ := os.ReadFile(guard.path)
+		before := seedGlobalRecord(t, m, identity, "00112233445566778899aabbccddeeff")
 		f.errs[identity.PID] = ErrLockOwnerUnverifiable
 		if _, err := m.AcquireGlobal(); !errors.Is(err, ErrLockOwnerUnverifiable) {
 			t.Fatal(err)
 		}
-		after, _ := os.ReadFile(guard.path)
+		after, _ := os.ReadFile(filepath.Join(m.root, "global.lock"))
 		if !bytes.Equal(before, after) {
 			t.Fatal("unverifiable lock changed")
 		}
+		if err := os.Remove(filepath.Join(m.root, "global.lock")); err != nil {
+			t.Fatalf("failed acquisition leaked claim handle: %v", err)
+		}
 	})
+}
+
+func TestInvalidCanonicalRecordPreservedAndClaimClosed(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "global.lock")
+	payload := []byte(`{"schema_version":1,"schema_version":1}`)
+	if err := os.WriteFile(path, payload, 0600); err != nil {
+		t.Fatal(err)
+	}
+	m, err := NewManager(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = m.AcquireGlobal(); !errors.Is(err, ErrLockRecordInvalid) {
+		t.Fatalf("invalid record classification: %v", err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(after, payload) {
+		t.Fatal("invalid canonical record changed")
+	}
+	if err = os.Remove(path); err != nil {
+		t.Fatalf("failed acquisition leaked claim handle: %v", err)
+	}
 }
 
 func TestPerFileIndependenceAndAliases(t *testing.T) {
@@ -321,3 +386,193 @@ func TestGlobalSubprocessContentionAndCrashRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSimultaneousStaleReclaim(t *testing.T) {
+	if role := os.Getenv("DUALPOOL_RECLAIM_ROLE"); role != "" {
+		reclaimChild(role, os.Getenv("DUALPOOL_RECLAIM_CLASS"), os.Getenv("DUALPOOL_RECLAIM_ROOT"), os.Getenv("DUALPOOL_RECLAIM_TARGET"), os.Getenv("DUALPOOL_RECLAIM_PREFIX"), os.Getenv("DUALPOOL_RECLAIM_ID"))
+		return
+	}
+	iterations := 50
+	if testing.Short() {
+		iterations = 5
+	}
+	for _, class := range []string{"global", "file"} {
+		t.Run(class, func(t *testing.T) {
+			root := t.TempDir()
+			target := filepath.Join(root, "target.json")
+			if err := os.WriteFile(target, []byte("fixture"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			for iteration := 0; iteration < iterations; iteration++ {
+				prefix := filepath.Join(root, "sync-"+class+"-"+stringID(iteration))
+				runReclaimChild(t, "seed", class, root, target, prefix, "seed")
+				commands := []*exec.Cmd{
+					startReclaimChild(t, "contender", class, root, target, prefix, "a"),
+					startReclaimChild(t, "contender", class, root, target, prefix, "b"),
+				}
+				waitFiles(t, prefix+"-ready-a", prefix+"-ready-b")
+				if err := os.WriteFile(prefix+"-start", []byte("start"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				waitFiles(t, prefix+"-result-a", prefix+"-result-b")
+				results := []string{readText(t, prefix+"-result-a"), readText(t, prefix+"-result-b")}
+				wins := 0
+				unexpected := ""
+				for _, result := range results {
+					if result == "won" {
+						wins++
+					} else if result != "held" {
+						unexpected = result
+					}
+				}
+				if wins != 1 || unexpected != "" {
+					_ = os.WriteFile(prefix+"-release", []byte("release"), 0600)
+					for _, cmd := range commands {
+						_ = cmd.Wait()
+					}
+					t.Fatalf("iteration %d acquired guards=%d unexpected=%q", iteration, wins, unexpected)
+				}
+				manager, err := NewManager(root)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err = acquireClass(manager, class, target); !errors.Is(err, ErrLockHeld) {
+					t.Fatalf("iteration %d third acquisition: %v", iteration, err)
+				}
+				if err = os.WriteFile(prefix+"-release", []byte("release"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				for _, cmd := range commands {
+					if err = cmd.Wait(); err != nil {
+						t.Fatalf("iteration %d child: %v", iteration, err)
+					}
+				}
+				guard, err := acquireClass(manager, class, target)
+				if err != nil {
+					t.Fatalf("iteration %d post-release: %v", iteration, err)
+				}
+				if err = guard.Release(); err != nil {
+					t.Fatal(err)
+				}
+				for _, suffix := range []string{"-ready-a", "-ready-b", "-result-a", "-result-b", "-start", "-release"} {
+					_ = os.Remove(prefix + suffix)
+				}
+			}
+		})
+	}
+}
+
+func reclaimChild(role, class, root, target, prefix, id string) {
+	manager, err := NewManager(root)
+	if err != nil {
+		os.Exit(81)
+	}
+	if role == "seed" {
+		if _, err = acquireClass(manager, class, target); err != nil {
+			os.Exit(82)
+		}
+		os.Exit(0)
+	}
+	_ = os.WriteFile(prefix+"-ready-"+id, []byte("ready"), 0600)
+	if !waitFile(prefix+"-start", 10*time.Second) {
+		os.Exit(83)
+	}
+	guard, err := acquireClass(manager, class, target)
+	result := "error"
+	if err == nil {
+		result = "won"
+	} else if errors.Is(err, ErrLockHeld) {
+		result = "held"
+	} else if errors.Is(err, ErrLockPersistence) {
+		result = "persistence"
+	} else if errors.Is(err, ErrLockOwnershipLost) {
+		result = "ownership_lost"
+	} else if errors.Is(err, ErrLockOwnerUnverifiable) {
+		result = "owner_unverifiable"
+	} else if errors.Is(err, ErrLockRecordInvalid) {
+		result = "record_invalid"
+	} else if errors.Is(err, ErrUnsafeLockArtifact) {
+		result = "unsafe_artifact"
+	}
+	_ = os.WriteFile(prefix+"-result-"+id, []byte(result), 0600)
+	if guard != nil {
+		if !waitFile(prefix+"-release", 10*time.Second) {
+			os.Exit(84)
+		}
+		if guard.Release() != nil {
+			os.Exit(85)
+		}
+	}
+	os.Exit(0)
+}
+
+func acquireClass(manager *Manager, class, target string) (*Guard, error) {
+	if class == "file" {
+		return manager.AcquireFile(target)
+	}
+	return manager.AcquireGlobal()
+}
+
+func runReclaimChild(t *testing.T, role, class, root, target, prefix, id string) {
+	t.Helper()
+	cmd := reclaimCommand(role, class, root, target, prefix, id)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("%s child: %v %s", role, err, output)
+	}
+}
+
+func startReclaimChild(t *testing.T, role, class, root, target, prefix, id string) *exec.Cmd {
+	t.Helper()
+	cmd := reclaimCommand(role, class, root, target, prefix, id)
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	return cmd
+}
+
+func reclaimCommand(role, class, root, target, prefix, id string) *exec.Cmd {
+	cmd := exec.Command(os.Args[0], "-test.run=TestSimultaneousStaleReclaim$")
+	cmd.Env = append(os.Environ(), "DUALPOOL_RECLAIM_ROLE="+role, "DUALPOOL_RECLAIM_CLASS="+class, "DUALPOOL_RECLAIM_ROOT="+root, "DUALPOOL_RECLAIM_TARGET="+target, "DUALPOOL_RECLAIM_PREFIX="+prefix, "DUALPOOL_RECLAIM_ID="+id)
+	return cmd
+}
+
+func waitFiles(t *testing.T, paths ...string) {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		all := true
+		for _, path := range paths {
+			if _, err := os.Stat(path); err != nil {
+				all = false
+				break
+			}
+		}
+		if all {
+			return
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for subprocess files")
+}
+
+func waitFile(path string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if _, err := os.Stat(path); err == nil {
+			return true
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	return false
+}
+
+func readText(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func stringID(value int) string { return fmt.Sprintf("%03d", value) }

@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -42,7 +44,7 @@ func NewManager(lockDir string, options ...Option) (*Manager, error) {
 	if err != nil || !info.IsDir() {
 		return nil, ErrUnsafeLockArtifact
 	}
-	if ok, err := safeEntry(absolute); err != nil || !ok {
+	if ok, entryErr := safeEntry(absolute); entryErr != nil || !ok {
 		return nil, ErrUnsafeLockArtifact
 	}
 	resolved, err := filepath.EvalSymlinks(absolute)
@@ -58,9 +60,11 @@ func NewManager(lockDir string, options ...Option) (*Manager, error) {
 	}
 	return m, nil
 }
+
 func (m *Manager) AcquireGlobal() (*Guard, error) {
 	return m.acquire(kindGlobal, "global", "global.lock")
 }
+
 func (m *Manager) AcquireFile(target string) (*Guard, error) {
 	resource, err := fileResource(target)
 	if err != nil {
@@ -68,6 +72,7 @@ func (m *Manager) AcquireFile(target string) (*Guard, error) {
 	}
 	return m.acquire(kindFile, resource, "file-"+resource+".lock")
 }
+
 func (m *Manager) CheckFile(target string) error {
 	resource, err := fileResource(target)
 	if err != nil {
@@ -87,52 +92,81 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 	}
 	created := m.now().UTC()
 	value := record{SchemaVersion: 1, Kind: kind, ResourceID: resource, OwnerPID: identity.PID, OwnerStartTime: identity.StartTime, OwnerImage: identity.Image, OperationID: operation, CreatedAt: created.Format(time.RFC3339Nano), ExpiresAt: created.Add(m.duration).Format(time.RFC3339Nano)}
-	payload, _ := encodeRecord(value)
+	payload, err := encodeRecord(value)
+	if err != nil {
+		return nil, ErrLockPersistence
+	}
 	path := filepath.Join(m.root, name)
-	for attempt := 0; attempt < 2; attempt++ {
+	for attempt := 0; attempt < 4; attempt++ {
 		candidate := filepath.Join(m.root, "."+name+".candidate-"+operation)
-		if err := writeCandidate(candidate, payload); err != nil {
+		if err = writeCandidate(candidate, payload); err != nil {
 			return nil, err
 		}
-		written, verifyErr := m.read(candidate)
+		written, verifyErr := readPath(candidate)
 		if verifyErr != nil || !bytes.Equal(written.bytes, payload) || written.record != value {
 			_ = os.Remove(candidate)
 			return nil, ErrLockPersistence
 		}
 		err = m.install(candidate, path)
-		_ = os.Remove(candidate)
+		_ = os.Remove(candidate) // only this attempt's non-authoritative candidate
 		if err == nil {
-			return &Guard{manager: m, path: path, record: value, bytes: payload}, nil
+			file, openErr := openInstalledCanonical(path)
+			if errors.Is(openErr, errCanonicalGone) && attempt < 3 {
+				continue
+			}
+			if openErr != nil {
+				return nil, openErr
+			}
+			current, readErr := readHandle(file)
+			if readErr != nil || !bytes.Equal(current.bytes, payload) || current.record != value {
+				_ = file.Close()
+				return nil, ErrLockOwnershipLost
+			}
+			return &Guard{path: path, record: value, bytes: payload, file: file}, nil
 		}
-		existing, readErr := m.read(path)
+
+		file, openErr := openCanonical(path)
+		if errors.Is(openErr, errCanonicalGone) {
+			if attempt < 3 {
+				continue
+			}
+			return nil, ErrLockPersistence
+		}
+		if openErr != nil {
+			return nil, openErr
+		}
+		existing, readErr := readHandle(file)
 		if readErr != nil {
+			_ = file.Close()
 			return nil, readErr
 		}
 		if existing.record.Kind != kind || existing.record.ResourceID != resource {
+			_ = file.Close()
 			return nil, ErrLockRecordInvalid
 		}
 		stale, inspectErr := m.stale(existing)
 		if inspectErr != nil {
+			_ = file.Close()
 			return nil, inspectErr
 		}
 		if !stale {
+			_ = file.Close()
 			return nil, ErrLockHeld
 		}
-		again, readErr := m.read(path)
-		if readErr != nil || !bytes.Equal(existing.bytes, again.bytes) {
-			return nil, ErrLockOwnershipLost
-		}
-		stale, inspectErr = m.stale(again)
+		stale, inspectErr = m.stale(existing)
 		if inspectErr != nil {
+			_ = file.Close()
 			return nil, inspectErr
 		}
 		if !stale {
+			_ = file.Close()
 			return nil, ErrLockHeld
 		}
-		if err := os.Remove(path); err != nil {
-			return nil, ErrLockPersistence
+		if err = deleteByHandle(file); err != nil {
+			_ = file.Close()
+			return nil, err
 		}
-		if attempt == 1 {
+		if err = file.Close(); err != nil {
 			return nil, ErrLockPersistence
 		}
 	}
@@ -144,7 +178,7 @@ type readRecord struct {
 	bytes  []byte
 }
 
-func (m *Manager) read(path string) (readRecord, error) {
+func readPath(path string) (readRecord, error) {
 	exists, err := safeEntry(path)
 	if err != nil {
 		return readRecord{}, err
@@ -166,26 +200,45 @@ func (m *Manager) read(path string) (readRecord, error) {
 	}
 	return readRecord{value, data}, nil
 }
+
+func readHandle(file *os.File) (readRecord, error) {
+	info, err := file.Stat()
+	if err != nil || info.IsDir() || info.Size() <= 0 || info.Size() > maxRecordBytes {
+		return readRecord{}, ErrLockRecordInvalid
+	}
+	data := make([]byte, int(info.Size()))
+	n, err := file.ReadAt(data, 0)
+	if (err != nil && !errors.Is(err, io.EOF)) || n != len(data) {
+		return readRecord{}, ErrLockPersistence
+	}
+	value, err := decodeRecord(data)
+	if err != nil {
+		return readRecord{}, err
+	}
+	return readRecord{value, data}, nil
+}
+
 func (m *Manager) stale(value readRecord) (bool, error) {
 	identity, err := m.inspector.Inspect(value.record.OwnerPID)
 	if err != nil {
-		if err == ErrProcessNotFound {
+		if errors.Is(err, ErrProcessNotFound) {
 			return true, nil
 		}
 		return false, ErrLockOwnerUnverifiable
 	}
 	return !exactOwner(value.record, identity), nil
 }
+
 func (m *Manager) check(kind lockKind, resource, name string) error {
-	path := filepath.Join(m.root, name)
-	exists, err := safeEntry(path)
+	file, err := openCanonical(filepath.Join(m.root, name))
+	if errors.Is(err, errCanonicalGone) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
-	if !exists {
-		return nil
-	}
-	value, err := m.read(path)
+	defer file.Close()
+	value, err := readHandle(file)
 	if err != nil {
 		return err
 	}
@@ -201,6 +254,7 @@ func (m *Manager) check(kind lockKind, resource, name string) error {
 	}
 	return ErrLockHeld
 }
+
 func (m *Manager) install(candidate, target string) error {
 	from, err := windows.UTF16PtrFromString(candidate)
 	if err != nil {
@@ -213,11 +267,75 @@ func (m *Manager) install(candidate, target string) error {
 	return windows.MoveFileEx(from, to, windows.MOVEFILE_WRITE_THROUGH)
 }
 
+var errCanonicalGone = errors.New("canonical lock disappeared")
+
+func openCanonical(path string) (*os.File, error) {
+	entry, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil, errCanonicalGone
+	}
+	if err != nil {
+		return nil, ErrLockPersistence
+	}
+	if entry.IsDir() || entry.Mode()&os.ModeSymlink != 0 {
+		return nil, ErrUnsafeLockArtifact
+	}
+	name, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return nil, ErrUnsafeLockArtifact
+	}
+	attributes, err := windows.GetFileAttributes(name)
+	if err != nil {
+		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) {
+			return nil, errCanonicalGone
+		}
+		return nil, ErrLockPersistence
+	}
+	if attributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 || attributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0 {
+		return nil, ErrUnsafeLockArtifact
+	}
+	handle, err := windows.CreateFile(name, windows.GENERIC_READ|windows.DELETE, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_OPEN_REPARSE_POINT, 0)
+	if err != nil {
+		if errors.Is(err, windows.ERROR_SHARING_VIOLATION) || errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
+			return nil, ErrLockHeld
+		}
+		if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) {
+			return nil, errCanonicalGone
+		}
+		return nil, ErrLockPersistence
+	}
+	var info windows.ByHandleFileInformation
+	if err = windows.GetFileInformationByHandle(handle, &info); err != nil || info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 || info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0 {
+		_ = windows.CloseHandle(handle)
+		return nil, ErrUnsafeLockArtifact
+	}
+	return os.NewFile(uintptr(handle), path), nil
+}
+
+func openInstalledCanonical(path string) (*os.File, error) {
+	deadline := time.Now().Add(250 * time.Millisecond)
+	for {
+		file, err := openCanonical(path)
+		if !errors.Is(err, ErrLockHeld) || time.Now().After(deadline) {
+			return file, err
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func deleteByHandle(file *os.File) error {
+	deleteFile := uint32(1)
+	if err := windows.SetFileInformationByHandle(windows.Handle(file.Fd()), windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&deleteFile)), uint32(unsafe.Sizeof(deleteFile))); err != nil {
+		return ErrLockPersistence
+	}
+	return nil
+}
+
 type Guard struct {
-	manager  *Manager
 	path     string
 	record   record
 	bytes    []byte
+	file     *os.File
 	mu       sync.Mutex
 	released bool
 }
@@ -228,14 +346,19 @@ func (g *Guard) Release() error {
 	if g.released {
 		return nil
 	}
-	current, err := g.manager.read(g.path)
-	if err != nil {
+	current, err := readHandle(g.file)
+	if err != nil || !bytes.Equal(current.bytes, g.bytes) || current.record != g.record {
+		_ = g.file.Close()
+		g.released = true
 		return ErrLockOwnershipLost
 	}
-	if !bytes.Equal(current.bytes, g.bytes) || current.record.OperationID != g.record.OperationID {
-		return ErrLockOwnershipLost
+	if err = deleteByHandle(g.file); err != nil {
+		_ = g.file.Close()
+		g.released = true
+		return err
 	}
-	if err = os.Remove(g.path); err != nil {
+	if err = g.file.Close(); err != nil {
+		g.released = true
 		return ErrLockPersistence
 	}
 	g.released = true
@@ -249,8 +372,9 @@ func randomID() (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
-func writeCandidate(path string, data []byte) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+
+func writeCandidate(candidate string, data []byte) error {
+	file, err := os.OpenFile(candidate, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return ErrLockPersistence
 	}
@@ -258,12 +382,12 @@ func writeCandidate(path string, data []byte) error {
 	defer func() {
 		_ = file.Close()
 		if !ok {
-			_ = os.Remove(path)
+			_ = os.Remove(candidate)
 		}
 	}()
 	for len(data) > 0 {
-		n, e := file.Write(data)
-		if e != nil || n == 0 {
+		n, writeErr := file.Write(data)
+		if writeErr != nil || n == 0 {
 			return ErrLockPersistence
 		}
 		data = data[n:]

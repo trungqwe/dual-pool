@@ -13,6 +13,7 @@
 | ISO-004 | Gemini donor request sent to Codex port | Unsupported/unauthorized; no Google credential | Integration trace |
 | AUTH-001 | OAuth never completes | Deadline, cancel if supported, no eligible account | Fake API test |
 | AUTH-002 | Two OAuth flows started concurrently | Second waits/refuses; states never mixed | Concurrency test |
+| P1-LOCK-HANDLE-001 | Two processes reclaim the same stale global/per-file lock simultaneously | Exactly one Guard; loser is held; successor cannot be deleted by pathname | Repeated Windows subprocess test |
 | AUTH-003 | Multiple new auth files appear | Ambiguous association; user decision required | Contract test |
 | AUTH-004 | OAuth succeeds but model missing | Account marked ineligible | Live/mock test |
 | ROUTE-001 | Model display name resembles donor | Passthrough; no reroute | Table test |
