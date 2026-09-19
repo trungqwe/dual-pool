@@ -325,3 +325,9 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Push: PASS to `origin/phase-0/reversible-compatibility`; remote SHA verified directly with `git ls-remote`.
 - Verification: candidate lock validator PASS, 2/2 lock tests PASS, 50/50 Node tests PASS, PowerShell parser, JSON, docs links, privacy/absolute-path scan, staged manifest, and `git diff --check` PASS.
 - PR: not created; Phase 0 was delivered directly to its configured branch.
+
+## Phase 0 candidate-lock validator repair — 2026-09-19
+
+- `verified_capabilities` now accepts only the seven names already backed by the Phase 0 candidate evidence. Unknown, duplicate and non-string verified names fail closed. The present `upstream.lock` is unchanged and valid.
+- `P0-LOCK-ALLOWLIST-001`: 5/5 focused tests, 53/53 full Node tests and `UPSTREAM_LOCK_VALID` PASS. This repairs the Phase 2 entry debt without claiming provider support or changing U-001..U-008.
+- Implementation commit/push: PENDING. Next authorized work: complete the bounded Phase 1 CLI/error/CI foundation on `phase-1/state-foundation` after carrying this repair forward.

@@ -5,6 +5,15 @@ const path = require('node:path');
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const COMMIT = /^[a-f0-9]{40}$/;
+const VERIFIED_CAPABILITIES = new Set([
+  'published_checksum_matches_archive',
+  'github_asset_digest_matches_archive',
+  'binary_version_matches_tag',
+  'loopback_ipv4_bind',
+  'management_key_required',
+  'client_key_required',
+  'credential_free_start_stop_cleanup',
+]);
 
 function fail(code) {
   throw new Error(code);
@@ -25,6 +34,12 @@ function validate(lock) {
   if (lock.release_metadata_url !== `https://github.com/router-for-me/CLIProxyAPI/releases/tag/${lock.tag}`) fail('LOCK_METADATA_URL_INVALID');
 
   if (!Array.isArray(lock.verified_capabilities) || !Array.isArray(lock.unverified_capabilities)) fail('LOCK_CAPABILITIES_INVALID');
+  const seenVerified = new Set();
+  for (const capability of lock.verified_capabilities) {
+    if (!VERIFIED_CAPABILITIES.has(capability)) fail('LOCK_VERIFIED_CAPABILITY_UNKNOWN');
+    if (seenVerified.has(capability)) fail('LOCK_VERIFIED_CAPABILITY_DUPLICATE');
+    seenVerified.add(capability);
+  }
   const overlap = lock.verified_capabilities.filter(value => lock.unverified_capabilities.includes(value));
   if (overlap.length) fail('LOCK_CAPABILITY_CONFLICT');
   for (const required of ['credential_specific_model_inventory', 'provider_specific_response_shapes', 'dedicated_health_endpoint']) {
