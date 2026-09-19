@@ -185,6 +185,14 @@ Exact next task: obtain an official login-capable disposable Codex/Antigravity p
 - Evidence: `docs/reports/2026-09-19T0553Z-phase-0b-u006-profile-clone.md`, `evidence/phase-0b-u006-profile-clone/`.
 - Exact next task: use a supported login-capable disposable Codex/Antigravity profile or explicit user-assisted authentication path that exposes the real account state. Do not start Phase 1 or Cloud Code.
 
+## Delivery receipt — opaque profile-clone boundary
+
+- Implementation/evidence commit: `4518d4a` (`probe(phase-0): verify cloned profile authentication boundary`).
+- Push: PASS to `origin/phase-0/reversible-compatibility`.
+- PR: not created; branch remains the configured Phase 0 branch.
+- Verification: COLD clone evidence, profile classification correction, PowerShell/Node syntax, JSON validation, privacy/absolute-path scan, cleanup controls, integrity manifest, and `git diff --check` PASS.
+- Historical probe residue remains unstaged and untouched.
+
 ## Delivery receipt — U-006 auth-reuse boundary
 
 - Implementation/evidence commit: `b7944df` (`probe(phase-0): record authenticated extension boundary`).
