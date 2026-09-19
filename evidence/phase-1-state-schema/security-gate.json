@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "run_id": "phase-1-state-schema",
+  "status": "PASS",
+  "checks": {
+    "strict_unknown_field_rejection": "PASS",
+    "duplicate_json_key_rejection": "PASS",
+    "strict_utf8": "PASS",
+    "document_size_limits": "PASS",
+    "future_version_rejection": "PASS",
+    "migration_negative_chain": "PASS",
+    "state_secret_field_boundary": "PASS",
+    "ownership_typed_value_union": "PASS",
+    "json_evidence": "PASS",
+    "documentation_links": "PASS",
+    "privacy_and_path_scan": "PASS",
+    "secret_scan": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "contains_local_paths": false,
+  "contains_raw_documents": false,
+  "contains_credentials": false
+}

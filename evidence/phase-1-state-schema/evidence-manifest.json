@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "run_id": "phase-1-state-schema",
+  "status": "PASS",
+  "artifacts": [
+    "test-result.json",
+    "security-gate.json"
+  ],
+  "sanitized": true,
+  "raw_state_included": false,
+  "local_paths_included": false
+}

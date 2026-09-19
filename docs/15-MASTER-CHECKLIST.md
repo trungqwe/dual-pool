@@ -38,7 +38,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Go CLI skeleton and version metadata. Evidence: `internal/app/app_test.go`, `internal/buildinfo/buildinfo_test.go`, `evidence/phase-1-foundation-bootstrap/test-result.json`.
 - [x] Stable errors and exit codes. Evidence: `internal/apperr/apperr_test.go`, `evidence/phase-1-foundation-bootstrap/test-result.json`.
 - [x] Structured allowlist logger. Evidence: `internal/safelog/safelog_test.go`, `evidence/phase-1-dataroot-logging/test-result.json`.
-- [ ] State/ownership schema and migrations.
+- [x] State/ownership schema and migrations. Evidence: `internal/state/`, `evidence/phase-1-state-schema/test-result.json`, `docs/reports/2026-09-19T1620Z-phase-1-state-schema-migrations.md`.
 - [ ] Atomic store and crash recovery.
 - [ ] Global/per-file locks with PID identity.
 - [ ] Windows secret-store implementation reviewed.

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "run_id": "phase-1-state-schema",
+  "status": "PASS",
+  "go_test_functions": 34,
+  "phase_1_state_test_functions": 12,
+  "go_fmt": "PASS",
+  "go_vet": "PASS",
+  "go_test": "PASS",
+  "go_race": "PASS",
+  "go_build": "PASS",
+  "phase_0_node_tests": {
+    "passed": 53,
+    "failed": 0
+  },
+  "upstream_lock": "UPSTREAM_LOCK_VALID",
+  "filesystem_product_state_created": false,
+  "network_used_by_product_tests": false
+}

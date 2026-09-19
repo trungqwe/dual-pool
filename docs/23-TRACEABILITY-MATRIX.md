@@ -60,18 +60,28 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 | Requirement | Test and evidence | Status |
 |---|---|---|
-| P1-CLI-001: supported commands and usage failure | [app tests](../internal/app/app_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS locally; remote CI pending |
-| P1-VERSION-001: deterministic and safe build output | [buildinfo tests](../internal/buildinfo/buildinfo_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS locally; remote CI pending |
-| P1-ERROR-001: exact categories and stable code registry | [error tests](../internal/apperr/apperr_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS locally; remote CI pending |
-| P1-ERROR-REDACTION-001: wrapped cause excluded from human and JSON output | [error tests](../internal/apperr/apperr_test.go), [security gate](../evidence/phase-1-foundation-bootstrap/security-gate.json) | PASS locally; remote CI pending |
-| P1-CI-001: source-only Windows workflow | [workflow](../.github/workflows/ci.yml), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | Workflow defined and parsed locally; remote CI pending |
+| P1-CLI-001: supported commands and usage failure | [app tests](../internal/app/app_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS; Source CI `35452170609` |
+| P1-VERSION-001: deterministic and safe build output | [buildinfo tests](../internal/buildinfo/buildinfo_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS; Source CI `35452170609` |
+| P1-ERROR-001: exact categories and stable code registry | [error tests](../internal/apperr/apperr_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS; Source CI `35452170609` |
+| P1-ERROR-REDACTION-001: wrapped cause excluded from human and JSON output | [error tests](../internal/apperr/apperr_test.go), [security gate](../evidence/phase-1-foundation-bootstrap/security-gate.json) | PASS; Source CI `35452170609` |
+| P1-CI-001: source-only Windows workflow | [workflow](../.github/workflows/ci.yml), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS; Source CI `35452170609` |
 
 ## Phase 1 data-root and logging foundation
 
 | Requirement | Test and evidence | Status |
 |---|---|---|
-| P1-DATAROOT-001: deterministic local-only resolver without filesystem mutation | [resolver tests](../internal/dataroot/dataroot_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
-| P1-LOG-ALLOWLIST-001: typed closed fields, families, levels, routes and error codes | [logger tests](../internal/safelog/safelog_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
+| P1-DATAROOT-001: deterministic local-only resolver without filesystem mutation | [resolver tests](../internal/dataroot/dataroot_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS; Source CI `35453552820` and delivery CI `35453645973` |
+| P1-LOG-ALLOWLIST-001: typed closed fields, families, levels, routes and error codes | [logger tests](../internal/safelog/safelog_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS; Source CI `35453552820` and delivery CI `35453645973` |
 | P1-LOG-REDACTION-001: unit sentinel/path/email/token rejection with zero output | [logger tests](../internal/safelog/safelog_test.go), [security gate](../evidence/phase-1-dataroot-logging/security-gate.json) | Foundation/unit PASS; end-to-end LOG-001 remains open |
-| P1-SESSION-FINGERPRINT-001: keyed deterministic truncated HMAC | [fingerprint tests](../internal/safelog/safelog_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
-| P1-APPERR-UNKNOWN-001: unknown code cannot downgrade to usage error | [error tests](../internal/apperr/apperr_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
+| P1-SESSION-FINGERPRINT-001: keyed deterministic truncated HMAC | [fingerprint tests](../internal/safelog/safelog_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS; Source CI `35453552820` and delivery CI `35453645973` |
+| P1-APPERR-UNKNOWN-001: unknown code cannot downgrade to usage error | [error tests](../internal/apperr/apperr_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS; Source CI `35453552820` and delivery CI `35453645973` |
+
+## Phase 1 state schema and migration foundation
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P1-STATE-SCHEMA-001: typed state v1, account metadata and isolated ports | [state tests](../internal/state/state_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally; remote CI pending |
+| P1-OWNERSHIP-SCHEMA-001: complete ownership records and closed typed values | [ownership tests](../internal/state/ownership_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally; persistence/rollback execution remains open |
+| P1-STATE-CODEC-001: strict fields, duplicate keys, UTF-8, limits and deterministic round trip | [codec implementation](../internal/state/codec.go), [state tests](../internal/state/state_test.go) | PASS locally; remote CI pending |
+| P1-MIGRATION-001: explicit sequential validated migration chain | [migration tests](../internal/state/migration_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally with synthetic 7→8→9 fixtures; product supports v1 only |
+| P1-STATE-SECRET-BOUNDARY-001: closed schema and opaque secret references | [schema tests](../internal/state/state_test.go), [security gate](../evidence/phase-1-state-schema/security-gate.json) | PASS at schema/unit boundary; end-to-end secret scan remains open |
