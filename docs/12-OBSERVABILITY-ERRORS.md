@@ -49,6 +49,7 @@ OAuth tokens, refresh tokens, API/management keys, Authorization/Cookie headers,
 | `POOL_ISOLATION_VIOLATION` | Opposite provider appeared/was selected | Stop all services; release blocker |
 | `ROLLBACK_CONFLICT` | Owned key changed after apply | Manual review; do not overwrite |
 | `SECRET_LEAK_DETECTED` | Scanner found forbidden material | Quarantine artifact and rotate exposed secret |
+| `DATA_ROOT_UNAVAILABLE` | Windows local application-data root is absent or unsafe | Restore a valid local `%LOCALAPPDATA%`; no fallback is used |
 
 Errors return non-zero exit codes by category: usage 2, compatibility 10, config 20, auth 30, service 40, security 50, test 60. Exact mapping is versioned in code and docs.
 
@@ -58,13 +59,21 @@ Phase 1 foundation mapping:
 |---|---|
 | usage (2) | `INVALID_COMMAND`, `INVALID_ARGUMENT` |
 | compatibility (10) | `UPSTREAM_VERSION_MISMATCH`, `AG_SCHEMA_UNSUPPORTED`, `CODEX_PICKER_ROUTE_MISMATCH`, `CATALOG_VERSION_MISMATCH` |
-| config (20) | `CONFIG_CONFLICT`, `ROLLBACK_CONFLICT` |
+| config (20) | `CONFIG_CONFLICT`, `ROLLBACK_CONFLICT`, `DATA_ROOT_UNAVAILABLE` |
 | auth (30) | `OAUTH_TIMEOUT`, `ACCOUNT_INELIGIBLE` |
 | service (40) | `PORT_IN_USE`, `MANAGEMENT_UNAVAILABLE`, `AG_POOL_UNAVAILABLE` |
 | security (50) | `PROCESS_IDENTITY_MISMATCH`, `POOL_ISOLATION_VIOLATION`, `SECRET_LEAK_DETECTED` |
 | test (60) | No operational code in this foundation slice. |
 
 `PROCESS_IDENTITY_MISMATCH` is classified as security because acting on an unverified PID could affect a foreign process. The Go `Error` keeps its underlying cause for internal inspection, while normal human and JSON renderers use only the safe registry message. `poolbridge` with no arguments prints help and exits successfully. Commands with extra arguments return `INVALID_ARGUMENT` and exit 2.
+
+## Phase 1 logging foundation
+
+`internal/safelog` emits one compact JSON object plus newline to an injected writer. It accepts only the fields listed above, validates the documented event families and the levels `debug`, `info`, `warn`, and `error`, and rejects the entire event before writing when any field, value, family, level, or registered error code is invalid. It has no file sink and does not use the product data root.
+
+String metadata uses field-specific syntax and length limits plus a defense-in-depth guard for token-like values, email addresses, absolute local paths, CR/LF, NUL and synthetic secret/session sentinels. `route_template` rejects queries and fragments. `bytes_class` is one of `empty`, `tiny`, `small`, `medium`, `large`, or `oversize`. `config_hash_prefix` is exactly 12 lowercase hex characters.
+
+Session correlation uses HMAC-SHA-256 with a caller-owned key. Only the first 16 digest bytes are returned as 32 lowercase hex characters. Empty keys and raw session identifiers are rejected; the logger never persists either input.
 
 ## Doctor output
 

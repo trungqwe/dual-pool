@@ -37,13 +37,14 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 - [x] Go CLI skeleton and version metadata. Evidence: `internal/app/app_test.go`, `internal/buildinfo/buildinfo_test.go`, `evidence/phase-1-foundation-bootstrap/test-result.json`.
 - [x] Stable errors and exit codes. Evidence: `internal/apperr/apperr_test.go`, `evidence/phase-1-foundation-bootstrap/test-result.json`.
-- [ ] Structured allowlist logger.
+- [x] Structured allowlist logger. Evidence: `internal/safelog/safelog_test.go`, `evidence/phase-1-dataroot-logging/test-result.json`.
 - [ ] State/ownership schema and migrations.
 - [ ] Atomic store and crash recovery.
 - [ ] Global/per-file locks with PID identity.
 - [ ] Windows secret-store implementation reviewed.
 - [ ] Config backup/patch/rollback engine.
 - [ ] Redaction and sentinel-secret tests.
+- [x] Phase 1 reusable logger redaction and sentinel unit layer. Full end-to-end `LOG-001` remains open. Evidence: `internal/safelog/safelog_test.go`, `evidence/phase-1-dataroot-logging/security-gate.json`.
 
 ## CLIProxyAPI lifecycle
 

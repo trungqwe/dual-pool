@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "phase": "Phase 1 data-root and logging foundation",
+  "status": "PASS_LOCAL_REMOTE_CI_PENDING",
+  "environment": "windows/amd64",
+  "go_version": "go1.26.0",
+  "start_commit": "8da48f2c3897d57eb43c180555bfff01a0263f31",
+  "go_test_functions": 22,
+  "phase_0_node_tests": 53,
+  "tests": [
+    { "test_id": "P1-DATAROOT-001", "status": "PASS" },
+    { "test_id": "P1-LOG-ALLOWLIST-001", "status": "PASS" },
+    { "test_id": "P1-LOG-REDACTION-001", "status": "PASS_FOUNDATION_UNIT" },
+    { "test_id": "P1-SESSION-FINGERPRINT-001", "status": "PASS" },
+    { "test_id": "P1-APPERR-UNKNOWN-001", "status": "PASS" }
+  ],
+  "commands": {
+    "go_fmt": "PASS",
+    "go_vet": "PASS",
+    "go_test": "PASS",
+    "go_race": "PASS",
+    "go_build": "PASS",
+    "phase_0_node_regression": "PASS_53_OF_53",
+    "upstream_lock_validator": "UPSTREAM_LOCK_VALID",
+    "remote_ci": "PENDING"
+  },
+  "open_requirement": "LOG-001 end-to-end exercise remains open"
+}

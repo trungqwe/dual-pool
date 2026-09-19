@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "phase": "Phase 1 data-root and logging foundation",
+  "hash_algorithm": "SHA-256",
+  "artifacts": [
+    {
+      "path": "internal/app/app.go",
+      "sha256": "1f24d8a1dcb09c1d3a1f12924be82da29e4f729caf3c89aff2104d023cdb015b",
+      "bytes": 1286
+    },
+    {
+      "path": "internal/apperr/apperr.go",
+      "sha256": "1b3eb24813227b587c9a44eeda36f6d3256e28565aca247364d5805839b4c7dc",
+      "bytes": 4993
+    },
+    {
+      "path": "internal/apperr/apperr_test.go",
+      "sha256": "bf6a89308295b0f416caae8c829f3af78a827a8daab0dc457e96130ea24196fe",
+      "bytes": 3658
+    },
+    {
+      "path": "internal/dataroot/dataroot_windows.go",
+      "sha256": "7af3464bf51fdd6360a97388536a324fe137753b8e3d7fa063adcf2eeb325aec",
+      "bytes": 2286
+    },
+    {
+      "path": "internal/dataroot/dataroot_test.go",
+      "sha256": "e65700681936487257ef13a20fd08c5c1ed634ec99cdf27fe430726543bb8ae9",
+      "bytes": 2151
+    },
+    {
+      "path": "internal/safelog/fields.go",
+      "sha256": "d6046dff4c34a7ff4a70a577b5c6259234891fe393c57ba2ef86713abbecaba0",
+      "bytes": 4361
+    },
+    {
+      "path": "internal/safelog/fingerprint.go",
+      "sha256": "5c35b28207696faae43f351cf710d61dd129bd87c765c80a08787e8066ce8357",
+      "bytes": 561
+    },
+    {
+      "path": "internal/safelog/safelog.go",
+      "sha256": "ea13529ccc610728c7f51bceba67d4cb2381220308e88db3907d1b56ca744b78",
+      "bytes": 4921
+    },
+    {
+      "path": "internal/safelog/safelog_test.go",
+      "sha256": "318d1bc587dd83d5da7b2d04068b7fc70720015f0e689662a776130ffb69f9a0",
+      "bytes": 7491
+    },
+    {
+      "path": "docs/reports/2026-09-19T1545Z-phase-1-dataroot-logging.md",
+      "sha256": "6510efe14aa05c1634dc16d370cac848bd570cbabfd667e445efcc686d8a4bc5",
+      "bytes": 6700
+    },
+    {
+      "path": "evidence/phase-1-dataroot-logging/test-result.json",
+      "sha256": "b562a7ca9be0fad21798fb5b225c388f3b7f45ee695ec618298b991d5cd207e8",
+      "bytes": 974
+    },
+    {
+      "path": "evidence/phase-1-dataroot-logging/security-gate.json",
+      "sha256": "db5cf08426b3f34b86a2f42787d95b779024e7e0f1f7224b8534b41f145facf9",
+      "bytes": 637
+    }
+  ],
+  "self_excluded": true,
+  "mutable_delivery_receipt_excluded": "docs/18-HANDOFF.md"
+}

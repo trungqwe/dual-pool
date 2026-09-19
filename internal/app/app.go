@@ -35,7 +35,7 @@ func (application App) Run(args []string, stdout, stderr io.Writer) int {
 		return apperr.CategorySuccess.ExitCode()
 	}
 	if len(args) != 1 {
-		err := apperr.New(apperr.CodeInvalidArgument, nil)
+		err := apperr.MustNew(apperr.CodeInvalidArgument, nil)
 		_, _ = fmt.Fprintln(stderr, err.Error())
 		return err.Category().ExitCode()
 	}
@@ -48,7 +48,7 @@ func (application App) Run(args []string, stdout, stderr io.Writer) int {
 		_, _ = io.WriteString(stdout, helpText)
 		return apperr.CategorySuccess.ExitCode()
 	default:
-		err := apperr.New(apperr.CodeInvalidCommand, nil)
+		err := apperr.MustNew(apperr.CodeInvalidCommand, nil)
 		_, _ = fmt.Fprintln(stderr, err.Error())
 		return err.Category().ExitCode()
 	}

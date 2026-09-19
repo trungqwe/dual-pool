@@ -44,6 +44,7 @@ func TestRegistryCompletenessAndMappings(t *testing.T) {
 		"SECRET_LEAK_DETECTED":        CategorySecurity,
 		"INVALID_COMMAND":             CategoryUsage,
 		"INVALID_ARGUMENT":            CategoryUsage,
+		"DATA_ROOT_UNAVAILABLE":       CategoryConfig,
 	}
 	registry := Registry()
 	if len(registry) != len(expected) {
@@ -67,7 +68,10 @@ func TestRegistryCompletenessAndMappings(t *testing.T) {
 func TestWrappedCauseNeverLeaks(t *testing.T) {
 	sensitive := `open C:\Users\Example\secret: Bearer SENTINEL_SECRET_123456789 user@example.invalid`
 	cause := errors.New(sensitive)
-	err := New(CodeConfigConflict, cause)
+	err, constructionErr := New(CodeConfigConflict, cause)
+	if constructionErr != nil {
+		t.Fatal(constructionErr)
+	}
 	if !errors.Is(err, cause) {
 		t.Fatal("cause is not internally inspectable")
 	}
@@ -88,5 +92,16 @@ func TestWrappedCauseNeverLeaks(t *testing.T) {
 	}
 	if got := err.Envelope().ExitCode; got != 20 {
 		t.Fatalf("envelope exit = %d, want 20", got)
+	}
+}
+
+func TestUnknownCodeCannotBecomeUsageError(t *testing.T) {
+	cause := errors.New("Bearer SENTINEL_SECRET_123456789")
+	err, constructionErr := New(Code("UNREGISTERED_PRIVATE_VALUE"), cause)
+	if err != nil || constructionErr == nil {
+		t.Fatalf("unknown code returned err=%v constructionErr=%v", err, constructionErr)
+	}
+	if strings.Contains(constructionErr.Error(), "UNREGISTERED_PRIVATE_VALUE") || strings.Contains(constructionErr.Error(), "SENTINEL_SECRET") || strings.Contains(constructionErr.Error(), "INVALID_ARGUMENT") {
+		t.Fatal("construction error leaked input or became a usage error")
 	}
 }

@@ -341,3 +341,12 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Implementation commit: `5d9b73175ab5b50ca2e5602bb141290dcba2dac0`; push PASS to `origin/phase-1/state-foundation`, verified with `git ls-remote`. The push reported a local Git config write error after the remote accepted the branch; remote SHA and GitHub CI independently confirm delivery.
 - Remote CI: **PASS**, [Source CI run 35452170609](https://github.com/trungqwe/dual-pool/actions/runs/35452170609) on the implementation SHA. PR: not requested and not created.
 - Report: `docs/reports/2026-09-19T1415Z-phase-1-foundation-bootstrap.md`; its pre-push `REMOTE_CI=PENDING` snapshot remains immutable. Exact next Phase 1 task: data-root resolver plus structured allowlist logger/redaction foundation.
+
+## Phase 1 data-root and logging slice — 2026-09-19
+
+- Authoritative Phase 0 HEAD before this run: `6619034bc7edd79af3101ee7015a3de724b41542`. Authoritative Phase 1 HEAD before this run: `8da48f2c3897d57eb43c180555bfff01a0263f31`.
+- Phase 1 already contains the functional Phase 0 validator repair. Phase 0 delivery-receipt-only history is not a required ancestor of Phase 1; no cosmetic merge/cherry-pick was performed.
+- Implemented a pure Windows local data-root resolver, typed metadata-only JSON logger, structural sensitive-value rejection, 16-byte HMAC-SHA-256 session fingerprint, and checked application-error construction. No directory, file, log sink, user config, listener or live provider operation was created.
+- Local gates: 22 Go test functions, race, vet, build, 53/53 Phase 0 Node tests and candidate lock validator PASS. `P1-LOG-REDACTION-001` foundation/unit proof is complete; end-to-end `LOG-001` remains open.
+- Implementation commit, remote CI, delivery SHA and remote HEAD: PENDING. Report: `docs/reports/2026-09-19T1545Z-phase-1-dataroot-logging.md`.
+- Exact next Phase 1 task after delivery: state/ownership schema v1 plus migration framework, without durable persistence.

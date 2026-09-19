@@ -1,6 +1,9 @@
 package apperr
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type Category int
 
@@ -59,6 +62,7 @@ const (
 	CodeSecretLeakDetected       Code = "SECRET_LEAK_DETECTED"
 	CodeInvalidCommand           Code = "INVALID_COMMAND"
 	CodeInvalidArgument          Code = "INVALID_ARGUMENT"
+	CodeDataRootUnavailable      Code = "DATA_ROOT_UNAVAILABLE"
 )
 
 type Definition struct {
@@ -83,6 +87,14 @@ var registry = map[Code]Definition{
 	CodeSecretLeakDetected:       {CategorySecurity, "forbidden sensitive material was detected"},
 	CodeInvalidCommand:           {CategoryUsage, "command is not recognized"},
 	CodeInvalidArgument:          {CategoryUsage, "argument is invalid"},
+	CodeDataRootUnavailable:      {CategoryConfig, "local application data root is unavailable"},
+}
+
+var errUnregisteredCode = errors.New("unregistered application error code")
+
+func IsRegistered(code Code) bool {
+	_, ok := registry[code]
+	return ok
 }
 
 func Registry() map[Code]Definition {
@@ -100,13 +112,20 @@ type Error struct {
 	cause    error
 }
 
-func New(code Code, cause error) *Error {
+func New(code Code, cause error) (*Error, error) {
 	definition, ok := registry[code]
 	if !ok {
-		definition = registry[CodeInvalidArgument]
-		code = CodeInvalidArgument
+		return nil, errUnregisteredCode
 	}
-	return &Error{code: code, message: definition.Message, category: definition.Category, cause: cause}
+	return &Error{code: code, message: definition.Message, category: definition.Category, cause: cause}, nil
+}
+
+func MustNew(code Code, cause error) *Error {
+	err, constructionErr := New(code, cause)
+	if constructionErr != nil {
+		panic(constructionErr)
+	}
+	return err
 }
 
 func (err *Error) Error() string      { return fmt.Sprintf("%s: %s", err.code, err.message) }

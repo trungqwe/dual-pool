@@ -65,3 +65,13 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P1-ERROR-001: exact categories and stable code registry | [error tests](../internal/apperr/apperr_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS locally; remote CI pending |
 | P1-ERROR-REDACTION-001: wrapped cause excluded from human and JSON output | [error tests](../internal/apperr/apperr_test.go), [security gate](../evidence/phase-1-foundation-bootstrap/security-gate.json) | PASS locally; remote CI pending |
 | P1-CI-001: source-only Windows workflow | [workflow](../.github/workflows/ci.yml), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | Workflow defined and parsed locally; remote CI pending |
+
+## Phase 1 data-root and logging foundation
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P1-DATAROOT-001: deterministic local-only resolver without filesystem mutation | [resolver tests](../internal/dataroot/dataroot_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
+| P1-LOG-ALLOWLIST-001: typed closed fields, families, levels, routes and error codes | [logger tests](../internal/safelog/safelog_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
+| P1-LOG-REDACTION-001: unit sentinel/path/email/token rejection with zero output | [logger tests](../internal/safelog/safelog_test.go), [security gate](../evidence/phase-1-dataroot-logging/security-gate.json) | Foundation/unit PASS; end-to-end LOG-001 remains open |
+| P1-SESSION-FINGERPRINT-001: keyed deterministic truncated HMAC | [fingerprint tests](../internal/safelog/safelog_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
+| P1-APPERR-UNKNOWN-001: unknown code cannot downgrade to usage error | [error tests](../internal/apperr/apperr_test.go), [result](../evidence/phase-1-dataroot-logging/test-result.json) | PASS locally; remote CI pending |
