@@ -31,6 +31,18 @@ func newFixture(t *testing.T, options ...Option) *fixture {
 	if err := os.WriteFile(f.target, f.original, 0600); err != nil {
 		t.Fatal(err)
 	}
+	if !safeLocalAbsolute(f.target) {
+		t.Fatal("TEMP target rejected by lexical local-path gate")
+	}
+	if _, err := safeExistingDir(filepath.Dir(f.target)); err != nil {
+		t.Fatal("TEMP target parent rejected by directory gate")
+	}
+	if _, err := safeTarget(f.target); err != nil {
+		t.Fatal("TEMP target rejected by artifact gate")
+	}
+	if _, err := fileIdentity(f.target); err != nil {
+		t.Fatal("TEMP target rejected by identity gate")
+	}
 	var err error
 	f.locks, err = lockfile.NewManager(f.lockDir)
 	if err != nil {
