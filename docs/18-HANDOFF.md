@@ -302,3 +302,10 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Cleanup PASS: probe, watchdog, recorder, listener, and shadow absent. Real config remained marker-free and byte-identical through cleanup with SHA-256 `F8D0FC86632716BC202660E0A544DB1BB26622175C2865B53D4B01B7A227B43F`.
 - U-006 remains **BLOCKED: WATCHDOG_STALL_REQUIRES_FORCED_OWNED_PROCESS_CLEANUP**. Auth recognition, Astra visibility, and target wire acceptance remain `UNKNOWN`; no second live probe was launched.
 - Exact next task: record safe-isolation exhaustion for U-006; do not return to real-config mutation. Report: `reports/2026-09-19T1335Z-phase-0b-shadow-live-cleanup.md`.
+
+### Delivery receipt — blocked shadow cleanup
+
+- Live evidence commit: `463fbeeabbda5759ddd9135d6291ab862cf4cf7e` (`probe(phase-0): record blocked shadow cleanup`).
+- Push: PASS to `origin/phase-0/reversible-compatibility`; remote SHA verified directly with `git ls-remote`.
+- Security gate and manifest: PASS. No raw secret, user path, PID, port, SID, auth state, session content, or prompt value was committed.
+- PR: not created; direct delivery to the configured Phase 0 branch was requested.
