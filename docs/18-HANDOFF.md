@@ -318,3 +318,10 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Candidate upstream: CLIProxyAPI `v7.3.7`, commit `b773607e3e7756dc6020a291825e4eb08899595a`; deterministic metadata and hashes are in `upstream.lock`. `config_adapter_version` remains `UNIMPLEMENTED`.
 - Preserved blockers: U-001..004 and U-006 `BLOCKED`; U-008 `PARTIAL_UNKNOWN`; U-005 and U-007 `PROBED`.
 - Exact next task: Phase 1 — create the Go CLI skeleton, version output, stable error envelope, and initial unit-test/CI foundation. No live IDE/provider integration.
+
+### Delivery receipt — Phase 0 closure
+
+- Closure commit: `5149e7ed7c21f37b9984d75be55314b6975f1663` (`docs(phase-0): close compatibility audit with blockers`).
+- Push: PASS to `origin/phase-0/reversible-compatibility`; remote SHA verified directly with `git ls-remote`.
+- Verification: candidate lock validator PASS, 2/2 lock tests PASS, 50/50 Node tests PASS, PowerShell parser, JSON, docs links, privacy/absolute-path scan, staged manifest, and `git diff --check` PASS.
+- PR: not created; Phase 0 was delivered directly to its configured branch.
