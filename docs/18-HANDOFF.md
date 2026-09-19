@@ -2,6 +2,8 @@
 
 ## Latest authoritative Phase 0B status — 2026-09-19
 
+Delivery receipt: implementation/evidence commit `e31fd58` (`probe(phase-0): verify parallel Codex picker routing`) đã push thành công từ `c55cd44` lên remote branch `phase-0/reversible-compatibility`. Chưa tạo PR.
+
 Gate `P0B-CX-TRANSPORT-001` remains PASS. The two-request parallel extension probe is **BLOCKED: EXTENSION_PAYLOAD_NOT_PARSEABLE**: the temporary extension reached loopback `POST /v1/responses` with `application/json` and an Authorization header, but the request body could not be safely parsed without retaining raw content. No model or prompt sentinel was inferred. U-005 remains `PARTIAL / UNKNOWN`; U-006 remains `BLOCKED`; U-001..U-004 remain `BLOCKED`; U-007 is `PROBED`; U-008 is `PARTIAL / UNKNOWN`.
 
 The original Antigravity instance survived every probe. Temporary extension silo, user-data, `CODEX_HOME`, recorder and listener cleanup passed; real Codex and Antigravity settings hashes were unchanged. Evidence: [status](../evidence/phase-0b-codex-extension/phase-0b-status-extension.json), [result](../evidence/phase-0b-codex-extension/codex-extension-two-request-20260919T031615744Z.json), [security gate](../evidence/phase-0b-codex-extension/security-gate.json), [manifest](../evidence/phase-0b-codex-extension/evidence-manifest.json).
