@@ -435,3 +435,17 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Real product root touched: false. Provider credentials touched: false. Synthetic credentials are registered for exact cleanup. The checklist remains open until remote CI passes; four distinct strong product secrets remains open until product initialization exists.
 - Report: `docs/reports/2026-09-19T1821Z-phase-1-windows-secret-store.md`. Evidence: `evidence/phase-1-secret-store/`.
 - Exact next Phase 1 task after delivery: config backup/patch/rollback engine using synthetic fixtures only. Do not begin it in this run.
+
+### Windows secret-store delivery receipt
+
+- Start HEAD: `6fbab30dc5ae3b3668cdbf330bfbc5037607bc5e` on `phase-1/state-foundation`.
+- Secret-store implementation commit: `053a87b24334d514cfdf1dcf049ad599dc52a952`. Its Source CI `35461530713` confirmed the WinCred package passed but exposed a pre-existing lock attribute transition race in the required full regression suite, so it was not accepted as delivery PASS.
+- Scoped correction commit: `6e0b4b2b2a01494a3b6c04dbbb4ef3bde54e90db`. It bounds transient `GetFileAttributesW` access-denied handling to the same 250 ms window already used for canonical `CreateFileW`, while preserving fail-closed behavior and handle-based deletion.
+- Corrected implementation Source CI: **PASS**, [run 35462429013](https://github.com/trungqwe/dual-pool/actions/runs/35462429013). Go format, module verification, vet, 72-test Go suite including real WinCred operations, Windows build, Phase 0 53/53 and candidate-lock validation all passed.
+- Local race instrumentation PASS, including the 211-second lock stress. Focused stale-reclaim stress passed five complete runs after the correction.
+- Backend: Windows Credential Manager, generic credentials, current-user credential set, local-machine persistence, four fixed versioned targets, no enumeration. Cross-process proof and exact synthetic cleanup PASS locally and in remote Windows CI.
+- Product root touched: false. Provider credentials touched: false. Product credential targets used by tests: false. Synthetic secrets, digests, usernames, PIDs and target values are absent from committed evidence.
+- Checklist movement: Windows secret-store implementation reviewed is complete. Four distinct strong product secrets remains open until product initialization generates them.
+- Delivery receipt commit: this commit; its SHA and delivery CI are verified after commit because a commit cannot contain its own SHA.
+- Push: normal fast-forward. PR: not requested and not created.
+- Phase 1 remains open. Exact next task: config backup/patch/rollback engine using synthetic fixtures only.

@@ -122,10 +122,10 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 | Requirement | Test and evidence | Status |
 |---|---|---|
-| P1-SECRET-STORE-API-001: closed four-purpose registry, validation and safe errors | [unit tests](../internal/secretstore/store_test.go), [result](../evidence/phase-1-secret-store/test-result.json) | Local PASS; remote CI pending |
-| P1-SECRET-CREDMAN-001: generic local-machine exact-target CRUD and replacement | [WinCred integration](../internal/secretstore/windows_test.go), [decision](../evidence/phase-1-secret-store/decision.json) | Local Windows PASS; remote CI pending |
-| P1-SECRET-CROSS-PROCESS-001: child process reads exact credential without secret transport | [WinCred integration](../internal/secretstore/windows_test.go), [result](../evidence/phase-1-secret-store/test-result.json) | Local Windows PASS; remote CI pending |
-| P1-SECRET-ISOLATION-001: four synthetic values remain purpose-isolated | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | Local Windows PASS; does not complete product-key generation |
-| P1-SECRET-CLEANUP-001: exact pre/post cleanup and idempotent delete | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | Local Windows PASS; no enumeration |
+| P1-SECRET-STORE-API-001: closed four-purpose registry, validation and safe errors | [unit tests](../internal/secretstore/store_test.go), [result](../evidence/phase-1-secret-store/test-result.json) | PASS; Source CI `35462429013` |
+| P1-SECRET-CREDMAN-001: generic local-machine exact-target CRUD and replacement | [WinCred integration](../internal/secretstore/windows_test.go), [decision](../evidence/phase-1-secret-store/decision.json) | PASS on local and GitHub-hosted Windows; Source CI `35462429013` |
+| P1-SECRET-CROSS-PROCESS-001: child process reads exact credential without secret transport | [WinCred integration](../internal/secretstore/windows_test.go), [result](../evidence/phase-1-secret-store/test-result.json) | PASS; Source CI `35462429013` |
+| P1-SECRET-ISOLATION-001: four synthetic values remain purpose-isolated | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS; Source CI `35462429013`; does not complete product-key generation |
+| P1-SECRET-CLEANUP-001: exact pre/post cleanup and idempotent delete | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS; Source CI `35462429013`; no enumeration |
 | P1-SECRET-NO-ENUMERATION-001: production has no broad credential API | [source gate](../internal/secretstore/store_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS |
 | P1-SECRET-NO-PROVIDER-TOKEN-001: store owns no provider credential | [source gate](../internal/secretstore/store_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS; FR-005 preserved |
