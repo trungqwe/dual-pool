@@ -48,7 +48,12 @@ func TestWindowsCredentialManagerIntegration(t *testing.T) {
 	purposes := []Purpose{CodexClientKey, CodexManagementKey, GoogleClientKey, GoogleManagementKey}
 	t.Cleanup(func() {
 		for _, purpose := range purposes {
-			_ = store.Delete(purpose)
+			if err := store.Delete(purpose); err != nil {
+				t.Errorf("exact credential cleanup failed: %v", err)
+			}
+			if _, err := store.Get(purpose); !errors.Is(err, ErrNotFound) {
+				t.Errorf("exact credential cleanup verification failed: %v", err)
+			}
 		}
 	})
 	for _, purpose := range purposes {
@@ -132,6 +137,14 @@ func TestWindowsCredentialManagerIntegration(t *testing.T) {
 			t.Fatal("remaining purpose changed")
 		}
 		Zero(remaining)
+	}
+	for _, purpose := range purposes {
+		if err := store.Delete(purpose); err != nil {
+			t.Fatalf("final exact cleanup failed: %v", err)
+		}
+		if _, err := store.Get(purpose); !errors.Is(err, ErrNotFound) {
+			t.Fatalf("final exact cleanup verification failed: %v", err)
+		}
 	}
 }
 

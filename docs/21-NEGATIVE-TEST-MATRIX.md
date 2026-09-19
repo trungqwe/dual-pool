@@ -42,3 +42,7 @@
 | DEL-001 | ZIP/report contains auth JSON/key | Packaging fails and artifact quarantined | Artifact scan |
 
 All rows are mandatory when their component enters scope. `BLOCKED` or `SKIPPED` rows remain open in the checklist.
+
+## Phase 1 config transaction component proof
+
+CFG-001 through CFG-004 pass against disposable Windows TOML fixtures in `internal/configtxn`. CFG-001 injects external drift immediately before CAS and proves those bytes survive. CFG-002 covers pre-commit fault boundaries and replacement failure with the original target intact. CFG-003 uses both deterministic fault points and abrupt subprocess exits before and after `ReplaceFileW`, followed by a fresh engine recovery. CFG-004 changes an owned value and proves rollback returns `ErrRollbackConflict` without replacing the target. These are E3 component results; installed Codex acceptance remains open.

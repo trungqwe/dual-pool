@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "scope": "synthetic_windows_temp_fixtures",
+  "package": "internal/configtxn",
+  "status": "PASS",
+  "stable_tests": [
+    "P1-CONFIG-TOML-SURGICAL-001",
+    "P1-CONFIG-BACKUP-001",
+    "P1-CONFIG-CAS-001",
+    "P1-CONFIG-OWNERSHIP-001",
+    "P1-CONFIG-RECOVERY-001",
+    "P1-CONFIG-ROLLBACK-001",
+    "P1-CONFIG-ROLLBACK-CONFLICT-001",
+    "P1-CONFIG-IDEMPOTENCE-001",
+    "P1-CONFIG-GLOBAL-LOCK-001",
+    "P1-SECRET-CLEANUP-FAILCLOSED-001"
+  ],
+  "subprocess_crash_cases": 3,
+  "real_config_touched": false,
+  "product_root_touched": false
+}

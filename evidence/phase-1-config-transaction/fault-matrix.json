@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "apply_fault_points": 11,
+  "abrupt_subprocess_apply_cases": 2,
+  "cfg_001": "PASS",
+  "cfg_002": "PASS",
+  "cfg_003": "PASS",
+  "allowed_outcomes": ["original_unapplied", "applied_and_owned", "conflict_with_diagnostics"]
+}

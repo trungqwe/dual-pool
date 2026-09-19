@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "files": [
+    "test-result.json",
+    "fault-matrix.json",
+    "rollback-matrix.json",
+    "security-gate.json"
+  ],
+  "contains_absolute_paths": false,
+  "contains_config_bodies": false,
+  "contains_secrets": false
+}

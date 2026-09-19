@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "rollback_fault_points": 8,
+  "abrupt_subprocess_rollback_cases": 1,
+  "normal_rollback": "PASS",
+  "unrelated_edit_preserved": "PASS",
+  "owned_value_conflict": "PASS",
+  "second_rollback_noop": "PASS"
+}

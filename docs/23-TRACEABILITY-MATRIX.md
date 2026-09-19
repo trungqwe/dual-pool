@@ -129,3 +129,19 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P1-SECRET-CLEANUP-001: exact pre/post cleanup and idempotent delete | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS; Source CI `35462429013`; no enumeration |
 | P1-SECRET-NO-ENUMERATION-001: production has no broad credential API | [source gate](../internal/secretstore/store_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS |
 | P1-SECRET-NO-PROVIDER-TOKEN-001: store owns no provider credential | [source gate](../internal/secretstore/store_test.go), [security gate](../evidence/phase-1-secret-store/security-gate.json) | PASS; FR-005 preserved |
+
+## Phase 1 config transaction engine
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P1-SECRET-CLEANUP-FAILCLOSED-001: fallback cleanup reports failure and final exact-target reads prove absence | [WinCred integration](../internal/secretstore/windows_test.go), [security gate](../evidence/phase-1-config-transaction/security-gate.json) | PASS; four synthetic targets, no enumeration |
+| P1-CONFIG-TOML-SURGICAL-001: parser validation, literal-span edits, raw unrelated-byte and BOM/newline preservation | [TOML tests](../internal/configtxn/toml_test.go), [result](../evidence/phase-1-config-transaction/test-result.json) | PASS on LF, CRLF and BOM+CRLF synthetic fixtures |
+| P1-CONFIG-BACKUP-001: exact verified exclusive pre-write backup | [engine tests](../internal/configtxn/engine_test.go), [security gate](../evidence/phase-1-config-transaction/security-gate.json) | PASS; product backup ACL gate remains open |
+| P1-CONFIG-CAS-001 / CFG-001: final external-writer CAS | [engine tests](../internal/configtxn/engine_test.go), [fault matrix](../evidence/phase-1-config-transaction/fault-matrix.json) | PASS; external bytes preserved |
+| P1-CONFIG-OWNERSHIP-001: PENDING precedes replace and APPLIED follows verified commit | [engine](../internal/configtxn/engine.go), [fault matrix](../evidence/phase-1-config-transaction/fault-matrix.json) | PASS |
+| P1-CONFIG-RECOVERY-001 / CFG-003: PRE/POST/damaged/drift recovery protocol | [recovery tests](../internal/configtxn/recovery_test.go), [fault matrix](../evidence/phase-1-config-transaction/fault-matrix.json) | PASS at component level; three abrupt subprocess boundaries included |
+| P1-CONFIG-ROLLBACK-001: restore original presence/value and preserve unrelated edits | [rollback tests](../internal/configtxn/engine_test.go), [rollback matrix](../evidence/phase-1-config-transaction/rollback-matrix.json) | PASS |
+| P1-CONFIG-ROLLBACK-CONFLICT-001 / CFG-004: owned drift fails closed | [engine tests](../internal/configtxn/engine_test.go), [security gate](../evidence/phase-1-config-transaction/security-gate.json) | PASS |
+| P1-CONFIG-IDEMPOTENCE-001: repeated Apply/Rollback/Recover | [engine and recovery tests](../internal/configtxn/), [result](../evidence/phase-1-config-transaction/test-result.json) | PASS |
+| P1-CONFIG-GLOBAL-LOCK-001: process contention before transaction preparation; target lock spans CAS/replace | [subprocess test](../internal/configtxn/recovery_test.go), [security gate](../evidence/phase-1-config-transaction/security-gate.json) | PASS |
+| CFG-002: pre-replace persistence/replacement failure | [fault tests](../internal/configtxn/recovery_test.go), [fault matrix](../evidence/phase-1-config-transaction/fault-matrix.json) | PASS; original intact |

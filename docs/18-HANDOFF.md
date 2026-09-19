@@ -449,3 +449,14 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Delivery receipt commit: this commit; its SHA and delivery CI are verified after commit because a commit cannot contain its own SHA.
 - Push: normal fast-forward. PR: not requested and not created.
 - Phase 1 remains open. Exact next task: config backup/patch/rollback engine using synthetic fixtures only.
+## Phase 1 config transaction engine — implementation pending delivery
+
+- Scope: seventh bounded Phase 1 slice on `phase-1/state-foundation`, starting at `94db0342dbb8c1401fcc87dceaae1531d01f3ca6`.
+- Implemented a TEMP-only Codex TOML transaction engine with exact backup, strict marker, PENDING/APPLIED ownership, GLOBAL/per-target locks, final CAS, `ReplaceFileW`, PRE/POST recovery, surgical rollback, conflict handling and idempotence.
+- Fixed `SECRET-TEST-CLEANUP-001`: fallback WinCred cleanup reports errors, and the integration test proves all four exact synthetic targets are absent at completion.
+- Pinned `github.com/pelletier/go-toml/v2 v2.4.3`; no serializer or unstable API is exposed or used.
+- Production owned registry is closed; catalog fallback is disabled by default. Antigravity production adapter: absent.
+- U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN. Real configs and product root were not touched.
+- Product-root/backup ACL acceptance and full end-to-end `LOG-001` remain open. Phase 1 is not closed.
+- Delivery SHA/CI/remote receipt will be appended after observable CI.
+- Exact next task after delivery: **Phase 1 — exit reconciliation and remaining-foundation gate audit**.

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "status": "PASS_WITH_OPEN_PRODUCT_BOUNDARIES",
+  "secret_test_cleanup_fail_closed": true,
+  "real_codex_config_touched": false,
+  "real_antigravity_config_touched": false,
+  "real_product_root_touched": false,
+  "antigravity_production_key_guessed": false,
+  "backup_exactness": "PASS",
+  "backup_collision": "PASS",
+  "toml_surgical_patch": "PASS",
+  "bom_newline_preservation": "PASS",
+  "global_lock": "PASS",
+  "per_target_lock": "PASS",
+  "cas": "PASS",
+  "replace_file_w": "PASS",
+  "apply_recovery": "PASS",
+  "rollback_recovery": "PASS",
+  "subprocess_crash": "PASS",
+  "product_backup_acl": "OPEN",
+  "full_log_001": "OPEN"
+}

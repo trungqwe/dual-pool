@@ -42,7 +42,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Atomic store and crash recovery. Evidence: `internal/state/store_test.go`, `evidence/phase-1-atomic-store/`, `docs/reports/2026-09-19T1700Z-phase-1-atomic-store-recovery.md`.
 - [x] Global/per-file locks with PID identity and handle-safe stale reclamation. Evidence: `internal/lockfile/`, `internal/state/store_test.go`, `evidence/phase-1-locks/`, `evidence/phase-1-lock-handle-correction/`, `docs/reports/2026-09-19T1733Z-phase-1-lock-handle-race-correction.md`.
 - [x] Windows secret-store implementation reviewed. Evidence: `internal/secretstore/`, `evidence/phase-1-secret-store/`, `docs/reports/2026-09-19T1821Z-phase-1-windows-secret-store.md`, Source CI `35462429013`.
-- [ ] Config backup/patch/rollback engine.
+- [x] Config backup/patch/rollback engine. Evidence: `internal/configtxn/`, `evidence/phase-1-config-transaction/`, `docs/reports/2026-09-19T1900Z-phase-1-config-transaction-engine.md`; synthetic TEMP fixtures only, product-root/backup ACL acceptance remains open.
 - [ ] Redaction and sentinel-secret tests.
 - [x] Phase 1 reusable logger redaction and sentinel unit layer. Full end-to-end `LOG-001` remains open. Evidence: `internal/safelog/safelog_test.go`, `evidence/phase-1-dataroot-logging/security-gate.json`.
 
