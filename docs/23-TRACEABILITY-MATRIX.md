@@ -90,10 +90,10 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 | Requirement | Test and evidence | Status |
 |---|---|---|
-| P1-OWNERSHIP-PATH-DEVICE-001: reserved Windows device components rejected | [ownership regression](../internal/state/ownership_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS locally; remote CI pending |
+| P1-OWNERSHIP-PATH-DEVICE-001: reserved Windows device components rejected | [ownership regression](../internal/state/ownership_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS; Source CI `35456545843` |
 | P1-STORE-ATOMIC-001: synced candidate, immutable marker and post-commit target sync | [store tests](../internal/state/store_test.go), [result](../evidence/phase-1-atomic-store/test-result.json) | Component PASS locally; cross-document atomicity excluded |
 | P1-STORE-CAS-001: concurrent target drift is not overwritten | [CAS test](../internal/state/store_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS locally; process locks remain open |
-| P1-STORE-RECOVERY-001: hash-based NEW/OLD/ABSENT/backup reconciliation | [recovery tests](../internal/state/store_test.go), [crash matrix](../evidence/phase-1-atomic-store/crash-matrix.json) | PASS locally; remote CI pending |
+| P1-STORE-RECOVERY-001: hash-based NEW/OLD/ABSENT/backup reconciliation | [recovery tests](../internal/state/store_test.go), [crash matrix](../evidence/phase-1-atomic-store/crash-matrix.json) | PASS; Source CI `35456545843` |
 | P1-STORE-CORRUPTION-001: corrupt target, marker, candidate and backup fail closed | [corruption tests](../internal/state/store_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS locally |
 | P1-STORE-CRASH-INJECTION-001: deterministic fault matrix and abrupt subprocess exits | [crash tests](../internal/state/store_test.go), [crash matrix](../evidence/phase-1-atomic-store/crash-matrix.json) | 22 in-process scenarios and 2 subprocess boundaries PASS locally |
 | P1-STORE-WINDOWS-REPLACE-001: production `ReplaceFileW` and `MoveFileExW` behavior | [Windows integration tests](../internal/state/store_test.go), [result](../evidence/phase-1-atomic-store/test-result.json) | PASS locally in disposable TEMP fixtures |

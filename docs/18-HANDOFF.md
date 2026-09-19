@@ -366,3 +366,17 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Delivery receipt: this scoped handoff commit; its SHA and final remote HEAD are verified after commit. PR: not requested and not created.
 - Phase 1 remains open: atomic state/ownership persistence and crash recovery, global/per-file locks with PID identity, Windows secret-store decision, and config fixture transaction engine are not implemented.
 - Exact next Phase 1 task: atomic state/ownership store plus crash recovery using TEMP fixtures only, with sibling temp write, flush, atomic replace, recovery markers, corrupt/truncated target handling, and crash-point fault injection. Do not mutate real `%LOCALAPPDATA%\DualPool`.
+
+## Phase 1 atomic state store and recovery slice — 2026-09-19
+
+- Implemented independent typed persistence for `state.json` and `ownership.json` under an injected existing directory. No production data root is selected or created by the store; every filesystem test uses a disposable TEMP fixture.
+- Candidates and immutable recovery markers use exclusive sibling creation, complete writes, short-write checks, `Sync`, close and strict re-read validation. Existing targets commit with Win32 `ReplaceFileW`; first creation uses same-directory `MoveFileExW` with write-through. `os.Rename` is not the commit primitive.
+- Added final hash CAS, strict marker schema, old/new/absent recovery, verified backup restoration, corrupt target/marker/candidate/backup handling, explicit read-only load behavior while recovery is required, idempotent recovery, reserved Windows device-path rejection, and reparse-point guards.
+- Durability claim is limited to crash-consistent application-level OLD/NEW/ABSENT behavior under tested Windows semantics. It does not claim cross-document atomicity, linearizable multi-process writes, or universal power-loss durability.
+- Dependency: pinned `golang.org/x/sys v0.48.0`; `go mod verify` is now a Source CI gate. The secure system-DLL loader resolves `ReplaceFileW`; no broad persistence dependency was added.
+- Test proof: 47 Go test functions, 11 fault points across existing and absent targets (22 scenarios), two abrupt subprocess exits, race/vet/build/module verification, 53/53 Phase 0 Node tests, and `UPSTREAM_LOCK_VALID` PASS.
+- Implementation chain: `f3dc01051eb8de93c0959df27b734bda609ba060`, module canonicalization `5b4216e4d22f63b48200bf18afe1a9ce008597f4`, and runner path canonicalization `5beef83e90bcdb866b1bd97f4314a49ef89405fc`.
+- Source CI `35456413829` failed because the runner's short-path alias was treated as unsafe. The fix canonicalizes an injected directory only after checking the supplied directory entry is not a symlink/reparse point. Corrected [Source CI run 35456545843](https://github.com/trungqwe/dual-pool/actions/runs/35456545843) PASS on `5beef83`.
+- Delivery receipt: this scoped handoff commit; its SHA and final remote HEAD are verified after commit. Push: normal fast-forward. PR: not requested and not created.
+- Checklist movement is limited to atomic store and crash recovery. Global/per-file locks with PID identity, Windows secret-store review, product-root ACL initialization, and config backup/patch/rollback remain open.
+- Exact next Phase 1 task: global/per-file locks with PID identity and stale-lock recovery using TEMP-only integration tests.
