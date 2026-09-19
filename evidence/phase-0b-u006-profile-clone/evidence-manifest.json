@@ -1,0 +1,111 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "artifacts":  [
+                      {
+                          "path":  "scripts/phase0b-extension-recorder-u006.cjs",
+                          "sha256":  "06E3908C38AD7CEF65A11A02A90B9DA2ED7630789BB03DBB9CDFBBAAE6C6BE33",
+                          "size":  3180
+                      },
+                      {
+                          "path":  "scripts/phase0b-codex-extension-u006-authenticated.ps1",
+                          "sha256":  "87DB73317F885B233DFD3C201EEEF20076031935AA476FEF549177441E3F6C9A",
+                          "size":  9974
+                      },
+                      {
+                          "path":  "scripts/phase0b-u006-hot-profile-clone.ps1",
+                          "sha256":  "9DEE6D1AE8F7B5671A7B6228B3A424B69B896064577222E63F7F4EBFC630FA0E",
+                          "size":  5868
+                      },
+                      {
+                          "path":  "scripts/phase0b-u006-cold-profile-watchdog.ps1",
+                          "sha256":  "332DE68B93987DA420BB5E4051CDB21EFB19FA6A121438E96B3EA1F38CF5E0C0",
+                          "size":  6470
+                      },
+                      {
+                          "path":  "scripts/phase0b-verify-extension-u006.ps1",
+                          "sha256":  "46D48D0A311AD9B84D85356702E3DCF9EAF49523CC769BF7F912F7C693950024",
+                          "size":  3443
+                      },
+                      {
+                          "path":  "docs/reports/2026-09-19T0553Z-phase-0b-u006-profile-clone.md",
+                          "sha256":  "E7782CBC9C88859BA77CF3F77110491F8B4C93D90DFE7E5AAFF1C6EBBF7E79DA",
+                          "size":  4183
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-audit-correction.json",
+                          "sha256":  "8337183EF0B0CAF2B4232A8669FA6686B519FBE476D298E8FBC95D705E9071A4",
+                          "size":  702
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T055552877Z.json",
+                          "sha256":  "10DA6BE25DD29FC9B992FAF0CFB43257BEC8C99CBF5B8155AEB9A7113DB13A39",
+                          "size":  1168
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T055826774Z.json",
+                          "sha256":  "B45BA3823CAE139A89ACEF7550293F863C1F7AB080AD57AB726D981EAC244D5F",
+                          "size":  1402
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060037347Z.json",
+                          "sha256":  "E9F6CEB62A4C4E4318D9E474243B0734B485F8DB4C3A8FEEE92B9EF03A94CD04",
+                          "size":  1402
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060321938Z.json",
+                          "sha256":  "0E421FD338615BB060A04971D68CA86710130C8C70390620FFEBE1F144366A37",
+                          "size":  1402
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060409861Z.json",
+                          "sha256":  "1F4B01A29E87616408444624AFAB3B4F0C75633A323883F08A0A02CB291DB042",
+                          "size":  1402
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060519922Z.json",
+                          "sha256":  "3C1375A454FC12EC48E1A81C13D0C741DADE72266529B4653B87E522AC8D73E2",
+                          "size":  1200
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060954959Z.json",
+                          "sha256":  "184C321D08F347AE4D90D0A37FD85EB720AE38993D4797EEF5BE8311631F33AA",
+                          "size":  1200
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T062325528Z.json",
+                          "sha256":  "7A8F7032442B5B7242F1B5C0C9ED43FC123EA08506FE6E9676DEB0E98C216D5C",
+                          "size":  1332
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T062746602Z.json",
+                          "sha256":  "AC4DEAE988045FEFFF3CF31A3FCA1FE8C14299D427979D59D0EE48932ACCA142",
+                          "size":  1220
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T063931298Z.json",
+                          "sha256":  "2CB60EF79F4573B9D6EF34CD2C30AA2E4F60D84449636F492BAABD091754EC5A",
+                          "size":  1205
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/u006-20260919T062419248Z.json",
+                          "sha256":  "3277EDDF9DC9FC799FF9405447084BE5CC206F23C78C437B105CD75E3CA23126",
+                          "size":  1940
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/u006-20260919T062836313Z.json",
+                          "sha256":  "06BB04375A886BE2DDDCDAFE78E11392149C5330917B5AB8B787D85F503337F8",
+                          "size":  2707
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/u006-20260919T064017845Z.json",
+                          "sha256":  "C561107DD783FB91ECCE883994D1127CB3EA4254DF278F1786B92BED6A59526B",
+                          "size":  1698
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-profile-clone/security-gate.json",
+                          "sha256":  "3FA2C94143409498BDAAD9232BBE355A870EA26B2EB4FDF5D88E94694D898C25",
+                          "size":  3929
+                      }
+                  ]
+}

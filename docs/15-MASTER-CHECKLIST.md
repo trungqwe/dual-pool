@@ -134,3 +134,4 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Closed U-005 as `PROBED` for the observed Windows 10/runtime scope using existing config-layer evidence.
 - [ ] U-006 authenticated picker probe: `BLOCKED: AUTHENTICATED_PROBE_UNAVAILABLE`; the isolated custom-provider extension exposed no login UI and no real auth state was reused.
 - [ ] U-006 auth-reuse follow-up: `BLOCKED: CLI_AUTH_NOT_CONSUMED_BY_EXTENSION`; opaque CLI auth status succeeded, but the isolated extension exposed no login UI and did not recognize the copied state. Evidence: `evidence/phase-0b-codex-u006-auth-reuse/`.
+- [ ] U-006 opaque profile-clone follow-up: `BLOCKED: CLONED_AUTH_STATE_NOT_RECOGNIZED`; Astra dropdown visibility was observed, but no Codex Plus account was present and the Probe remained reconnecting. Evidence: `evidence/phase-0b-u006-profile-clone/`.

@@ -1,0 +1,58 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "paths_actually_scanned":  [
+                                   "scripts/phase0b-extension-recorder-u006.cjs",
+                                   "scripts/phase0b-codex-extension-u006-authenticated.ps1",
+                                   "scripts/phase0b-u006-hot-profile-clone.ps1",
+                                   "scripts/phase0b-u006-cold-profile-watchdog.ps1",
+                                   "scripts/phase0b-verify-extension-u006.ps1",
+                                   "docs/reports/2026-09-19T0553Z-phase-0b-u006-profile-clone.md",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-audit-correction.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T055552877Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T055826774Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060037347Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060321938Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060409861Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060519922Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T060954959Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T062325528Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T062746602Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/profile-clone-result-20260919T063931298Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/u006-20260919T062419248Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/u006-20260919T062836313Z.json",
+                                   "evidence/phase-0b-u006-profile-clone/u006-20260919T064017845Z.json"
+                               ],
+    "excluded_paths":  [
+                           "evidence/phase-0b-u006-profile-clone/evidence-manifest.json",
+                           "evidence/phase-0b-u006-profile-clone/security-gate.json"
+                       ],
+    "exclusion_reason":  "Generated last and verified separately",
+    "positive_controls":  {
+                              "auth_path_scan":  "PASS",
+                              "powershell_syntax":  "PASS",
+                              "absolute_path_scan":  "PASS",
+                              "diff_check":  "PASS",
+                              "secret_privacy_scan":  "PASS",
+                              "node_syntax":  "PASS",
+                              "json":  "PASS"
+                          },
+    "u005":  "PROBED",
+    "u006":  "BLOCKED",
+    "classification":  "CLONED_AUTH_STATE_NOT_RECOGNIZED",
+    "cleanup":  {
+                    "original_instance_survived":  true,
+                    "auth_material_committed":  false,
+                    "auth_material_inspected":  false,
+                    "temporary_root_removed":  true,
+                    "auth_material_hashed":  false
+                },
+    "auth_material_policy":  {
+                                 "temporary_opaque_copy":  "TRUE",
+                                 "default_auth_read":  "FALSE",
+                                 "contents_logged":  "FALSE",
+                                 "contents_read":  "FALSE",
+                                 "repository_path":  "FALSE",
+                                 "contents_hashed":  "FALSE"
+                             }
+}

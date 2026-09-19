@@ -1,0 +1,14 @@
+{
+  "schema_version": "1",
+  "test_id": "P0B-CX-PROFILE-CLONE-AUDIT-001",
+  "source_run_id": "20260919T063931298Z",
+  "prior_classification": "CLI_AUTH_NOT_CONSUMED_BY_EXTENSION",
+  "corrected_classification": "CLONED_AUTH_STATE_NOT_RECOGNIZED",
+  "reason": "The owner-authorized opaque Antigravity profile clone did not expose the owner's Codex Plus account in extension settings and remained reconnecting. This is a profile-clone recognition failure, not a CLI auth-cache probe.",
+  "astra_dropdown_visible": true,
+  "authenticated_clone_recognized": false,
+  "wire_acceptance_started": false,
+  "auth_material_inspected": false,
+  "auth_material_committed": false,
+  "auth_material_hashed": false
+}

@@ -1,0 +1,40 @@
+{
+    "schema_version":  "4",
+    "test_id":  "P0B-CX-MODEL-RESOLUTION-001",
+    "run_id":  "20260919T064017845Z",
+    "status":  "BLOCKED",
+    "classification":  "CLI_AUTH_NOT_CONSUMED_BY_EXTENSION",
+    "authentication_context_present":  false,
+    "observation_source":  "user-assisted",
+    "astra_selected":  false,
+    "capture":  null,
+    "controls":  {
+                     "real_config_unchanged":  true,
+                     "installed_extension_manifest_unchanged":  true,
+                     "real_settings_unchanged":  true
+                 },
+    "cleanup":  {
+                    "temporary_root_removed":  true,
+                    "temporary_root_exists_before_cleanup":  true,
+                    "recorder_listener_absent":  true,
+                    "original_instance_survived":  true,
+                    "probe_process_absent":  true
+                },
+    "failure":  {
+                    "classification":  "CLI_AUTH_NOT_CONSUMED_BY_EXTENSION",
+                    "script_relative_path":  "scripts/phase0b-codex-extension-u006-authenticated.ps1",
+                    "exception_type":  "System.Management.Automation.RuntimeException",
+                    "line_number":  20,
+                    "stage":  "WAIT_AUTHENTICATION"
+                },
+    "unknowns":  {
+                     "U-004":  "BLOCKED",
+                     "U-007":  "PROBED",
+                     "U-005":  "PROBED",
+                     "U-003":  "BLOCKED",
+                     "U-002":  "BLOCKED",
+                     "U-008":  "PARTIAL / UNKNOWN",
+                     "U-001":  "BLOCKED",
+                     "U-006":  "BLOCKED"
+                 }
+}

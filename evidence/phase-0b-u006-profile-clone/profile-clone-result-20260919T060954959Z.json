@@ -1,0 +1,32 @@
+{
+    "schema_version":  "1",
+    "test_id":  "P0B-CX-PROFILE-CLONE-001",
+    "run_id":  "20260919T060954959Z",
+    "clone_mode":  "COLD",
+    "source_profile_discovery":  "DEFAULT_PRODUCT_USER_DATA",
+    "source_profile_present":  true,
+    "auth_profile_copy_mode":  "OPAQUE_FULL_PROFILE",
+    "authentication_clone_recognized":  false,
+    "astra_visible":  null,
+    "astra_selected":  false,
+    "wire_route":  null,
+    "wire_model":  null,
+    "custom_provider_retained":  false,
+    "auth_sentinel_match":  null,
+    "prompt_sentinel_match":  null,
+    "response_lifecycle":  false,
+    "status":  "BLOCKED",
+    "classification":  "ORIGINAL_RELAUNCH_FAILED",
+    "copy_result":  "SUCCESS",
+    "original_relaunched":  false,
+    "cleanup":  {
+                    "original_instance_survived":  false,
+                    "clone_root_present_before_cleanup":  true,
+                    "temporary_root_removed":  true,
+                    "child_exit_code":  null,
+                    "clone_root_present_after_cleanup":  true
+                },
+    "auth_material_inspected":  false,
+    "auth_material_committed":  false,
+    "auth_material_hashed":  false
+}

@@ -177,6 +177,14 @@ Exact next task: obtain an official login-capable disposable Codex/Antigravity p
 - Cleanup: PASS. Temporary auth/probe roots removed; original IDE survived; real configuration and extension hashes were unchanged; auth contents were never inspected, logged, hashed, committed, or retained.
 - Exact next task: use an officially supported login-capable disposable Codex/Antigravity profile or user-assisted authentication path, then rerun only U-006. Do not start Phase 1 or Cloud Code.
 
+## Latest opaque profile-clone outcome — 2026-09-19
+
+- HOT clone was incomplete; COLD clone succeeded and the owner manually reopened the original IDE.
+- Probe dropdown displayed `GPT-6 Astra`, but the owner confirmed no Codex Plus account was present in extension settings and the UI remained reconnecting. Authenticated clone recognition therefore failed: `CLONED_AUTH_STATE_NOT_RECOGNIZED`.
+- U-006 remains **BLOCKED**. The observed `gpt-5.6-luna` request is not accepted as Astra proof because Astra was not actually selected for that request.
+- Evidence: `docs/reports/2026-09-19T0553Z-phase-0b-u006-profile-clone.md`, `evidence/phase-0b-u006-profile-clone/`.
+- Exact next task: use a supported login-capable disposable Codex/Antigravity profile or explicit user-assisted authentication path that exposes the real account state. Do not start Phase 1 or Cloud Code.
+
 ## Delivery receipt — U-006 auth-reuse boundary
 
 - Implementation/evidence commit: `b7944df` (`probe(phase-0): record authenticated extension boundary`).
