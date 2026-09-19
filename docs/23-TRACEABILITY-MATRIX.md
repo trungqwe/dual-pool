@@ -50,3 +50,4 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 | P0B-CX-CONFIG-LAYER-001 | [config-resolution](../evidence/phase-0b-codex-extension-u006/config-resolution.json), [U-005 correction](../evidence/phase-0b-codex-extension-u006/u005-audit-correction.json) | U-005 PROBED for observed Windows 10/runtime scope |
 | P0B-CX-MODEL-RESOLUTION-001 | [U-006 result](../evidence/phase-0b-codex-extension-u006/u006-result.json) | BLOCKED: AUTHENTICATED_PROBE_UNAVAILABLE; no picker or wire request run |
+| P0B-CX-AUTH-REUSE-001 | [auth bootstrap](../evidence/phase-0b-codex-u006-auth-reuse/auth-bootstrap-20260919T053402170Z.json), [U-006 result](../evidence/phase-0b-codex-u006-auth-reuse/u006-20260919T053402492Z.json) | Opaque CLI auth copy authenticated, but extension did not consume it; BLOCKED: CLI_AUTH_NOT_CONSUMED_BY_EXTENSION |

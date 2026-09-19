@@ -167,3 +167,12 @@ Exact next task: obtain an official login-capable disposable Codex/Antigravity p
 - PR: not created.
 - Verification: U-006 JSON, Node/PowerShell syntax, generic absolute-path scan, secret/privacy scan, cleanup controls, integrity manifest hash verification, and `git diff --check` PASS.
 - Historical probe residue under `evidence/phase-0b-codex-extension/` remains unstaged and untouched.
+
+## Latest U-006 auth-reuse boundary — 2026-09-19
+
+- Owner-authorized opaque auth-copy probe: temporary `codex login status` classified `AUTHENTICATED_CHATGPT`.
+- The isolated Codex extension exposed no login UI and did not consume the copied CLI auth state. Owner result: `AUTH_NOT_RECOGNIZED`.
+- U-006: **BLOCKED: CLI_AUTH_NOT_CONSUMED_BY_EXTENSION**. Picker, GPT-6 Astra selection, and wire verification were not run.
+- Evidence: `docs/reports/2026-09-19T0515Z-phase-0b-u006-auth-reuse.md`, `evidence/phase-0b-codex-u006-auth-reuse/`.
+- Cleanup: PASS. Temporary auth/probe roots removed; original IDE survived; real configuration and extension hashes were unchanged; auth contents were never inspected, logged, hashed, committed, or retained.
+- Exact next task: use an officially supported login-capable disposable Codex/Antigravity profile or user-assisted authentication path, then rerun only U-006. Do not start Phase 1 or Cloud Code.

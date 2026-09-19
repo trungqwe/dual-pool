@@ -1,0 +1,13 @@
+{
+    "schema_version":  "1",
+    "test_id":  "P0B-CX-AUTH-BOOTSTRAP-001",
+    "run_id":  "20260919T053402170Z",
+    "auth_source_method":  "OPAQUE_AUTH_FILE_COPY",
+    "temporary_auth_status":  "AUTHENTICATED_CHATGPT",
+    "auth_material_read":  false,
+    "auth_material_logged":  false,
+    "auth_material_committed":  false,
+    "auth_material_hashed":  false,
+    "auth_path_in_approved_temp_root":  true,
+    "auth_path_in_repository":  false
+}

@@ -1,0 +1,46 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "artifacts":  [
+                      {
+                          "path":  "scripts/phase0b-extension-recorder-u006.cjs",
+                          "sha256":  "06E3908C38AD7CEF65A11A02A90B9DA2ED7630789BB03DBB9CDFBBAAE6C6BE33",
+                          "size":  3180
+                      },
+                      {
+                          "path":  "scripts/phase0b-codex-extension-u006-authenticated.ps1",
+                          "sha256":  "FAB2045C4DE10348CEAF2A8FF3B9C045B566BB022A087273419D4468EB4972AC",
+                          "size":  9798
+                      },
+                      {
+                          "path":  "scripts/phase0b-codex-u006-auth-reuse.ps1",
+                          "sha256":  "95FF5A340DB8093DA6324E28F26E8EEA04B049E818F02DDE3392FBD0531E09BD",
+                          "size":  3687
+                      },
+                      {
+                          "path":  "scripts/phase0b-verify-extension-u006.ps1",
+                          "sha256":  "83555B7257B92A43F216CD3D99BBDE8E6B30B69684F935E30AD8EB13A93A112E",
+                          "size":  3356
+                      },
+                      {
+                          "path":  "docs/reports/2026-09-19T0515Z-phase-0b-u006-auth-reuse.md",
+                          "sha256":  "F61DA4C375DBF0E220D08721BC53DBEFEDAD7D2DADF37382FEA7DC7340B5E34D",
+                          "size":  3949
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-u006-auth-reuse/auth-bootstrap-20260919T053402170Z.json",
+                          "sha256":  "C0CDF99E81321F31A4FB1D773EBAE1475829F3596C13273DAA4B44BA71FE1CDA",
+                          "size":  463
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-u006-auth-reuse/u006-20260919T053402492Z.json",
+                          "sha256":  "D8E3D6AA6C28259C48DE123C3845C00F6FA17DBD802CC1B3E1B3F1B4C0FCF419",
+                          "size":  1698
+                      },
+                      {
+                          "path":  "evidence/phase-0b-codex-u006-auth-reuse/security-gate.json",
+                          "sha256":  "FCB9CC91060291120427D3E79C9636A9021DF9237F715B0C49F424A15EAF4193",
+                          "size":  2425
+                      }
+                  ]
+}

@@ -1,0 +1,45 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "paths_actually_scanned":  [
+                                   "scripts/phase0b-extension-recorder-u006.cjs",
+                                   "scripts/phase0b-codex-extension-u006-authenticated.ps1",
+                                   "scripts/phase0b-codex-u006-auth-reuse.ps1",
+                                   "scripts/phase0b-verify-extension-u006.ps1",
+                                   "docs/reports/2026-09-19T0515Z-phase-0b-u006-auth-reuse.md",
+                                   "evidence/phase-0b-codex-u006-auth-reuse/auth-bootstrap-20260919T053402170Z.json",
+                                   "evidence/phase-0b-codex-u006-auth-reuse/u006-20260919T053402492Z.json"
+                               ],
+    "excluded_paths":  [
+                           "evidence/phase-0b-codex-u006-auth-reuse/evidence-manifest.json",
+                           "evidence/phase-0b-codex-u006-auth-reuse/security-gate.json"
+                       ],
+    "exclusion_reason":  "Generated last and verified separately",
+    "positive_controls":  {
+                              "auth_path_scan":  "PASS",
+                              "powershell_syntax":  "PASS",
+                              "absolute_path_scan":  "PASS",
+                              "diff_check":  "PASS",
+                              "secret_privacy_scan":  "PASS",
+                              "node_syntax":  "PASS",
+                              "json":  "PASS"
+                          },
+    "u005":  "PROBED",
+    "u006":  "BLOCKED",
+    "classification":  "CLI_AUTH_NOT_CONSUMED_BY_EXTENSION",
+    "cleanup":  {
+                    "original_instance_survived":  true,
+                    "auth_material_committed":  false,
+                    "auth_material_inspected":  false,
+                    "temporary_root_removed":  true,
+                    "auth_material_hashed":  false
+                },
+    "auth_material_policy":  {
+                                 "temporary_opaque_copy":  "TRUE",
+                                 "default_auth_read":  "FALSE",
+                                 "contents_logged":  "FALSE",
+                                 "contents_read":  "FALSE",
+                                 "repository_path":  "FALSE",
+                                 "contents_hashed":  "FALSE"
+                             }
+}

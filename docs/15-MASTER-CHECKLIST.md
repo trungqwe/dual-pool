@@ -133,3 +133,4 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Corrected the unauthenticated Astra observation to `NON_DIAGNOSTIC_FOR_ASTRA_ENTITLEMENT`.
 - [x] Closed U-005 as `PROBED` for the observed Windows 10/runtime scope using existing config-layer evidence.
 - [ ] U-006 authenticated picker probe: `BLOCKED: AUTHENTICATED_PROBE_UNAVAILABLE`; the isolated custom-provider extension exposed no login UI and no real auth state was reused.
+- [ ] U-006 auth-reuse follow-up: `BLOCKED: CLI_AUTH_NOT_CONSUMED_BY_EXTENSION`; opaque CLI auth status succeeded, but the isolated extension exposed no login UI and did not recognize the copied state. Evidence: `evidence/phase-0b-codex-u006-auth-reuse/`.
