@@ -176,3 +176,11 @@ Exact next task: obtain an official login-capable disposable Codex/Antigravity p
 - Evidence: `docs/reports/2026-09-19T0515Z-phase-0b-u006-auth-reuse.md`, `evidence/phase-0b-codex-u006-auth-reuse/`.
 - Cleanup: PASS. Temporary auth/probe roots removed; original IDE survived; real configuration and extension hashes were unchanged; auth contents were never inspected, logged, hashed, committed, or retained.
 - Exact next task: use an officially supported login-capable disposable Codex/Antigravity profile or user-assisted authentication path, then rerun only U-006. Do not start Phase 1 or Cloud Code.
+
+## Delivery receipt — U-006 auth-reuse boundary
+
+- Implementation/evidence commit: `b7944df` (`probe(phase-0): record authenticated extension boundary`).
+- Push: PASS to `origin/phase-0/reversible-compatibility`.
+- PR: not created; branch remains the configured Phase 0 branch.
+- Verification: U-006 result, auth bootstrap boundary, PowerShell/Node syntax, JSON validation, absolute-path/secret scan, cleanup controls, integrity manifest, and `git diff --check` PASS.
+- Residual historical probe files remain unstaged and untouched.
