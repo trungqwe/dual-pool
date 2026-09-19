@@ -9,6 +9,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/trungqwe/dual-pool/internal/lockfile"
 )
 
 const fixtureTransactionID = "00112233445566778899aabbccddeeff"
@@ -17,8 +20,30 @@ func testStore(t *testing.T, options ...Option) *Store {
 	t.Helper()
 	dir := t.TempDir()
 	assertDisposable(t, dir)
+	lockDir := filepath.Join(dir, "locks")
+	if err := os.Mkdir(lockDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	manager, err := lockfile.NewManager(lockDir, lockfile.WithOperationIDGenerator(func() (string, error) { return fixtureTransactionID, nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	options = append(options, WithLockManager(manager))
 	options = append([]Option{WithTransactionIDGenerator(func() (string, error) { return fixtureTransactionID, nil })}, options...)
 	store, err := NewStore(dir, options...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return store
+}
+
+func freshStore(t *testing.T, dir string) *Store {
+	t.Helper()
+	manager, err := lockfile.NewManager(filepath.Join(dir, "locks"), lockfile.WithOperationIDGenerator(func() (string, error) { return fixtureTransactionID, nil }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	store, err := NewStore(dir, WithLockManager(manager))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +190,7 @@ func TestStoreRejectsInvalidObjectsWithoutFilesystemChanges(t *testing.T) {
 		t.Fatal("invalid state accepted")
 	}
 	entries, _ := os.ReadDir(store.dir)
-	if len(entries) != 0 {
+	if len(entries) != 1 || entries[0].Name() != "locks" {
 		t.Fatal("filesystem changed")
 	}
 }
@@ -182,6 +207,23 @@ func TestLoadMissingAndRecoveryRequired(t *testing.T) {
 	}
 	if err := store.SaveState(validState()); !errors.Is(err, ErrRecoveryRequired) {
 		t.Fatal(err)
+	}
+}
+
+func TestLoadReportsLiveMutationWithoutRecovering(t *testing.T) {
+	store := testStore(t)
+	guard, err := store.locks.AcquireFile(store.targetPath(documentState))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer guard.Release()
+	marker := markerFor(t, documentState, false, nil, validState())
+	writeFile(t, store.markerPath(documentState), mustMarker(marker))
+	if _, err = store.LoadState(); !errors.Is(err, ErrMutationInProgress) {
+		t.Fatalf("live mutation classification: %v", err)
+	}
+	if _, err = os.Stat(store.markerPath(documentState)); err != nil {
+		t.Fatal("read-only load altered recovery artifacts")
 	}
 }
 
@@ -229,9 +271,81 @@ func TestCASConcurrentDriftRefusesOverwrite(t *testing.T) {
 	if !bytes.Equal(got, driftBytes) {
 		t.Fatal("drift overwritten")
 	}
-	fresh, _ := NewStore(store.dir)
+	fresh := freshStore(t, store.dir)
 	if err := fresh.Recover(); !errors.Is(err, ErrConcurrentDrift) {
 		t.Fatalf("%v", err)
+	}
+}
+
+func TestMutationRequiresLockProvider(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewStore(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = store.SaveState(validState()); !errors.Is(err, ErrLockProviderRequired) {
+		t.Fatalf("save without lock provider: %v", err)
+	}
+	if err = store.Recover(); !errors.Is(err, ErrLockProviderRequired) {
+		t.Fatalf("recover without lock provider: %v", err)
+	}
+}
+
+func TestSecondStoreCannotEnterCASReplaceWindow(t *testing.T) {
+	storeA := testStore(t)
+	if err := storeA.SaveState(validState()); err != nil {
+		t.Fatal(err)
+	}
+	storeB := freshStore(t, storeA.dir)
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	storeA.fault = func(point FaultPoint) error {
+		if point == AfterCASBeforeReplace {
+			close(entered)
+			<-release
+		}
+		return nil
+	}
+	done := make(chan error, 1)
+	go func() { done <- storeA.SaveState(updatedState()) }()
+	<-entered
+	if err := storeB.SaveState(validState()); !errors.Is(err, lockfile.ErrLockHeld) {
+		close(release)
+		t.Fatalf("second writer entered mutation: %v", err)
+	}
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRecoverDoesNotDeleteLiveWriterCandidate(t *testing.T) {
+	storeA := testStore(t)
+	storeB := freshStore(t, storeA.dir)
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	storeA.fault = func(point FaultPoint) error {
+		if point == AfterCandidateCreate {
+			close(entered)
+			<-release
+		}
+		return nil
+	}
+	done := make(chan error, 1)
+	go func() { done <- storeA.SaveState(validState()) }()
+	<-entered
+	candidate := storeA.ownedArtifactPath("." + documentFilename(documentState) + ".tmp-" + fixtureTransactionID)
+	if err := storeB.Recover(); !errors.Is(err, lockfile.ErrLockHeld) {
+		close(release)
+		t.Fatalf("recovery entered live mutation: %v", err)
+	}
+	if exists, err := safeExists(candidate); err != nil || !exists {
+		close(release)
+		t.Fatalf("live candidate removed: exists=%v err=%v", exists, err)
+	}
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -257,7 +371,7 @@ func TestFaultMatrixExistingAndFirstCreation(t *testing.T) {
 				if err := store.SaveState(updatedState()); !errors.Is(err, ErrInjectedCrash) {
 					t.Fatalf("fault not reached: %v", err)
 				}
-				fresh, _ := NewStore(store.dir)
+				fresh := freshStore(t, store.dir)
 				if err := fresh.Recover(); err != nil {
 					t.Fatalf("recover: %v", err)
 				}
@@ -335,6 +449,92 @@ func TestRecoveryTruthTableAndInvalidArtifacts(t *testing.T) {
 			t.Fatalf("%s %v", result, err)
 		}
 	})
+	t.Run("unsafe backup preserves all diagnostics", func(t *testing.T) {
+		store := testStore(t)
+		old := mustState(t, validState())
+		marker := markerFor(t, documentState, true, old, updatedState())
+		writeFile(t, store.targetPath(documentState), old)
+		candidate := store.ownedArtifactPath(marker.CandidateBasename)
+		writeFile(t, candidate, mustState(t, updatedState()))
+		markerPath := store.markerPath(documentState)
+		writeFile(t, markerPath, mustMarker(marker))
+		outside := t.TempDir()
+		backup := store.ownedArtifactPath(marker.BackupBasename)
+		output, err := exec.Command("cmd", "/c", "mklink", "/J", backup, outside).CombinedOutput()
+		if err != nil {
+			t.Fatalf("create backup junction: %v: %s", err, output)
+		}
+		defer os.Remove(backup)
+		before, _ := os.ReadFile(store.targetPath(documentState))
+		if _, err = store.recoverOne(documentState); !errors.Is(err, ErrUnsafeArtifact) {
+			t.Fatalf("unsafe backup accepted: %v", err)
+		}
+		for _, path := range []string{candidate, markerPath} {
+			if _, err = os.Lstat(path); err != nil {
+				t.Fatalf("diagnostic artifact removed: %v", err)
+			}
+		}
+		after, _ := os.ReadFile(store.targetPath(documentState))
+		if !bytes.Equal(before, after) {
+			t.Fatal("target changed")
+		}
+	})
+}
+
+func TestSubprocessStoreLockContention(t *testing.T) {
+	if os.Getenv("DUALPOOL_STORE_HOLD_CHILD") != "" {
+		dir := os.Getenv("DUALPOOL_STORE_DIR")
+		manager, _ := lockfile.NewManager(filepath.Join(dir, "locks"))
+		store, _ := NewStore(dir, WithLockManager(manager), WithFaultInjector(func(point FaultPoint) error {
+			if string(point) == os.Getenv("DUALPOOL_STORE_HOLD_POINT") {
+				_ = os.WriteFile(filepath.Join(dir, "ready"), []byte("ready"), 0600)
+				time.Sleep(10 * time.Minute)
+			}
+			return nil
+		}))
+		_ = store.SaveState(validState())
+		os.Exit(0)
+	}
+	for _, point := range []FaultPoint{AfterCandidateCreate, AfterCASBeforeReplace} {
+		t.Run(string(point), func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.Mkdir(filepath.Join(dir, "locks"), 0700); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command(os.Args[0], "-test.run=TestSubprocessStoreLockContention")
+			cmd.Env = append(os.Environ(), "DUALPOOL_STORE_HOLD_CHILD=1", "DUALPOOL_STORE_DIR="+dir, "DUALPOOL_STORE_HOLD_POINT="+string(point))
+			if err := cmd.Start(); err != nil {
+				t.Fatal(err)
+			}
+			ready := filepath.Join(dir, "ready")
+			for i := 0; i < 200; i++ {
+				if _, err := os.Stat(ready); err == nil {
+					break
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+			store := freshStore(t, dir)
+			if err := store.SaveState(updatedState()); !errors.Is(err, lockfile.ErrLockHeld) {
+				_ = cmd.Process.Kill()
+				_ = cmd.Wait()
+				t.Fatalf("second writer entered: %v", err)
+			}
+			if point == AfterCandidateCreate {
+				if err := store.Recover(); !errors.Is(err, lockfile.ErrLockHeld) {
+					t.Fatalf("recover entered: %v", err)
+				}
+			}
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+			_ = os.Remove(ready)
+			if err := store.Recover(); err != nil {
+				t.Fatalf("stale lock recovery: %v", err)
+			}
+			if err := store.SaveState(updatedState()); err != nil {
+				t.Fatalf("later writer: %v", err)
+			}
+		})
+	}
 }
 
 func TestMarkerStrictValidation(t *testing.T) {
@@ -362,12 +562,15 @@ func TestSubprocessCrashRecovery(t *testing.T) {
 		t.Run(string(point), func(t *testing.T) {
 			dir := t.TempDir()
 			assertDisposable(t, dir)
+			if err := os.Mkdir(filepath.Join(dir, "locks"), 0700); err != nil {
+				t.Fatal(err)
+			}
 			cmd := exec.Command(os.Args[0], "-test.run=TestSubprocessCrashRecovery")
 			cmd.Env = append(os.Environ(), "DUALPOOL_STORE_CHILD=1", "DUALPOOL_STORE_DIR="+dir, "DUALPOOL_STORE_POINT="+string(point))
 			if err := cmd.Run(); err == nil {
 				t.Fatal("child did not exit")
 			}
-			store, _ := NewStore(dir)
+			store := freshStore(t, dir)
 			if err := store.Recover(); err != nil {
 				t.Fatal(err)
 			}
@@ -383,7 +586,9 @@ func TestSubprocessCrashRecovery(t *testing.T) {
 }
 
 func subprocessChild() {
-	store, _ := NewStore(os.Getenv("DUALPOOL_STORE_DIR"), WithTransactionIDGenerator(func() (string, error) { return fixtureTransactionID, nil }), WithFaultInjector(func(point FaultPoint) error {
+	dir := os.Getenv("DUALPOOL_STORE_DIR")
+	manager, _ := lockfile.NewManager(filepath.Join(dir, "locks"))
+	store, _ := NewStore(dir, WithLockManager(manager), WithTransactionIDGenerator(func() (string, error) { return fixtureTransactionID, nil }), WithFaultInjector(func(point FaultPoint) error {
 		if string(point) == os.Getenv("DUALPOOL_STORE_POINT") {
 			os.Exit(73)
 		}

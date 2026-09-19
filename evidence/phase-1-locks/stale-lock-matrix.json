@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "classifications": {
+    "live_exact": "HELD",
+    "live_expired": "HELD",
+    "dead_unexpired": "RECOVERED",
+    "pid_reused": "RECOVERED",
+    "image_mismatch": "RECOVERED",
+    "owner_unverifiable": "BLOCKED",
+    "invalid_record": "BLOCKED"
+  },
+  "stale_removal": {
+    "record_reread": "BYTE_IDENTICAL_REQUIRED",
+    "owner_recheck": "REQUIRED",
+    "acquisition_retry": "BOUNDED_ONCE"
+  }
+}

@@ -12,8 +12,8 @@ const (
 )
 
 func (store *Store) Recover() error {
-	if err := store.safeDirectory(); err != nil {
-		return err
+	if store.locks == nil {
+		return ErrLockProviderRequired
 	}
 	for _, kind := range []documentKind{documentState, documentOwnership} {
 		if _, err := store.recoverOne(kind); err != nil {
@@ -24,6 +24,25 @@ func (store *Store) Recover() error {
 }
 
 func (store *Store) recoverOne(kind documentKind) (recoveryResult, error) {
+	if store.locks == nil {
+		return recoveryNone, ErrLockProviderRequired
+	}
+	guard, err := store.locks.AcquireFile(store.targetPath(kind))
+	if err != nil {
+		return recoveryNone, err
+	}
+	if err := store.safeDirectory(); err != nil {
+		_ = guard.Release()
+		return recoveryNone, err
+	}
+	result, recoverErr := store.recoverOneLocked(kind)
+	if releaseErr := guard.Release(); recoverErr == nil && releaseErr != nil {
+		return recoveryNone, releaseErr
+	}
+	return result, recoverErr
+}
+
+func (store *Store) recoverOneLocked(kind documentKind) (recoveryResult, error) {
 	markerPath := store.markerPath(kind)
 	exists, err := safeExists(markerPath)
 	if err != nil {
@@ -55,10 +74,20 @@ func (store *Store) recoverOne(kind documentKind) (recoveryResult, error) {
 			return recoveryNone, ErrRecoveryMarkerInvalid
 		}
 	}
+	if _, err := safeExists(candidate); err != nil {
+		return recoveryNone, err
+	}
+	if backup != "" {
+		if _, err := safeExists(backup); err != nil {
+			return recoveryNone, err
+		}
+	}
 	targetExists, targetValid, targetHash := inspectDocument(target, kind)
 	if targetExists && targetValid && targetHash == marker.NewSHA256 {
 		if marker.OldExists && backup != "" {
-			if exists, _ := safeExists(backup); exists && !matchingDocument(backup, kind, marker.OldSHA256) {
+			if exists, err := safeExists(backup); err != nil {
+				return recoveryNone, err
+			} else if exists && !matchingDocument(backup, kind, marker.OldSHA256) {
 				return recoveryNone, ErrRecoveryUnresolved
 			}
 		}
@@ -77,7 +106,9 @@ func (store *Store) recoverOne(kind documentKind) (recoveryResult, error) {
 	}
 	if marker.OldExists && targetExists && targetValid && targetHash == marker.OldSHA256 {
 		if backup != "" {
-			if exists, _ := safeExists(backup); exists && !matchingDocument(backup, kind, marker.OldSHA256) {
+			if exists, err := safeExists(backup); err != nil {
+				return recoveryNone, err
+			} else if exists && !matchingDocument(backup, kind, marker.OldSHA256) {
 				return recoveryNone, ErrRecoveryUnresolved
 			}
 		}

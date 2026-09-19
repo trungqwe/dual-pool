@@ -40,7 +40,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Structured allowlist logger. Evidence: `internal/safelog/safelog_test.go`, `evidence/phase-1-dataroot-logging/test-result.json`.
 - [x] State/ownership schema and migrations. Evidence: `internal/state/`, `evidence/phase-1-state-schema/test-result.json`, `docs/reports/2026-09-19T1620Z-phase-1-state-schema-migrations.md`.
 - [x] Atomic store and crash recovery. Evidence: `internal/state/store_test.go`, `evidence/phase-1-atomic-store/`, `docs/reports/2026-09-19T1700Z-phase-1-atomic-store-recovery.md`.
-- [ ] Global/per-file locks with PID identity.
+- [x] Global/per-file locks with PID identity. Evidence: `internal/lockfile/`, `internal/state/store_test.go`, `evidence/phase-1-locks/`, `docs/reports/2026-09-20T0015Z-phase-1-locks-pid-identity.md`.
 - [ ] Windows secret-store implementation reviewed.
 - [ ] Config backup/patch/rollback engine.
 - [ ] Redaction and sentinel-secret tests.

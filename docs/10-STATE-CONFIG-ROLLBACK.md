@@ -6,7 +6,7 @@
 
 The Phase 1 store persists these documents independently. It writes a unique synced sibling candidate, creates an immutable synced recovery marker, performs a final hash CAS, and commits through `ReplaceFileW` for an existing target or same-directory `MoveFileExW` with write-through for first creation. Recovery derives the outcome from target/candidate/backup hashes rather than a mutable stage field. Reads never perform recovery implicitly.
 
-This provides a crash-consistent application-level old-or-new guarantee under tested Windows semantics. It does not claim cross-document atomicity, multi-process linearizability, or an absolute power-loss guarantee for every filesystem and storage stack. Global/per-file locks and real product-root ACL initialization remain separate Phase 1 work.
+This provides a crash-consistent application-level old-or-new guarantee under tested Windows semantics. Each document mutation now holds a canonical-target per-file lock from the initial read through commit, verification and cleanup, closing the cooperating-writer CAS/replace window. It does not claim cross-document atomicity or an absolute power-loss guarantee for every filesystem and storage stack. Real product-root ACL initialization remains separate Phase 1 work.
 
 Minimum state:
 
@@ -117,4 +117,8 @@ Keep at least the pre-install snapshot, most recent successful snapshot, and sna
 
 ## Concurrency
 
-One global mutating operation at a time. Read-only status may run concurrently. Locks include owning PID, process start time, operation ID and expiry metadata; stale lock recovery verifies process identity before removal.
+The global lock is the future operation-orchestration primitive; a per-file lock serializes one canonical target mutation. The Store internally acquires the per-document lock for `SaveState`, `SaveOwnership`, recovery and orphan cleanup. Ordinary loads remain read-only: a live mutation lock plus marker is reported as mutation in progress, while a marker without a verified live owner requires explicit recovery.
+
+Lock ownership uses PID, the raw 64-bit Windows process creation FILETIME, canonical executable image and an opaque operation ID. Expiry is diagnostic metadata and never permits stealing a lock from an exact live owner. Stale removal requires two byte-identical reads and repeated owner-identity verification, followed by one bounded acquisition retry. An unverifiable owner or invalid record fails closed.
+
+Future operations that require both lock classes acquire `GLOBAL` before `PER-FILE`. Operations needing multiple file locks acquire them by ascending resource ID.

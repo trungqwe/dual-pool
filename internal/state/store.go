@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+
+	"github.com/trungqwe/dual-pool/internal/lockfile"
 )
 
 var (
@@ -20,6 +22,8 @@ var (
 	ErrPersistenceFailed     = errors.New("state persistence failed")
 	ErrUnsafeArtifact        = errors.New("unsafe state artifact")
 	ErrInjectedCrash         = errors.New("injected state-store crash")
+	ErrLockProviderRequired  = errors.New("state mutation lock provider is required")
+	ErrMutationInProgress    = errors.New("state mutation is in progress")
 )
 
 type FaultPoint string
@@ -48,6 +52,9 @@ func WithFaultInjector(injector func(FaultPoint) error) Option {
 func WithTransactionIDGenerator(generator func() (string, error)) Option {
 	return func(store *Store) { store.transactionID = generator }
 }
+func WithLockManager(manager *lockfile.Manager) Option {
+	return func(store *Store) { store.locks = manager }
+}
 
 type replacer interface {
 	replaceExisting(target, candidate, backup string) error
@@ -59,6 +66,7 @@ type Store struct {
 	replacer      replacer
 	fault         faultInjector
 	transactionID transactionIDGenerator
+	locks         *lockfile.Manager
 }
 
 func NewStore(stateDir string, options ...Option) (*Store, error) {
@@ -136,6 +144,15 @@ func (store *Store) load(kind documentKind) ([]byte, error) {
 	if exists, err := safeExists(store.markerPath(kind)); err != nil {
 		return nil, err
 	} else if exists {
+		if store.locks != nil {
+			err := store.locks.CheckFile(store.targetPath(kind))
+			if errors.Is(err, lockfile.ErrLockHeld) || errors.Is(err, lockfile.ErrLockOwnerUnverifiable) {
+				return nil, ErrMutationInProgress
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
 		return nil, ErrRecoveryRequired
 	}
 	path := store.targetPath(kind)
@@ -156,7 +173,19 @@ func (store *Store) load(kind documentKind) ([]byte, error) {
 	return data, nil
 }
 
-func (store *Store) save(kind documentKind, data []byte, semantic func([]byte) error) error {
+func (store *Store) save(kind documentKind, data []byte, semantic func([]byte) error) (result error) {
+	if store.locks == nil {
+		return ErrLockProviderRequired
+	}
+	guard, err := store.locks.AcquireFile(store.targetPath(kind))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if releaseErr := guard.Release(); result == nil && releaseErr != nil {
+			result = releaseErr
+		}
+	}()
 	if err := store.safeDirectory(); err != nil {
 		return err
 	}

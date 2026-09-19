@@ -98,3 +98,18 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P1-STORE-CRASH-INJECTION-001: deterministic fault matrix and abrupt subprocess exits | [crash tests](../internal/state/store_test.go), [crash matrix](../evidence/phase-1-atomic-store/crash-matrix.json) | 22 in-process scenarios and 2 subprocess boundaries PASS locally |
 | P1-STORE-WINDOWS-REPLACE-001: production `ReplaceFileW` and `MoveFileExW` behavior | [Windows integration tests](../internal/state/store_test.go), [result](../evidence/phase-1-atomic-store/test-result.json) | PASS locally in disposable TEMP fixtures |
 | CFG-002/CFG-003 state persistence foundation | P1-STORE-ATOMIC-001, P1-STORE-RECOVERY-001 | Component proof only; external config transaction acceptance remains open |
+
+## Phase 1 mutation lock foundation
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P1-LOCK-GLOBAL-001: global mutual exclusion and crash recovery | [lock tests](../internal/lockfile/manager_test.go), [result](../evidence/phase-1-locks/test-result.json) | PASS in disposable TEMP subprocess fixtures |
+| P1-LOCK-FILE-001: canonical per-file exclusion, independence and alias handling | [lock tests](../internal/lockfile/manager_test.go), [security gate](../evidence/phase-1-locks/security-gate.json) | PASS; raw target paths never enter lock filenames |
+| P1-LOCK-PID-IDENTITY-001: PID, exact creation FILETIME and canonical image | [Windows inspector](../internal/lockfile/process_windows.go), [lock tests](../internal/lockfile/manager_test.go) | PASS for lock-owner identity; Phase 2 child PID-file lifecycle remains open |
+| P1-LOCK-PID-REUSE-001: reused PID and image mismatch are stale identities | [lock tests](../internal/lockfile/manager_test.go), [stale matrix](../evidence/phase-1-locks/stale-lock-matrix.json) | PASS without terminating the observed process |
+| P1-LOCK-STALE-RECOVERY-001: exact record recheck and bounded retry | [lock manager](../internal/lockfile/manager.go), [stale matrix](../evidence/phase-1-locks/stale-lock-matrix.json) | PASS |
+| P1-LOCK-UNVERIFIABLE-001: ambiguous owner fails closed | [lock tests](../internal/lockfile/manager_test.go), [security gate](../evidence/phase-1-locks/security-gate.json) | PASS; expiry cannot override owner verification |
+| P1-LOCK-STORE-INTEGRATION-001: Store lock spans initial read through cleanup | [Store tests](../internal/state/store_test.go), [security gate](../evidence/phase-1-locks/security-gate.json) | PASS; former CAS/replace writer window closed |
+| P1-LOCK-RECOVERY-RACE-001: recovery cannot delete a live writer candidate | [Store tests](../internal/state/store_test.go), [security gate](../evidence/phase-1-locks/security-gate.json) | PASS in-process and subprocess fixtures |
+| P1-STORE-RECOVERY-HYGIENE-001: all referenced artifacts checked before cleanup | [Store regression](../internal/state/store_test.go), [security gate](../evidence/phase-1-locks/security-gate.json) | PASS; unsafe backup preserves candidate, marker and target |
+| PROC-001 lock-owner identity foundation | P1-LOCK-PID-IDENTITY-001, P1-LOCK-PID-REUSE-001 | Component PASS; CLIProxyAPI child ownership and termination remain open for Phase 2 |

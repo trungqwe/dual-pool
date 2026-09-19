@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "pre_lock_fixes": {
+    "LOCK-PRE-001": "PASS",
+    "LOCK-PRE-002": "PASS",
+    "LOCK-PRE-003": "PASS"
+  },
+  "locks": {
+    "global_mutual_exclusion": "PASS",
+    "per_file_mutual_exclusion": "PASS",
+    "per_file_independence": "PASS",
+    "canonical_alias_behavior": "PASS",
+    "pid_start_image_identity": "PASS",
+    "pid_reuse": "PASS",
+    "live_expired_not_stolen": "PASS",
+    "unverifiable_not_stolen": "PASS",
+    "dead_owner_recovered": "PASS",
+    "strict_json": "PASS",
+    "unsafe_artifact_rejected": "PASS",
+    "reparse_root_rejected": "PASS"
+  },
+  "store": {
+    "cas_replace_race_closed": "PASS",
+    "orphan_cleanup_race_closed": "PASS",
+    "recovery_safety_error_propagation": "PASS",
+    "old_crash_matrix": "PASS",
+    "subprocess_stale_lock_recovery": "PASS"
+  },
+  "boundaries": {
+    "real_product_root_touched": false,
+    "foreign_or_real_process_killed": false,
+    "committed_owner_image": false,
+    "committed_pid_or_operation_id": false
+  }
+}

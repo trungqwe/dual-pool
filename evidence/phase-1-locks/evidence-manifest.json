@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "scope": "phase-1-locks",
+  "result": "PASS",
+  "artifacts": [
+    "test-result.json",
+    "stale-lock-matrix.json",
+    "security-gate.json"
+  ],
+  "privacy": "CLASSIFICATIONS_ONLY",
+  "contains_local_paths": false,
+  "contains_process_ids": false,
+  "contains_operation_ids": false,
+  "contains_owner_images": false
+}
