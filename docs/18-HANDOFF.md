@@ -348,5 +348,8 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Phase 1 already contains the functional Phase 0 validator repair. Phase 0 delivery-receipt-only history is not a required ancestor of Phase 1; no cosmetic merge/cherry-pick was performed.
 - Implemented a pure Windows local data-root resolver, typed metadata-only JSON logger, structural sensitive-value rejection, 16-byte HMAC-SHA-256 session fingerprint, and checked application-error construction. No directory, file, log sink, user config, listener or live provider operation was created.
 - Local gates: 22 Go test functions, race, vet, build, 53/53 Phase 0 Node tests and candidate lock validator PASS. `P1-LOG-REDACTION-001` foundation/unit proof is complete; end-to-end `LOG-001` remains open.
-- Implementation commit, remote CI, delivery SHA and remote HEAD: PENDING. Report: `docs/reports/2026-09-19T1545Z-phase-1-dataroot-logging.md`.
+- Implementation commit: `a97371f1a917526092e03ecad1831b98558f284a`; push PASS to `origin/phase-1/state-foundation`, verified with `git ls-remote`.
+- Remote CI: **PASS**, [Source CI run 35453552820](https://github.com/trungqwe/dual-pool/actions/runs/35453552820) on the implementation SHA. Go format/vet/tests/build, Phase 0 Node regression and candidate-lock validation all passed.
+- Delivery receipt: this scoped handoff commit; its SHA and final remote HEAD are verified after commit because a commit cannot contain its own SHA. PR: not requested and not created.
+- Report: `docs/reports/2026-09-19T1545Z-phase-1-dataroot-logging.md`; its pre-push remote-CI snapshot remains immutable.
 - Exact next Phase 1 task after delivery: state/ownership schema v1 plus migration framework, without durable persistence.
