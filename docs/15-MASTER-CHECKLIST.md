@@ -20,6 +20,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Antigravity version, settings path candidate and static key candidate inventoried without mutation. Evidence: `antigravity-discovery.json`.
 - [x] Candidate CLIProxyAPI release/hash/config/routes and credential-free loopback/auth behavior probed. Evidence: `cliproxy-schema.json`, `probe-results.json`.
 - [x] Proposed and candidate callback port collision inventory captured. Evidence: `ports.json`.
+- [x] Candidate lock verified-capability claims use an evidence-backed closed allowlist; unknown and duplicate names fail closed. Evidence: `scripts/phase0-upstream-lock.test.cjs`, `docs/reports/2026-09-19T1523Z-phase-0-lock-allowlist.md`.
 - [x] U-001 through U-008 reviewed with partial evidence kept open. Evidence: `docs/03-DECISIONS-AND-EVIDENCE.md`.
 
 ### Phase 0B — reversible mutation-dependent compatibility

@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { loadAndValidate } = require('./phase0-upstream-lock.cjs');
+const { validate, loadAndValidate } = require('./phase0-upstream-lock.cjs');
 
 const lockPath = path.resolve(__dirname, '..', 'upstream.lock');
 
@@ -24,4 +24,22 @@ test('candidate lock cannot claim credentialed provider support', () => {
   assert.ok(lock.unverified_capabilities.includes('provider_specific_response_shapes'));
   assert.ok(lock.unverified_capabilities.includes('dedicated_health_endpoint'));
   assert.doesNotMatch(JSON.stringify(lock), /\/latest(?:\/|"|$)/i);
+});
+
+test('unknown verified capability is rejected', () => {
+  const lock = structuredClone(loadAndValidate(lockPath));
+  lock.verified_capabilities.push('invented_provider_support');
+  assert.throws(() => validate(lock), /LOCK_VERIFIED_CAPABILITY_UNKNOWN/);
+});
+
+test('duplicate verified capability is rejected', () => {
+  const lock = structuredClone(loadAndValidate(lockPath));
+  lock.verified_capabilities.push(lock.verified_capabilities[0]);
+  assert.throws(() => validate(lock), /LOCK_VERIFIED_CAPABILITY_DUPLICATE/);
+});
+
+test('non-string verified capability is rejected', () => {
+  const lock = structuredClone(loadAndValidate(lockPath));
+  lock.verified_capabilities.push({ name: 'loopback_ipv4_bind' });
+  assert.throws(() => validate(lock), /LOCK_VERIFIED_CAPABILITY_UNKNOWN/);
 });
