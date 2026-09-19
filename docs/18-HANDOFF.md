@@ -232,3 +232,9 @@ Owner cho phép tự sửa và kiểm thử đến PASS; chỉ gọi hỗ trợ 
 Session dự kiến dưới TEMP: `dual-pool-u006-primary-729d99527ecc4b049ae56e53944418f0`. Main watchdog là `scripts/phase0b-primary-watchdog.cjs`; wrapper PowerShell gọi nó. Console nhận checkpoint độc lập; agent chỉ ghi `agent-approved` sau khi xác minh PID/heartbeat. Không gửi ASTRA_SENT qua chat: recorder tự phát hiện prompt sau khi chọn Astra. Sau restore PASS, người dùng tự mở IDE bằng shortcut; watchdog không tự mở normal IDE.
 
 Khi quay lại: đọc result mới tại `evidence/phase-0b-u006-primary-repair/result-*.json`; nếu chưa có, đọc status/heartbeat của đúng session TEMP. Không mở lại probe thứ hai. Nếu restore chưa PASS, giữ backup và dùng recovery helper khi IDE đã đóng. Không đọc auth.
+
+### Delivery sửa primary watchdog
+
+- Implementation: `10305afd80fdfa7a3d62f61c65a2657df9cc5088`; push PASS tới `origin/phase-0/reversible-compatibility` bằng checkout delivery riêng, commit/push Git thông thường.
+- Safety fixture gate PASS; hash artifact đã kiểm tra cả working tree và staged Git blob trước commit. U-006 live vẫn chưa được xác nhận.
+- Workspace chính giữ nguyên residue và local ref cũ; không pull/reset trên workspace chính khi chưa đối chiếu các thay đổi đã push. Checkout delivery nằm dưới TEMP với basename `dual-pool-delivery-729d99527ecc4b049ae56e53944418f0`.

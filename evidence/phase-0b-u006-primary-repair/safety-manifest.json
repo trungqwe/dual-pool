@@ -87,9 +87,9 @@
     },
     {
       "path": "docs/18-HANDOFF.md",
-      "sha256": "030f99e5c107952e97025f71228ab1cbc512b628acc54634b1f649e336d249f9",
-      "size": 23746,
-      "git_lf_sha256": "030f99e5c107952e97025f71228ab1cbc512b628acc54634b1f649e336d249f9"
+      "sha256": "f6b89b6d68bd0927a484ab912f1040b41334d5f8576ca594ce750675fd4a1d6c",
+      "size": 24390,
+      "git_lf_sha256": "f6b89b6d68bd0927a484ab912f1040b41334d5f8576ca594ce750675fd4a1d6c"
     },
     {
       "path": "docs/15-MASTER-CHECKLIST.md",
