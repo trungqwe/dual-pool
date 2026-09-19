@@ -125,13 +125,9 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 			}
 			return &Guard{path: path, record: value, bytes: payload, file: file}, nil
 		}
-		if !errors.Is(err, windows.ERROR_ALREADY_EXISTS) && !errors.Is(err, windows.ERROR_FILE_EXISTS) {
-			return nil, ErrLockPersistence
-		}
-		contended = true
-
 		file, openErr := openCanonical(path)
 		if errors.Is(openErr, errCanonicalGone) {
+			contended = true
 			if attempt < 3 {
 				continue
 			}
@@ -140,6 +136,7 @@ func (m *Manager) acquire(kind lockKind, resource, name string) (*Guard, error) 
 		if openErr != nil {
 			return nil, openErr
 		}
+		contended = true
 		existing, readErr := readHandle(file)
 		if readErr != nil {
 			_ = file.Close()
