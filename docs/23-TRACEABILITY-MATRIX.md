@@ -80,8 +80,8 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 | Requirement | Test and evidence | Status |
 |---|---|---|
-| P1-STATE-SCHEMA-001: typed state v1, account metadata and isolated ports | [state tests](../internal/state/state_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally; remote CI pending |
+| P1-STATE-SCHEMA-001: typed state v1, account metadata and isolated ports | [state tests](../internal/state/state_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS; Source CI `35455036621` |
 | P1-OWNERSHIP-SCHEMA-001: complete ownership records and closed typed values | [ownership tests](../internal/state/ownership_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally; persistence/rollback execution remains open |
-| P1-STATE-CODEC-001: strict fields, duplicate keys, UTF-8, limits and deterministic round trip | [codec implementation](../internal/state/codec.go), [state tests](../internal/state/state_test.go) | PASS locally; remote CI pending |
+| P1-STATE-CODEC-001: strict fields, duplicate keys, UTF-8, limits and deterministic round trip | [codec implementation](../internal/state/codec.go), [state tests](../internal/state/state_test.go) | PASS; Source CI `35455036621` |
 | P1-MIGRATION-001: explicit sequential validated migration chain | [migration tests](../internal/state/migration_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally with synthetic 7→8→9 fixtures; product supports v1 only |
 | P1-STATE-SECRET-BOUNDARY-001: closed schema and opaque secret references | [schema tests](../internal/state/state_test.go), [security gate](../evidence/phase-1-state-schema/security-gate.json) | PASS at schema/unit boundary; end-to-end secret scan remains open |

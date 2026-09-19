@@ -353,3 +353,16 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Delivery receipt: this scoped handoff commit; its SHA and final remote HEAD are verified after commit because a commit cannot contain its own SHA. PR: not requested and not created.
 - Report: `docs/reports/2026-09-19T1545Z-phase-1-dataroot-logging.md`; its pre-push remote-CI snapshot remains immutable.
 - Exact next Phase 1 task after delivery: state/ownership schema v1 plus migration framework, without durable persistence.
+
+## Phase 1 state schema and migration slice — 2026-09-19
+
+- Implemented typed `state.json` v1 and `ownership.json` v1 schemas, strict in-memory codecs, validation, closed typed ownership values, and a generic explicit migration chain. Product schemas accept version 1 only; synthetic versions 7→8→9 verify the framework without inventing a product v0.
+- State validation covers non-secret account metadata, opaque install/account identities, unique `(pool, opaque_id)` accounts, distinct valid ports, documented Antigravity modes, the conservative persistent instance status `stopped`, SHA-256 config hashes, bounded fingerprints, RFC3339 probe times, and safe symbolic fields.
+- Ownership validation covers canonical local Windows paths, documented record fields, unique target/key ownership, TOML/JSON and UTF-8 metadata, SHA-256 hashes, RFC3339 apply time, presence consistency, and the exact one-of typed value invariant. Secret values can only be represented by a bounded opaque `secret_ref`; no secret resolver was added.
+- Codecs reject invalid UTF-8, oversize input, missing and unknown fields, recursively duplicated object keys, wrong types, multiple documents, malformed JSON, and unsupported versions. Encoding is deterministic compact JSON plus LF and validates before serialization.
+- Implementation/evidence commit: `d0bc7fa505887065c05b773be50e1b1b193128d3` (`feat(phase-1): add state schemas and migration framework`). Push PASS to `origin/phase-1/state-foundation`; remote SHA verified directly.
+- Remote CI: **PASS**, [Source CI run 35455036621](https://github.com/trungqwe/dual-pool/actions/runs/35455036621) on the implementation SHA. Local gates: 34 Go test functions, race, vet, build, 53/53 Phase 0 Node tests, candidate lock, JSON/docs/privacy/secret/diff checks PASS.
+- Earlier traceability CI debt was corrected after independently confirming Source CI `35453552820` for `a97371f` and delivery CI `35453645973` for `16cdad1`. Logger claims remain scoped: validation rejection is zero bytes; writer errors can follow acceptance of a safe prefix by a generic `io.Writer`.
+- Delivery receipt: this scoped handoff commit; its SHA and final remote HEAD are verified after commit. PR: not requested and not created.
+- Phase 1 remains open: atomic state/ownership persistence and crash recovery, global/per-file locks with PID identity, Windows secret-store decision, and config fixture transaction engine are not implemented.
+- Exact next Phase 1 task: atomic state/ownership store plus crash recovery using TEMP fixtures only, with sibling temp write, flush, atomic replace, recovery markers, corrupt/truncated target handling, and crash-point fault injection. Do not mutate real `%LOCALAPPDATA%\DualPool`.
