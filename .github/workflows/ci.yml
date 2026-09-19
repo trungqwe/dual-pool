@@ -23,6 +23,8 @@ jobs:
         run: |
           go fmt ./...
           git diff --exit-code
+      - name: Verify Go modules
+        run: go mod verify
       - name: Go vet
         run: go vet ./...
       - name: Go tests

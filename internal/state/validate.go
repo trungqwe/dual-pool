@@ -180,7 +180,7 @@ func validWindowsPath(s string) bool {
 		return false
 	}
 	for _, p := range strings.FieldsFunc(s[3:], func(r rune) bool { return r == '\\' || r == '/' }) {
-		if p == "." || p == ".." || p == "" || strings.HasSuffix(p, ".") || strings.HasSuffix(p, " ") {
+		if p == "." || p == ".." || p == "" || strings.HasSuffix(p, ".") || strings.HasSuffix(p, " ") || reservedWindowsName(p) {
 			return false
 		}
 	}
@@ -211,3 +211,10 @@ func oneOf(v string, x ...string) bool {
 	return false
 }
 func asciiLetter(b byte) bool { return b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' }
+func reservedWindowsName(part string) bool {
+	name := strings.ToUpper(strings.SplitN(part, ".", 2)[0])
+	if name == "CON" || name == "PRN" || name == "AUX" || name == "NUL" || name == "CLOCK$" {
+		return true
+	}
+	return len(name) == 4 && (strings.HasPrefix(name, "COM") || strings.HasPrefix(name, "LPT")) && name[3] >= '1' && name[3] <= '9'
+}

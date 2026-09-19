@@ -69,3 +69,15 @@ func TestOwnershipStrictUnknownAndFuture(t *testing.T) {
 		t.Fatal("future accepted")
 	}
 }
+
+func TestOwnershipRejectsReservedWindowsDevicePaths(t *testing.T) {
+	for _, component := range []string{"CON", "prn.txt", "AUX", "NUL.cfg", "CLOCK$", "COM1", "com9.log", "LPT1", "lpt9.txt"} {
+		t.Run(component, func(t *testing.T) {
+			o := validOwnership()
+			o.Records[0].TargetPath = `C:\Fixture\` + component + `\config.toml`
+			if _, err := EncodeOwnership(o); err == nil {
+				t.Fatal("reserved device component accepted")
+			}
+		})
+	}
+}

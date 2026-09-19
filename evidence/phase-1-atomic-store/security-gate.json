@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "run_id": "phase-1-atomic-store",
+  "status": "PASS",
+  "checks": {
+    "reserved_windows_device_paths": "PASS",
+    "replace_file_existing": "PASS",
+    "move_file_first_create": "PASS",
+    "candidate_sync": "PASS",
+    "marker_sync": "PASS",
+    "target_sync": "PASS",
+    "cas_drift": "PASS",
+    "corrupt_target": "PASS",
+    "corrupt_marker": "PASS",
+    "recovery_truth_table": "PASS",
+    "recovery_idempotence": "PASS",
+    "reparse_boundary": "PASS",
+    "subprocess_crash": "PASS",
+    "json_evidence": "PASS",
+    "documentation_links": "PASS",
+    "privacy_and_path_scan": "PASS",
+    "secret_scan": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "absolute_paths_recorded": false,
+  "document_bodies_recorded": false,
+  "credentials_recorded": false
+}

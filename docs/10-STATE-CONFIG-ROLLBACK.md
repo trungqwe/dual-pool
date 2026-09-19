@@ -4,6 +4,10 @@
 
 `state.json` contains non-secret operational state. `ownership.json` contains configuration ownership records. Both use explicit `schema_version` and transactional migration.
 
+The Phase 1 store persists these documents independently. It writes a unique synced sibling candidate, creates an immutable synced recovery marker, performs a final hash CAS, and commits through `ReplaceFileW` for an existing target or same-directory `MoveFileExW` with write-through for first creation. Recovery derives the outcome from target/candidate/backup hashes rather than a mutable stage field. Reads never perform recovery implicitly.
+
+This provides a crash-consistent application-level old-or-new guarantee under tested Windows semantics. It does not claim cross-document atomicity, multi-process linearizability, or an absolute power-loss guarantee for every filesystem and storage stack. Global/per-file locks and real product-root ACL initialization remain separate Phase 1 work.
+
 Minimum state:
 
 ```json

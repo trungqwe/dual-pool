@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "run_id": "phase-1-atomic-store",
+  "status": "PASS",
+  "artifacts": ["test-result.json", "crash-matrix.json", "security-gate.json"],
+  "sanitized": true,
+  "raw_documents_included": false,
+  "absolute_paths_included": false
+}

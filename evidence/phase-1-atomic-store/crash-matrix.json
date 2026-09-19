@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "run_id": "phase-1-atomic-store",
+  "status": "PASS",
+  "fault_points": [
+    "AFTER_CANDIDATE_CREATE", "AFTER_CANDIDATE_WRITE", "AFTER_CANDIDATE_SYNC",
+    "AFTER_MARKER_SYNC", "BEFORE_CAS", "AFTER_CAS_BEFORE_REPLACE",
+    "AFTER_REPLACE", "AFTER_TARGET_VERIFY", "AFTER_TARGET_SYNC",
+    "BEFORE_BACKUP_CLEANUP", "BEFORE_MARKER_CLEANUP"
+  ],
+  "matrices": [
+    {"initial":"OLD","scenarios":11,"final_hash_relation":"OLD|NEW","artifact_cleanup":"PASS"},
+    {"initial":"ABSENT","scenarios":11,"final_hash_relation":"ABSENT|NEW","artifact_cleanup":"PASS"}
+  ],
+  "subprocess": [
+    {"fault_point":"AFTER_MARKER_SYNC","initial":"ABSENT","recovery":"ABORTED_RECOVERED","final_hash_relation":"ABSENT"},
+    {"fault_point":"AFTER_REPLACE","initial":"ABSENT","recovery":"COMMITTED_RECOVERED","final_hash_relation":"NEW"}
+  ],
+  "partial_document_accepted": false
+}
