@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "phase": "Phase 1 foundation bootstrap",
+  "hash_algorithm": "SHA-256",
+  "artifacts": [
+    {
+      "path": "go.mod",
+      "sha256": "a04de579c01d601b26d9006d9a01cc40053b1c24e5d38971e9ec6d2aa230df7b",
+      "bytes": 46
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "04d2c890bafa48c32bbd3dbfff32e46fb4fccef3799ee8171f2626c51f830622",
+      "bytes": 805
+    },
+    {
+      "path": "cmd/poolbridge/main.go",
+      "sha256": "3a348a4c71db6bc053756c986ae25127f537cbc3c3212b3074f655bd0bca26d5",
+      "bytes": 148
+    },
+    {
+      "path": "internal/app/app.go",
+      "sha256": "1b162898039adfe8d9ee29e491fb65d3134dccb5643ed62b49ea089c53ef00a9",
+      "bytes": 1278
+    },
+    {
+      "path": "internal/app/app_test.go",
+      "sha256": "e1471edc4b1a6d522e11cdaad8bf92687325a130552f1fa172d9158e22323d37",
+      "bytes": 2679
+    },
+    {
+      "path": "internal/apperr/apperr.go",
+      "sha256": "cb1b8998c2ea22db44c339ac410fe934fb74cb3b947b4a55f6f8529439acac9a",
+      "bytes": 4536
+    },
+    {
+      "path": "internal/apperr/apperr_test.go",
+      "sha256": "dde137a88ce390622484a321a00c0037f16156d5b24d816109b824f658c0d20f",
+      "bytes": 2933
+    },
+    {
+      "path": "internal/buildinfo/buildinfo.go",
+      "sha256": "233e3b8404b5f4c87dfb80abb6f0b0eee46648ae2d8b7acf45d903627b72d3dc",
+      "bytes": 1439
+    },
+    {
+      "path": "internal/buildinfo/buildinfo_test.go",
+      "sha256": "35b85bc92105c00791374ee20c573ddcffd80a2a4c318177424351d9641ca654",
+      "bytes": 1590
+    },
+    {
+      "path": "docs/reports/2026-09-19T1415Z-phase-1-foundation-bootstrap.md",
+      "sha256": "f91006e1ae53ccdda62d1b8d504000c125774bde35e4e29ebc583e0d359923e9",
+      "bytes": 7021
+    },
+    {
+      "path": "evidence/phase-1-foundation-bootstrap/test-result.json",
+      "sha256": "7fad69609772a393f695e28cd4f1eccc4170af2e98d7c1ef63d9a9eb88859bf0",
+      "bytes": 1559
+    },
+    {
+      "path": "evidence/phase-1-foundation-bootstrap/security-gate.json",
+      "sha256": "f96b889e43a1e28c4e028b93b2b0827ead82d7060e2e1ddacec3285adc45db2e",
+      "bytes": 470
+    }
+  ],
+  "self_excluded": true,
+  "mutable_delivery_receipt_excluded": "docs/18-HANDOFF.md"
+}

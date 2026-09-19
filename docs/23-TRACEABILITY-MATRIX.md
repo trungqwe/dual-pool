@@ -55,3 +55,13 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P0B-CX-PRIMARY-PROFILE-001 | [primary-profile report](../docs/reports/2026-09-19T0715Z-phase-0b-u006-primary-profile.md), [primary-profile evidence](../evidence/phase-0b-u006-primary-profile/) | Config restored byte-for-byte, but watchdog could not relaunch Antigravity; BLOCKED: NORMAL_RELAUNCH_FAILED |
 | P0-CLOSURE-001 | [closure result](../evidence/phase-0-closure.json), [candidate lock](../upstream.lock), [validator](../scripts/phase0-upstream-lock.cjs) | PASS_WITH_BLOCKERS: Phase 1 fixture foundation GO; live IDE/provider integration and release NO-GO |
 | P0-LOCK-ALLOWLIST-001 | [validator](../scripts/phase0-upstream-lock.cjs), [negative tests](../scripts/phase0-upstream-lock.test.cjs), [repair report](reports/2026-09-19T1523Z-phase-0-lock-allowlist.md) | PASS: unknown, duplicate and non-string verified capability claims fail closed; candidate lock remains valid |
+
+## Phase 1 foundation bootstrap
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P1-CLI-001: supported commands and usage failure | [app tests](../internal/app/app_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS locally; remote CI pending |
+| P1-VERSION-001: deterministic and safe build output | [buildinfo tests](../internal/buildinfo/buildinfo_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS locally; remote CI pending |
+| P1-ERROR-001: exact categories and stable code registry | [error tests](../internal/apperr/apperr_test.go), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | PASS locally; remote CI pending |
+| P1-ERROR-REDACTION-001: wrapped cause excluded from human and JSON output | [error tests](../internal/apperr/apperr_test.go), [security gate](../evidence/phase-1-foundation-bootstrap/security-gate.json) | PASS locally; remote CI pending |
+| P1-CI-001: source-only Windows workflow | [workflow](../.github/workflows/ci.yml), [result](../evidence/phase-1-foundation-bootstrap/test-result.json) | Workflow defined and parsed locally; remote CI pending |

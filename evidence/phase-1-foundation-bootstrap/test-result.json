@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "phase": "Phase 1 foundation bootstrap",
+  "status": "PASS_LOCAL_REMOTE_CI_PENDING",
+  "environment": "windows/amd64",
+  "go_version": "go1.26.0",
+  "module": "github.com/trungqwe/dual-pool",
+  "start_commit": "dd448f7c2e55351eccfb8b8f2f16e8433810e05a",
+  "phase_0_repair_inherited": true,
+  "assertion_count": 5,
+  "assertion_unit": "named acceptance assertions below",
+  "go_test_functions": 11,
+  "phase_0_node_tests": 53,
+  "assertions": [
+    { "test_id": "P1-CLI-001", "status": "PASS", "scope": "version, help, unknown and extra arguments" },
+    { "test_id": "P1-VERSION-001", "status": "PASS", "scope": "deterministic output and unsafe metadata rejection" },
+    { "test_id": "P1-ERROR-001", "status": "PASS", "scope": "literal code registry and exact exit categories" },
+    { "test_id": "P1-ERROR-REDACTION-001", "status": "PASS", "scope": "synthetic wrapped cause excluded from human and JSON output" },
+    { "test_id": "P1-CI-001", "status": "PASS_LOCAL", "scope": "workflow parsed and local equivalent checks passed" }
+  ],
+  "commands": {
+    "go_fmt": "PASS",
+    "go_vet": "PASS",
+    "go_test": "PASS",
+    "go_race": "PASS",
+    "windows_build": "PASS",
+    "phase_0_node_regression": "PASS_53_OF_53",
+    "upstream_lock_validator": "UPSTREAM_LOCK_VALID",
+    "workflow_yaml_parse": "PASS",
+    "remote_ci": "PENDING"
+  },
+  "local_test_environment_note": "Go test execution used a disposable worktree-local GOTMPDIR after the default Windows temporary directory denied opening one generated test executable."
+}

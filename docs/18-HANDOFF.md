@@ -332,3 +332,10 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - `P0-LOCK-ALLOWLIST-001`: 5/5 focused tests, 53/53 full Node tests and `UPSTREAM_LOCK_VALID` PASS. This repairs the Phase 2 entry debt without claiming provider support or changing U-001..U-008.
 - Implementation commit: `c46c8f0e5160a5eb001108d0cc9a86c9ffefd3fe`. Remote `phase-0/reversible-compatibility` was verified at this SHA with `git ls-remote` after a fast-forward push. Git reported a local remote-tracking ref update error after the remote accepted the push; the remote SHA is authoritative.
 - PR: none requested. Next authorized work: complete the bounded Phase 1 CLI/error/CI foundation on `phase-1/state-foundation` after carrying this repair forward.
+
+## Phase 1 CLI foundation — 2026-09-19
+
+- Branch `phase-1/state-foundation` inherits the Phase 0 allowlist repair. The first Phase 1 slice contains the Go module, `poolbridge` version/help CLI, typed error registry/categories, safe human/JSON error output, unit tests and a source-only Windows CI workflow.
+- Local verification: 11 Go test functions PASS, `go test -race` PASS, vet/build PASS, 53/53 Phase 0 Node tests PASS, candidate lock valid. The default Windows TEMP denied one generated Go test executable; all Go tests passed with a disposable worktree-local `GOTMPDIR`. Remote CI remains PENDING until a workflow run completes.
+- Checklist movement is limited to Go CLI/version metadata and stable errors/exit codes. No state store, logger, secrets, lifecycle, live IDE or provider work was started. U-001..U-008 remain at their prior classifications.
+- Implementation commit/push/CI receipt: PENDING. Report: `docs/reports/2026-09-19T1415Z-phase-1-foundation-bootstrap.md`. Exact next Phase 1 task after delivery: data-root resolver plus structured allowlist logger/redaction foundation.

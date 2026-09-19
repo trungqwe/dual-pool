@@ -52,6 +52,20 @@ OAuth tokens, refresh tokens, API/management keys, Authorization/Cookie headers,
 
 Errors return non-zero exit codes by category: usage 2, compatibility 10, config 20, auth 30, service 40, security 50, test 60. Exact mapping is versioned in code and docs.
 
+Phase 1 foundation mapping:
+
+| Exit category | Stable codes |
+|---|---|
+| usage (2) | `INVALID_COMMAND`, `INVALID_ARGUMENT` |
+| compatibility (10) | `UPSTREAM_VERSION_MISMATCH`, `AG_SCHEMA_UNSUPPORTED`, `CODEX_PICKER_ROUTE_MISMATCH`, `CATALOG_VERSION_MISMATCH` |
+| config (20) | `CONFIG_CONFLICT`, `ROLLBACK_CONFLICT` |
+| auth (30) | `OAUTH_TIMEOUT`, `ACCOUNT_INELIGIBLE` |
+| service (40) | `PORT_IN_USE`, `MANAGEMENT_UNAVAILABLE`, `AG_POOL_UNAVAILABLE` |
+| security (50) | `PROCESS_IDENTITY_MISMATCH`, `POOL_ISOLATION_VIOLATION`, `SECRET_LEAK_DETECTED` |
+| test (60) | No operational code in this foundation slice. |
+
+`PROCESS_IDENTITY_MISMATCH` is classified as security because acting on an unverified PID could affect a foreign process. The Go `Error` keeps its underlying cause for internal inspection, while normal human and JSON renderers use only the safe registry message. `poolbridge` with no arguments prints help and exits successfully. Commands with extra arguments return `INVALID_ARGUMENT` and exit 2.
+
 ## Doctor output
 
 `poolbridge doctor --json` is stable machine-readable output. It reports:

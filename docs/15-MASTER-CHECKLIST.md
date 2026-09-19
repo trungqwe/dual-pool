@@ -35,8 +35,8 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ## Foundation
 
-- [ ] Go CLI skeleton and version metadata.
-- [ ] Stable errors and exit codes.
+- [x] Go CLI skeleton and version metadata. Evidence: `internal/app/app_test.go`, `internal/buildinfo/buildinfo_test.go`, `evidence/phase-1-foundation-bootstrap/test-result.json`.
+- [x] Stable errors and exit codes. Evidence: `internal/apperr/apperr_test.go`, `evidence/phase-1-foundation-bootstrap/test-result.json`.
 - [ ] Structured allowlist logger.
 - [ ] State/ownership schema and migrations.
 - [ ] Atomic store and crash recovery.

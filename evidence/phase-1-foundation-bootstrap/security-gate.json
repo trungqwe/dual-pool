@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "phase": "Phase 1 foundation bootstrap",
+  "status": "PASS_LOCAL",
+  "synthetic_cause_redaction_test": "PASS",
+  "synthetic_build_metadata_rejection_test": "PASS",
+  "real_credentials_accessed": false,
+  "user_configuration_mutated": false,
+  "listeners_started": false,
+  "upstream_binary_downloaded_or_started": false,
+  "source_and_fixture_only": true,
+  "staged_privacy_scan": "PASS",
+  "docs_link_check": "PASS",
+  "diff_check": "PASS"
+}
