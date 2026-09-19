@@ -208,3 +208,9 @@ Exact next task: obtain an official login-capable disposable Codex/Antigravity p
 - PR: not created; branch remains the configured Phase 0 branch.
 - Verification: U-006 result, auth bootstrap boundary, PowerShell/Node syntax, JSON validation, absolute-path/secret scan, cleanup controls, integrity manifest, and `git diff --check` PASS.
 - Residual historical probe files remain unstaged and untouched.
+### Delivery receipt — primary profile audit
+
+- Implementation commit: `e877409c4416ff2d0cfa0b5c3079b7c8337588bf` (`probe(phase-0): audit primary authenticated profile boundary`).
+- Remote push: PASS to `origin/phase-0/reversible-compatibility` as a fast-forward from `4f57f8a402be282cbefff802de6473c167e6735a`.
+- Local tracking-ref update: `UNKNOWN` because the Windows filesystem rejected Git's local ref lock/unlink operation; the remote branch was verified by the successful push output.
+- Next run remains U-006 only after a supported normal Antigravity relaunch path is available.
