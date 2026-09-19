@@ -138,5 +138,6 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [ ] U-006 primary-profile follow-up: `BLOCKED: NORMAL_RELAUNCH_FAILED`; temporary user-level config mutation was restored byte-for-byte, but no auth/Astra/wire checkpoint ran. Evidence: `evidence/phase-0b-u006-primary-profile/`.
 - [x] Primary watchdog incident reconciled and real-config live mutation disabled. Evidence: `docs/reports/2026-09-19T0905Z-phase-0b-primary-watchdog-incident-audit.md`, `scripts/phase0b-primary-watchdog-disabled.test.ps1`.
 - [ ] Safe replacement U-006 shadow `CODEX_HOME` probe with `real_config_mutation_capability=false` and `crash_requires_restore=false`.
+- [x] Shadow-only U-006 watchdog design and fixture safety: 5/5 tests PASS. Live probe remains open and baseline drift blocks it. Evidence: `docs/reports/2026-09-19T0930Z-phase-0b-shadow-home-design.md`.
 - [ ] Audit primary-profile: PASS cũ không đủ bằng chứng; watchdog chặn trước mutation. Xem [audit](reports/2026-09-19T0814Z-phase-0b-primary-audit.md). Sửa và kiểm thử orchestration/rollback trước lần chạy live tiếp theo.
 - [x] Sửa safety primary-profile: 25 Node tests, 12 assertion transaction, syntax/privacy/docs/diff PASS; chỉ là gate chuẩn bị, U-006 vẫn chờ live. [Report](reports/2026-09-19T0840Z-phase-0b-primary-repair.md).

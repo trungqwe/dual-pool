@@ -35,6 +35,12 @@ Current policy: `REAL_USER_CONFIG_LIVE_MUTATION_DISABLED`. The ordinary `scripts
 
 U-006 remains **BLOCKED**. The next permitted design is a new shadow `CODEX_HOME` probe under `%TEMP%`; the real user Codex directory must never be modified. A future shadow watchdog must set `real_config_mutation_capability=false` and `crash_requires_restore=false`, delete only the shadow, print `SHADOW_CLEANUP_PASS`, and wait for the owner to open Antigravity normally. It must not auto-launch the normal IDE. Do not start that design in this incident correction commit.
 
+## Shadow-home design — pending live gate
+
+The shadow-only entrypoint is now `scripts/phase0b-u006-shadow-home-watchdog.cjs`. It copies the complete `.codex` tree opaquely into a private TEMP root, modifies only the shadow `config.toml`, passes `CODEX_HOME` and the synthetic key only to the probe child, and never starts the normal IDE after cleanup. The real config is never a restore target. Fixture proof: 5/5 tests PASS. Report: `docs/reports/2026-09-19T0930Z-phase-0b-shadow-home-design.md`.
+
+The current real config hash was observed as different from the historical baseline, so the shadow entrypoint will stop with `REAL_CONFIG_BASELINE_DRIFT` before copying or changing anything. This is `UNKNOWN`, not an authorization to overwrite the config. U-006 remains BLOCKED. A live shadow run requires a fresh read-only baseline decision and then owner interaction at auth/Astra checkpoints.
+
 ## Current status
 
 Phase hiện tại: **Phase 0B**. Gate `P0B-CX-TRANSPORT-001` v5: **PASS**; recorder và Codex tự thoát với code 0, không timeout/forced kill. Phase 1 chưa bắt đầu. Gate CLI không đóng U-005/U-006.
