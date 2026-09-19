@@ -414,3 +414,12 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Global/per-file lock checklist status: PASS. The Phase 2 child-process/PID-file lifecycle remains open.
 - Delivery receipt: this scoped handoff commit; its SHA, delivery CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA. PR: not requested and not created.
 - Exact next Phase 1 task: Windows secret-store interface and implementation decision/proof using synthetic secrets only.
+
+### Handle correction delivery addendum
+
+- The first receipt commit `c93bb7296bde400db95d203c1efa607de6a30ba0` had a failing delivery CI and is superseded by this addendum; no earlier report or receipt was rewritten.
+- Delivery CI `35459875003` and diagnostic CI `35460062587` each preserved exactly one Guard but exposed a rare `claim_open` persistence result during Windows delete-pending transition.
+- Safe stage-only diagnostics were added in `9fcf75bd7bee513bb21fa839023740bb9aae6668` and preserved through `22fcedaf3fa0bdd306592c7e40aed16685fc8e99`; they contain no path, PID, image, operation ID or record body.
+- Final behavior in `55d9a130122e6f41f45d24b0e213ce89c5ed1591` bounds ambiguous `CreateFileW` access-denied retries to 250 ms. Persistent access denial remains `ErrLockPersistence`; a completed transition is reclassified from the next concrete handle outcome.
+- Corrected final [Source CI run 35460361030](https://github.com/trungqwe/dual-pool/actions/runs/35460361030) PASS on `22fcedaf3fa0bdd306592c7e40aed16685fc8e99`.
+- Delivery commit: this addendum commit. Its SHA, CI and final remote HEAD are verified after commit.
