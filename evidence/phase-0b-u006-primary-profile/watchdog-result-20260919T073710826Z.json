@@ -1,0 +1,41 @@
+{
+    "schema_version":  "1",
+    "test_id":  "P0B-CX-PRIMARY-MODEL-001",
+    "run_id":  "20260919T073710826Z",
+    "primary_profile_used":  true,
+    "authentication_confirmed":  false,
+    "astra_visible":  false,
+    "astra_selected":  false,
+    "target_request_captured":  false,
+    "target_model":  null,
+    "wire_route":  null,
+    "custom_provider_retained":  false,
+    "synthetic_auth":  null,
+    "prompt_sentinel":  null,
+    "response_lifecycle":  false,
+    "background_request_count":  null,
+    "status":  "BLOCKED",
+    "classification":  "Exception calling \"Replace\" with \"4\" argument(s): \"The path is not of a legal form.\"",
+    "config":  {
+                   "temporary_mutation":  false,
+                   "byte_for_byte_restore":  false,
+                   "original_state":  "PRESENT",
+                   "config_after_sha256":  "ABSENT",
+                   "config_before_sha256":  "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+                   "backup_created":  true
+               },
+    "controls":  {
+                     "listener_absent":  true,
+                     "extension_unchanged":  true,
+                     "settings_unchanged":  true,
+                     "normal_relaunch":  false,
+                     "extension_before_sha256":  "4591A66710C5639D0E153452EBB8773D919CF680929BAEE4BB60D30EB62E77D2",
+                     "settings_before_sha256":  "1AE12E9E48D8B139C0A3803A02844E27C0E7E1F3E9A7D9998EFDF348370C34A2"
+                 },
+    "cleanup":  {
+                    "auth_material_committed":  false,
+                    "auth_material_inspected":  false,
+                    "temp_root_removed":  false
+                },
+    "failure_classification":  "Exception calling \"Replace\" with \"4\" argument(s): \"The path is not of a legal form.\""
+}

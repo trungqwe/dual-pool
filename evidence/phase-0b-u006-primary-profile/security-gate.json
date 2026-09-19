@@ -1,0 +1,38 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "paths_actually_scanned":  [
+                                   "scripts/phase0b-extension-recorder-primary.cjs",
+                                   "scripts/phase0b-u006-primary-watchdog.ps1",
+                                   "scripts/phase0b-u006-primary-restore.ps1",
+                                   "scripts/phase0b-verify-primary-profile.ps1",
+                                   "docs/reports/2026-09-19T0715Z-phase-0b-u006-primary-profile.md",
+                                   "evidence/phase-0b-u006-primary-profile/primary-profile-audit-correction.json",
+                                   "evidence/phase-0b-u006-primary-profile/watchdog-result-20260919T073710826Z.json",
+                                   "evidence/phase-0b-u006-primary-profile/watchdog-result-20260919T075105857Z.json"
+                               ],
+    "excluded_paths":  [
+                           "evidence/phase-0b-u006-primary-profile/evidence-manifest.json",
+                           "evidence/phase-0b-u006-primary-profile/security-gate.json"
+                       ],
+    "exclusion_reason":  "Generated last and verified separately",
+    "positive_controls":  {
+                              "config_content_scan":  "PASS",
+                              "powershell_syntax":  "PASS",
+                              "absolute_path_scan":  "PASS",
+                              "diff_check":  "PASS",
+                              "secret_privacy_scan":  "PASS",
+                              "node_syntax":  "PASS",
+                              "json":  "PASS"
+                          },
+    "u005":  "PROBED",
+    "u006":  "BLOCKED",
+    "classification":  "NORMAL_RELAUNCH_FAILED",
+    "cleanup":  {
+                    "auth_material_committed":  false,
+                    "auth_material_inspected":  false,
+                    "config_restore_pass":  true,
+                    "auth_material_hashed":  false,
+                    "temp_root_removed":  true
+                }
+}

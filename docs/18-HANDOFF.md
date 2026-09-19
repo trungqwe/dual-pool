@@ -185,6 +185,14 @@ Exact next task: obtain an official login-capable disposable Codex/Antigravity p
 - Evidence: `docs/reports/2026-09-19T0553Z-phase-0b-u006-profile-clone.md`, `evidence/phase-0b-u006-profile-clone/`.
 - Exact next task: use a supported login-capable disposable Codex/Antigravity profile or explicit user-assisted authentication path that exposes the real account state. Do not start Phase 1 or Cloud Code.
 
+## Latest primary-profile probe outcome — 2026-09-19
+
+- External watchdog was detached and the real user-level Codex config was backed up and temporarily mutated.
+- Authoritative retry restored the config byte-for-byte: before/after SHA-256 `1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D`.
+- Antigravity relaunch failed within the bounded watchdog window, so no auth/Astra/wire checkpoint ran. U-006 remains **BLOCKED: NORMAL_RELAUNCH_FAILED**.
+- Evidence: `docs/reports/2026-09-19T0715Z-phase-0b-u006-primary-profile.md`, `evidence/phase-0b-u006-primary-profile/`.
+- Exact next task: resolve the supported Antigravity relaunch path or perform a user-assisted primary-profile relaunch, then rerun only U-006. Do not start Phase 1 or Cloud Code.
+
 ## Delivery receipt — opaque profile-clone boundary
 
 - Implementation/evidence commit: `4518d4a` (`probe(phase-0): verify cloned profile authentication boundary`).

@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "test_id": "P0B-CX-PRIMARY-AUDIT-001",
+  "authoritative_run_id": "20260919T075105857Z",
+  "development_run_id": "20260919T073710826Z",
+  "development_issue": "INVALID_ATOMIC_REPLACE_BACKUP_ARGUMENT",
+  "authoritative_classification": "NORMAL_RELAUNCH_FAILED",
+  "target_request_captured": false,
+  "authentication_checkpoint_reached": false,
+  "astra_checkpoint_reached": false,
+  "config_restore_pass": true,
+  "config_before_sha256": "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+  "config_after_sha256": "1AE4E3BC2C1185EA4C9C863BA481D66F5C160B02B63F4C04F1D885754257470D",
+  "auth_material_inspected": false,
+  "auth_material_committed": false,
+  "auth_material_hashed": false
+}

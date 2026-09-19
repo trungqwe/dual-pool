@@ -1,0 +1,51 @@
+{
+    "schema_version":  "1",
+    "status":  "PASS",
+    "artifacts":  [
+                      {
+                          "path":  "scripts/phase0b-extension-recorder-primary.cjs",
+                          "sha256":  "8F56EA70544790FFAF0F37D57E6E8E9C60DF5677BF7BCFF89AE808196A3B4A09",
+                          "size":  3410
+                      },
+                      {
+                          "path":  "scripts/phase0b-u006-primary-watchdog.ps1",
+                          "sha256":  "538E9A7AEE7B572734AAA962BBEF99EEF7C4A4DB3B7444C0D154F0AAF1B43249",
+                          "size":  11188
+                      },
+                      {
+                          "path":  "scripts/phase0b-u006-primary-restore.ps1",
+                          "sha256":  "07411694E6BF0AFB74D3E7997B236567FDEF54D9E61F864BE1570B46C9EF5AC5",
+                          "size":  1437
+                      },
+                      {
+                          "path":  "scripts/phase0b-verify-primary-profile.ps1",
+                          "sha256":  "08106265E5C3E91DF8C751B2B7EE45D2687B53AF46C2CB9008AF2D28CE89929A",
+                          "size":  3230
+                      },
+                      {
+                          "path":  "docs/reports/2026-09-19T0715Z-phase-0b-u006-primary-profile.md",
+                          "sha256":  "A4FEF96A154E3093AB4630F838D54EB660F2655BDF43241AB3FB882529E19834",
+                          "size":  3680
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-primary-profile/primary-profile-audit-correction.json",
+                          "sha256":  "0B8E83C6D3779FDDFAAA47F942D44BC60E97AB71CDE7C03F617A87DD3E1EED72",
+                          "size":  732
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-primary-profile/watchdog-result-20260919T073710826Z.json",
+                          "sha256":  "2E252673DA35945A36A287DF55BF7867DEB3969278A6135A25A301C9D3864ACF",
+                          "size":  1873
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-primary-profile/watchdog-result-20260919T075105857Z.json",
+                          "sha256":  "F5B6BEADCA4FA049B4D065FC43D1624F668B4347747F34C0AAE43B47D56615E7",
+                          "size":  1787
+                      },
+                      {
+                          "path":  "evidence/phase-0b-u006-primary-profile/security-gate.json",
+                          "sha256":  "B2FD280718DA7E5E544FF4D0A45FA68782C0F3B2385CE956F7294D1C6F2C98A4",
+                          "size":  2078
+                      }
+                  ]
+}
