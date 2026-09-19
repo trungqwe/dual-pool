@@ -578,8 +578,8 @@ func safeTarget(path string) (string, error) {
 	if e != nil || filepath.Clean(a) != a {
 		return "", ErrUnsafeConfigArtifact
 	}
-	d, e := safeExistingDir(filepath.Dir(a))
-	if e != nil || !strings.EqualFold(d, filepath.Dir(a)) {
+	_, e = safeExistingDir(filepath.Dir(a))
+	if e != nil {
 		return "", ErrUnsafeConfigArtifact
 	}
 	i, e := os.Lstat(a)
