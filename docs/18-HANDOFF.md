@@ -159,3 +159,11 @@ The historical unauthenticated `ASTRA_NOT_VISIBLE` observation is corrected pros
 U-006 is **BLOCKED: AUTHENTICATED_PROBE_UNAVAILABLE**. The isolated custom-provider Probe had no Codex login UI, so the user could not authenticate through the disposable profile without reusing the primary session. No auth file, cookie, database, token, email, account ID, or billing data was inspected, copied, hashed, logged, or committed. The opaque temporary root was deleted after the user closed the Probe; the original IDE survived and real configuration hashes remained unchanged. Evidence: [result](../evidence/phase-0b-codex-extension-u006/u006-result.json), [security gate](../evidence/phase-0b-codex-extension-u006/security-gate.json), [manifest](../evidence/phase-0b-codex-extension-u006/evidence-manifest.json).
 
 Exact next task: obtain an official login-capable disposable Codex/Antigravity profile or a supported user-assisted authentication path, then rerun only the U-006 picker retention probe. Do not start Phase 1 or Cloud Code.
+
+## Delivery receipt — authenticated-picker boundary
+
+- Implementation/evidence commit: `128cef7b0dbc8e8c6375d7eb11705b94a16562a0` (`probe(phase-0): audit authenticated picker boundary`).
+- Push: PASS to `origin/phase-0/reversible-compatibility`.
+- PR: not created.
+- Verification: U-006 JSON, Node/PowerShell syntax, generic absolute-path scan, secret/privacy scan, cleanup controls, integrity manifest hash verification, and `git diff --check` PASS.
+- Historical probe residue under `evidence/phase-0b-codex-extension/` remains unstaged and untouched.
