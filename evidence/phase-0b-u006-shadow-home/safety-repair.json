@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "test_id": "P0B-CX-SHADOW-HOME-SAFETY-002",
+  "status": "PASS_BEFORE_LIVE",
+  "starting_head": "7db245469cbda20d9080e0924c49edd29757878b",
+  "real_config_mutation_capability": false,
+  "crash_requires_restore": false,
+  "primary_watchdog_disabled": true,
+  "current_sha256": "C15720CC37B0670D4EC1D0294DA5E067DD7CF65437D2E5DF4C209A9411F5CD58",
+  "toml_parse": "PASS",
+  "probe_markers_present": false,
+  "preflight_antigravity_count": 21,
+  "expanded_tests": "20/20 PASS",
+  "node_syntax": "PASS",
+  "powershell_syntax": "PASS",
+  "diff_check": "PASS",
+  "live_probe_run": false,
+  "raw_values_persisted": false
+}

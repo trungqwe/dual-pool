@@ -280,3 +280,6 @@ Read-only assessment: current config SHA-256 `C15720CC37B0670D4EC1D0294DA5E067DD
 - Current real config was read-only assessed; SHA-256 remained `C15720CC37B0670D4EC1D0294DA5E067DD7CF65437D2E5DF4C209A9411F5CD58`; no probe marker was found; real config mutation was `false`.
 - Live U-006 was intentionally not run. No Antigravity process was launched, no auth was inspected, and no normal IDE was auto-launched.
 - Next action: only a separately authorized owner-assisted live shadow run. On auth loss, record `FULL_CODEX_HOME_SHADOW_AUTH_NOT_RECOGNIZED`; never return to real-config mutation.
+### Shadow lifecycle safety repair — 2026-09-19
+
+At starting HEAD `7db2454`, SHADOW-009..013 were repaired. The watchdog now waits for voluntary primary closure, fails closed on process-query errors, applies a restricted TEMP ACL before copying, retains the shadow on probe-close timeout, and requires manual normal reopen plus `NORMAL_IDE_OK` and a final unchanged real-config hash before PASS. The external launcher and bounded cleanup helper are included. Safety tests: 20/20 PASS; live probe not yet run. Report: `reports/2026-09-19T1254Z-phase-0b-shadow-lifecycle-repair.md`.
