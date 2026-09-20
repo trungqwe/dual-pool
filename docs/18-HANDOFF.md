@@ -547,3 +547,9 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN. Phase 2 remains OPEN.
 - Evidence/correction commit and Source CI: PENDING.
 - Exact next task after receipt: **pinned v7.3.7 config adapter + two isolated instance config generation**. Do not start processes in that slice before separate gates.
+
+### Source CI correction for product-init evidence
+
+- Evidence commit `6899d95663de12d924f313226d7ad5bf987731bd` Source CI [run 35488802945](https://github.com/trungqwe/dual-pool/actions/runs/35488802945) **FAIL** at the existing `lockfile` stale-reclaim stress (`canonical_lstat` transient). The product initializer and ACL package tests passed in that run. The failed CI is not accepted as a delivery gate.
+- A bounded `os.Lstat` retry for only Windows transient access/share errors is under verification; all other errors remain fail closed. Correction report: `docs/reports/20260920T0435Z-phase-2-lock-ci-correction.md`.
+- Correction commit/CI: PENDING. Product root and four production credentials remain intentionally present; no additional product mutation was performed for this CI repair.

@@ -285,7 +285,17 @@ func (m *Manager) install(candidate, target string) error {
 var errCanonicalGone = errors.New("canonical lock disappeared")
 
 func openCanonical(path string) (*os.File, error) {
-	entry, err := os.Lstat(path)
+	var entry os.FileInfo
+	var err error
+	lstatDeadline := time.Now().Add(250 * time.Millisecond)
+	for {
+		entry, err = os.Lstat(path)
+		transient := errors.Is(err, windows.ERROR_ACCESS_DENIED) || errors.Is(err, windows.ERROR_SHARING_VIOLATION)
+		if !transient || time.Now().After(lstatDeadline) {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	if os.IsNotExist(err) || errors.Is(err, windows.ERROR_DELETE_PENDING) {
 		return nil, errCanonicalGone
 	}
