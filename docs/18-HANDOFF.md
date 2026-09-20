@@ -648,3 +648,7 @@ The first live shadow run exposed an observability defect: after terminal checkp
 ## Runtime identity correction pending CI
 
 - Historical CI 35505989265 FAIL ở existing lockfile stale-reclaim stress; không được dùng authorize. Correction dùng lock version và pinned short-commit prefix, strict EOF parser; real L3 NOT RUN.
+
+## Pre-live proof closure pending CI
+
+- Added commit-prefix/strict EOF fixtures and full real-gate integrity baseline; real L3 NOT RUN.

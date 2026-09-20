@@ -102,3 +102,29 @@ func TestClientAllowlistIsClosed(t *testing.T) {
 		t.Fatal("forbidden route accepted")
 	}
 }
+
+func TestRuntimeCommitPrefixContract(t *testing.T) {
+	for name, got := range map[string]bool{
+		"seven": validRuntimeCommit(pinnedCommit, pinnedCommit[:7]), "long": validRuntimeCommit(pinnedCommit, pinnedCommit[:12]), "full": validRuntimeCommit(pinnedCommit, pinnedCommit),
+		"short": validRuntimeCommit(pinnedCommit, pinnedCommit[:6]), "uppercase": validRuntimeCommit(pinnedCommit, strings.ToUpper(pinnedCommit[:7])), "nonhex": validRuntimeCommit(pinnedCommit, "zzzzzzz"), "wrong": validRuntimeCommit(pinnedCommit, "abcdef0"), "longer": validRuntimeCommit(pinnedCommit, pinnedCommit+"a"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got != (name == "seven" || name == "long" || name == "full") {
+				t.Fatal("commit prefix contract mismatch")
+			}
+		})
+	}
+}
+
+func TestStrictEOF(t *testing.T) {
+	for _, body := range []string{`{"debug":false} `, "{\"debug\":false}\n\t"} {
+		if err := parseDebug([]byte(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, body := range []string{`{"debug":false}{}`, `{"debug":false} garbage`, `{"debug":false} {`, `{"debug":false}` + string([]byte{0xff})} {
+		if !errors.Is(parseDebug([]byte(body)), ErrContract) {
+			t.Fatal("trailing data accepted")
+		}
+	}
+}

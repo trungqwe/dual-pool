@@ -3,6 +3,7 @@ package instance
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"os"
 	"path/filepath"
 	"testing"
@@ -57,6 +58,23 @@ func TestRealEmptyManagementInventory(t *testing.T) {
 		t.Fatal("installed binary invalid")
 	}
 	before := map[cliproxyconfig.ID][]byte{}
+	identities := map[cliproxyconfig.ID]realFileIdentity{}
+	beforeKeys := map[secretstore.Purpose][]byte{}
+	for _, p := range []secretstore.Purpose{secretstore.CodexClientKey, secretstore.CodexManagementKey, secretstore.GoogleClientKey, secretstore.GoogleManagementKey} {
+		v, e := store.Get(p)
+		if e != nil || len(v) != 32 {
+			t.Fatal("invalid product key")
+		}
+		beforeKeys[p] = v
+	}
+	defer func() {
+		for _, b := range before {
+			secretstore.Zero(b)
+		}
+		for _, b := range beforeKeys {
+			secretstore.Zero(b)
+		}
+	}()
 	for _, id := range []cliproxyconfig.ID{cliproxyconfig.Codex, cliproxyconfig.Google} {
 		if _, e := os.Lstat(filepath.Join(layout.Instances, string(id), "process.json")); !os.IsNotExist(e) {
 			t.Fatal("unexpected process record")
@@ -72,6 +90,10 @@ func TestRealEmptyManagementInventory(t *testing.T) {
 			t.Fatal(e)
 		}
 		before[id] = b
+		identities[id], e = realIdentity(filepath.Join(layout.Instances, string(id), "config.yaml"))
+		if e != nil {
+			t.Fatal(e)
+		}
 	}
 	for _, p := range []int{cliproxyconfig.CodexPort, cliproxyconfig.GooglePort} {
 		used, e := m.portOccupied(p)
@@ -119,8 +141,34 @@ func TestRealEmptyManagementInventory(t *testing.T) {
 			t.Fatal("config changed")
 		}
 		secretstore.Zero(after)
+		if afterID, e := realIdentity(filepath.Join(layout.Instances, string(id), "config.yaml")); e != nil || afterID != identities[id] {
+			t.Fatal("config identity changed")
+		}
+		if _, e := os.Lstat(filepath.Join(layout.Instances, string(id), "process.json")); !os.IsNotExist(e) {
+			t.Fatal("process record remains")
+		}
+		for _, n := range []string{"auth", "logs"} {
+			es, e := os.ReadDir(filepath.Join(layout.Instances, string(id), n))
+			if e != nil || len(es) != 0 {
+				t.Fatal("auth/log artifact remains")
+			}
+		}
 	}
-	for _, b := range before {
-		secretstore.Zero(b)
+	for _, p := range []secretstore.Purpose{secretstore.CodexClientKey, secretstore.CodexManagementKey, secretstore.GoogleClientKey, secretstore.GoogleManagementKey} {
+		after, e := store.Get(p)
+		if e != nil || subtle.ConstantTimeCompare(beforeKeys[p], after) != 1 {
+			secretstore.Zero(after)
+			t.Fatal("key changed")
+		}
+		secretstore.Zero(after)
+	}
+	for _, p := range []int{cliproxyconfig.CodexPort, cliproxyconfig.GooglePort} {
+		used, e := m.portOccupied(p)
+		if e != nil || used {
+			t.Fatal("listener remains")
+		}
+	}
+	if err = m.validateInstall(ctx, m.executableDir()); err != nil {
+		t.Fatal("binary validation failed")
 	}
 }
