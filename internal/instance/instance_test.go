@@ -1,13 +1,88 @@
 package instance
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
+	"github.com/trungqwe/dual-pool/internal/dataroot"
+	"github.com/trungqwe/dual-pool/internal/processidentity"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
+
+type fakeTerminationHandle struct {
+	identity                          processidentity.Identity
+	inspectErr, terminateErr, waitErr error
+	terminated, waited, closed        bool
+}
+
+func (h *fakeTerminationHandle) Inspect() (processidentity.Identity, error) {
+	return h.identity, h.inspectErr
+}
+func (h *fakeTerminationHandle) Terminate() error  { h.terminated = true; return h.terminateErr }
+func (h *fakeTerminationHandle) Wait(uint32) error { h.waited = true; return h.waitErr }
+func (h *fakeTerminationHandle) Close() error      { h.closed = true; return nil }
+
+func TestStopRecordUsesOneVerifiedHandle(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "bin")
+	dir := filepath.Join(bin, "cliproxyapi", "7.3.7")
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	exe := filepath.Join(dir, "cliproxyapi.exe")
+	if err := os.WriteFile(exe, []byte("fixture executable"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256([]byte("fixture executable"))
+	record := ProcessRecord{SchemaVersion: 1, InstanceID: "codex", PID: 42, StartTime: 99, ExecutableSHA256: hex.EncodeToString(sum[:]), ConfigSHA256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Port: cliproxyconfig.CodexPort}
+	for name, live := range map[string]processidentity.Identity{
+		"PID reuse":      {PID: 42, StartTime: 100, Image: exe},
+		"image mismatch": {PID: 42, StartTime: 99, Image: filepath.Join(dir, "foreign.exe")},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := &fakeTerminationHandle{identity: live}
+			opened := 0
+			m := &Manager{layout: dataroot.Layout{Bin: bin}, lock: upstreamlock.Lock{Version: "7.3.7"}, opener: func(pid uint32) (terminationHandle, error) {
+				opened++
+				if pid != record.PID {
+					t.Fatal("wrong PID")
+				}
+				return h, nil
+			}}
+			if err := m.stopRecord(record); err != ErrIdentityMismatch {
+				t.Fatalf("got %v", err)
+			}
+			if opened != 1 || h.terminated || h.waited || !h.closed {
+				t.Fatal("unverified handle was used to terminate")
+			}
+		})
+	}
+}
+
+func TestStopRecordTerminatesTheVerifiedHandle(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "bin")
+	dir := filepath.Join(bin, "cliproxyapi", "7.3.7")
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	exe := filepath.Join(dir, "cliproxyapi.exe")
+	if err := os.WriteFile(exe, []byte("fixture executable"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256([]byte("fixture executable"))
+	record := ProcessRecord{SchemaVersion: 1, InstanceID: "codex", PID: 42, StartTime: 99, ExecutableSHA256: hex.EncodeToString(sum[:]), ConfigSHA256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Port: cliproxyconfig.CodexPort}
+	h := &fakeTerminationHandle{identity: processidentity.Identity{PID: record.PID, StartTime: record.StartTime, Image: exe}}
+	m := &Manager{layout: dataroot.Layout{Bin: bin}, lock: upstreamlock.Lock{Version: "7.3.7"}, opener: func(uint32) (terminationHandle, error) { return h, nil }}
+	if err := m.stopRecord(record); err != nil {
+		t.Fatal(err)
+	}
+	if !h.terminated || !h.waited || !h.closed {
+		t.Fatal("verified handle lifecycle incomplete")
+	}
+}
 
 func TestProcessRecordRejectsPIDReuseAndUnsafeValues(t *testing.T) {
 	valid := ProcessRecord{SchemaVersion: 1, InstanceID: "codex", PID: 42, StartTime: 99, ExecutableSHA256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ConfigSHA256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Port: cliproxyconfig.CodexPort}

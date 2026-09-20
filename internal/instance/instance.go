@@ -58,6 +58,13 @@ type ACL interface {
 type SecretReader interface {
 	Get(secretstore.Purpose) ([]byte, error)
 }
+type terminationHandle interface {
+	Inspect() (processidentity.Identity, error)
+	Terminate() error
+	Wait(uint32) error
+	Close() error
+}
+type terminationOpener func(uint32) (terminationHandle, error)
 
 type InstallManifest struct {
 	SchemaVersion        int    `json:"schema_version"`
@@ -103,6 +110,7 @@ type Manager struct {
 	locks     *lockfile.Manager
 	inspector lockfile.ProcessInspector
 	reader    SecretReader
+	opener    terminationOpener
 }
 
 func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option) (*Manager, error) {
@@ -113,14 +121,18 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 	if err != nil {
 		return nil, ErrUnsafeInstance
 	}
-	m := &Manager{layout: layout, acl: acl, lock: lock, locks: locks, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New()}
+	m := &Manager{layout: layout, acl: acl, lock: lock, locks: locks, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New(), opener: openForTermination}
 	for _, opt := range opts {
 		opt(m)
 	}
-	if m.inspector == nil || m.reader == nil {
+	if m.inspector == nil || m.reader == nil || m.opener == nil {
 		return nil, ErrUnsafeInstance
 	}
 	return m, nil
+}
+
+func openForTermination(pid uint32) (terminationHandle, error) {
+	return processidentity.OpenForTermination(pid)
 }
 
 type Option func(*Manager)
@@ -421,7 +433,7 @@ func (m *Manager) cleanupOwned(id cliproxyconfig.ID, record ProcessRecord) error
 	return nil
 }
 func (m *Manager) stopRecord(record ProcessRecord) error {
-	h, err := processidentity.OpenForTermination(record.PID)
+	h, err := m.opener(record.PID)
 	if err != nil {
 		return ErrIdentityMismatch
 	}

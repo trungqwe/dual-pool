@@ -3,6 +3,7 @@ package instance
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 	"github.com/trungqwe/dual-pool/internal/winacl"
+	"golang.org/x/sys/windows"
 )
 
 // TestRealLifecycle is the only opt-in persistent lifecycle gate. It sends no
@@ -58,6 +60,23 @@ func TestRealLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := map[cliproxyconfig.ID][]byte{}
+	identities := map[cliproxyconfig.ID]realFileIdentity{}
+	beforeKeys := map[secretstore.Purpose][]byte{}
+	for _, p := range []secretstore.Purpose{secretstore.CodexClientKey, secretstore.CodexManagementKey, secretstore.GoogleClientKey, secretstore.GoogleManagementKey} {
+		v, e := store.Get(p)
+		if e != nil || len(v) != 32 {
+			t.Fatal("product key invalid")
+		}
+		beforeKeys[p] = v
+	}
+	defer func() {
+		for _, v := range before {
+			secretstore.Zero(v)
+		}
+		for _, v := range beforeKeys {
+			secretstore.Zero(v)
+		}
+	}()
 	for _, id := range []cliproxyconfig.ID{cliproxyconfig.Codex, cliproxyconfig.Google} {
 		if _, e := os.Lstat(filepath.Join(layout.Instances, string(id), "process.json")); !os.IsNotExist(e) {
 			t.Fatal("unexpected process record")
@@ -73,6 +92,10 @@ func TestRealLifecycle(t *testing.T) {
 			t.Fatal(e)
 		}
 		before[id] = b
+		identities[id], e = realIdentity(filepath.Join(layout.Instances, string(id), "config.yaml"))
+		if e != nil {
+			t.Fatal(e)
+		}
 	}
 	for _, port := range []int{cliproxyconfig.CodexPort, cliproxyconfig.GooglePort} {
 		occupied, e := m.portOccupied(port)
@@ -101,7 +124,17 @@ func TestRealLifecycle(t *testing.T) {
 	t.Cleanup(func() {
 		for _, id := range []cliproxyconfig.ID{cliproxyconfig.Codex, cliproxyconfig.Google} {
 			if owned[id] {
-				_ = m.Stop(id)
+				if e := m.Stop(id); e != nil {
+					t.Errorf("P2-REAL-CLEANUP-001: safe stop unresolved: %v", e)
+				}
+			}
+			if _, e := os.Lstat(filepath.Join(layout.Instances, string(id), "process.json")); !os.IsNotExist(e) {
+				t.Errorf("P2-REAL-CLEANUP-001: process record unresolved")
+			}
+		}
+		for _, port := range []int{cliproxyconfig.CodexPort, cliproxyconfig.GooglePort} {
+			if occupied, e := m.portOccupied(port); e != nil || occupied {
+				t.Errorf("P2-REAL-CLEANUP-001: listener unresolved")
 			}
 		}
 	})
@@ -147,6 +180,19 @@ func TestRealLifecycle(t *testing.T) {
 		if e != nil || !bytes.Equal(before[id], after) {
 			t.Fatal("config changed")
 		}
+		secretstore.Zero(after)
+		if afterID, e := realIdentity(filepath.Join(layout.Instances, string(id), "config.yaml")); e != nil || afterID != identities[id] {
+			t.Fatal("config identity changed")
+		}
+		if _, e := os.Lstat(filepath.Join(layout.Instances, string(id), "process.json")); !os.IsNotExist(e) {
+			t.Fatal("process record remains")
+		}
+		for _, name := range []string{"auth", "logs"} {
+			entries, e := os.ReadDir(filepath.Join(layout.Instances, string(id), name))
+			if e != nil || len(entries) != 0 {
+				t.Fatal("auth/log artifacts remain")
+			}
+		}
 	}
 	for _, port := range []int{cliproxyconfig.CodexPort, cliproxyconfig.GooglePort} {
 		occupied, e := m.portOccupied(port)
@@ -154,4 +200,30 @@ func TestRealLifecycle(t *testing.T) {
 			t.Fatal("listener remains")
 		}
 	}
+	for p, before := range beforeKeys {
+		after, e := store.Get(p)
+		if e != nil || subtle.ConstantTimeCompare(before, after) != 1 {
+			secretstore.Zero(after)
+			t.Fatal("product key changed")
+		}
+		secretstore.Zero(after)
+	}
+	if err = m.validateInstall(ctx, m.executableDir()); err != nil {
+		t.Fatal("binary final validation failed")
+	}
+}
+
+type realFileIdentity struct{ volume, high, low uint32 }
+
+func realIdentity(path string) (realFileIdentity, error) {
+	f, e := os.Open(path)
+	if e != nil {
+		return realFileIdentity{}, e
+	}
+	defer f.Close()
+	var info windows.ByHandleFileInformation
+	if e = windows.GetFileInformationByHandle(windows.Handle(f.Fd()), &info); e != nil {
+		return realFileIdentity{}, e
+	}
+	return realFileIdentity{info.VolumeSerialNumber, info.FileIndexHigh, info.FileIndexLow}, nil
 }

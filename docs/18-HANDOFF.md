@@ -621,3 +621,14 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Checklist đã đóng config-adapter mismatch và config path/key/port isolation. Runtime bind loopback, management/client authentication, process identity, start/stop/restart/status, health, auth inventory và update rollback vẫn OPEN. U-001..U-004/U-006 vẫn BLOCKED; U-008 vẫn PARTIAL_UNKNOWN.
 - Push receipt/receipt CI/remote HEAD: được xác nhận sau commit này vì commit không thể chứa SHA của chính nó.
 - Exact next task: **Phase 2 — protected pinned-binary installation + two-instance empty lifecycle L0/L1/L2 smoke**. Không bắt đầu task đó trong run này.
+
+# Phase 2 — hardening final của real lifecycle harness
+
+- Start HEAD: `74120593f8d23d9dde1fbe0b3f0ee0fafb805d8d`.
+- Thay đổi scoped: cleanup real harness không nuốt lỗi `Stop`, kiểm tra process record và listener; final assertions kiểm tra auth/log rỗng, config bytes/file identity, bốn key constant-time và binary validation.
+- Regression fixture mới chứng minh PID reuse hoặc executable image mismatch bị từ chối trước `Terminate`; handle đã xác minh phải đi qua `Terminate`, `Wait`, `Close` trên chính handle đó.
+- Local gates PASS: full Go tests; `go test -race -count=1 ./internal/instance`; vet; build; module verification; Node 55/55; `UPSTREAM_LOCK_VALID`; `git diff --check`.
+- Full local race suite: PENDING vì giới hạn phiên lệnh; Source CI của commit là gate bắt buộc.
+- Real lifecycle: **NOT RUN**. `DUALPOOL_RUN_REAL_LIFECYCLE` chưa arm; không có CLIProxyAPI process/listener mới, OAuth hay provider traffic trong run này.
+- Report: `docs/reports/2026-09-20T0932Z-phase-2-real-harness-hardening.md`.
+- Exact next action: commit/push, đợi Source CI PASS; chỉ sau đó chạy one-shot real lifecycle gate. Dừng nếu bất kỳ cleanup/integrity criterion nào fail.
