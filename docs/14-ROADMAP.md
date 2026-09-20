@@ -140,3 +140,6 @@ Exit: Definition of Done in `01-PROJECT-CHARTER.md` is satisfied.
 - Discovered incompatibility updates docs/tests before implementation workaround.
 - Do not mark an exit criterion complete without an evidence ID/path.
 - If a phase is BLOCKED, handoff states the smallest user/external action required; agents do not bypass it.
+# Tiến độ Phase 2: cấu hình instance
+
+Slice thứ ba xây dựng adapter pinned v7.3.7, canonical wire key và hai cấu hình instance tách biệt. Gate cấu hình/ACL/secret placement là điều kiện trước khi cài binary hoặc khởi chạy process. Phase 2 vẫn OPEN cho bind và xác thực runtime, lifecycle, health, kiểm tra auth root và rollback cập nhật.

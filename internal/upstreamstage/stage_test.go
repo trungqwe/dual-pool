@@ -53,7 +53,7 @@ func fixtureExecutable(t *testing.T) []byte {
 }
 func lockFor(t *testing.T, archive, exe []byte) upstreamlock.Lock {
 	t.Helper()
-	raw := fmt.Sprintf(`{"schema_version":1,"product":"CLIProxyAPI","status":"candidate","version":"1.2.3","tag":"v1.2.3","commit":"0123456789abcdef0123456789abcdef01234567","retrieved_at":"2026-09-20T00:00:00Z","release_metadata_url":"https://github.com/router-for-me/CLIProxyAPI/releases/tag/v1.2.3","config_adapter_version":"UNIMPLEMENTED","platforms":{"windows_amd64":{"artifact":"CLIProxyAPI_1.2.3_windows_amd64.zip","download_url":"https://github.com/router-for-me/CLIProxyAPI/releases/download/v1.2.3/CLIProxyAPI_1.2.3_windows_amd64.zip","archive_sha256":"%s","executable_sha256":"%s"}},"verified_capabilities":["published_checksum_matches_archive","github_asset_digest_matches_archive","binary_version_matches_tag","loopback_ipv4_bind","management_key_required","client_key_required","credential_free_start_stop_cleanup"],"unverified_capabilities":["credential_specific_model_inventory","provider_specific_response_shapes","dedicated_health_endpoint"],"evidence":"fixture"}`, hashBytes(archive), hashBytes(exe))
+	raw := fmt.Sprintf(`{"schema_version":1,"product":"CLIProxyAPI","status":"candidate","version":"7.3.7","tag":"v7.3.7","commit":"b773607e3e7756dc6020a291825e4eb08899595a","retrieved_at":"2026-09-20T00:00:00Z","release_metadata_url":"https://github.com/router-for-me/CLIProxyAPI/releases/tag/v7.3.7","config_adapter_version":"dualpool-cpa-v7.3.7-config-v1","platforms":{"windows_amd64":{"artifact":"CLIProxyAPI_7.3.7_windows_amd64.zip","download_url":"https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.7/CLIProxyAPI_7.3.7_windows_amd64.zip","archive_sha256":"%s","executable_sha256":"%s"}},"verified_capabilities":["published_checksum_matches_archive","github_asset_digest_matches_archive","binary_version_matches_tag","loopback_ipv4_bind","management_key_required","client_key_required","credential_free_start_stop_cleanup"],"unverified_capabilities":["credential_specific_model_inventory","provider_specific_response_shapes","dedicated_health_endpoint"],"evidence":"fixture"}`, hashBytes(archive), hashBytes(exe))
 	l, e := upstreamlock.Decode([]byte(raw))
 	if e != nil {
 		t.Fatal(e)
@@ -191,12 +191,12 @@ func TestBinaryIdentityFailures(t *testing.T) {
 		wantVersion, wantCommit bool
 		wantErr                 bool
 	}{
-		{"match", fakeIdentityRunner{stdout: line("1.2.3", "01234567")}, true, true, false},
-		{"wrong version", fakeIdentityRunner{stdout: line("9.9.9", "01234567")}, false, true, false},
-		{"wrong commit", fakeIdentityRunner{stdout: line("1.2.3", "ffffffff")}, true, false, false},
-		{"nonzero", fakeIdentityRunner{stdout: line("1.2.3", "01234567"), err: errors.New("exit")}, false, false, true},
+		{"match", fakeIdentityRunner{stdout: line("7.3.7", "b773607e")}, true, true, false},
+		{"wrong version", fakeIdentityRunner{stdout: line("9.9.9", "b773607e")}, false, true, false},
+		{"wrong commit", fakeIdentityRunner{stdout: line("7.3.7", "ffffffff")}, true, false, false},
+		{"nonzero", fakeIdentityRunner{stdout: line("7.3.7", "b773607e"), err: errors.New("exit")}, false, false, true},
 		{"oversized stdout", fakeIdentityRunner{stdout: bytes.Repeat([]byte("x"), maxProbeBytes+1)}, false, false, true},
-		{"oversized stderr", fakeIdentityRunner{stdout: line("1.2.3", "01234567"), stderr: bytes.Repeat([]byte("x"), maxProbeBytes+1)}, false, false, true},
+		{"oversized stderr", fakeIdentityRunner{stdout: line("7.3.7", "b773607e"), stderr: bytes.Repeat([]byte("x"), maxProbeBytes+1)}, false, false, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -291,7 +291,7 @@ func response(code int, body []byte, length int64) *http.Response {
 
 func TestDownloaderContract(t *testing.T) {
 	body := []byte("archive")
-	p := upstreamlock.Platform{Artifact: "CLIProxyAPI_1.2.3_windows_amd64.zip", DownloadURL: "https://github.com/router-for-me/CLIProxyAPI/releases/download/v1.2.3/CLIProxyAPI_1.2.3_windows_amd64.zip", ArchiveSHA256: hashBytes(body)}
+	p := upstreamlock.Platform{Artifact: "CLIProxyAPI_7.3.7_windows_amd64.zip", DownloadURL: "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.7/CLIProxyAPI_7.3.7_windows_amd64.zip", ArchiveSHA256: hashBytes(body)}
 	calls := 0
 	d := NewHTTPDownloaderWithTransport(roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		calls++
@@ -306,14 +306,14 @@ func TestDownloaderContract(t *testing.T) {
 		t.Fatalf("%+v %v", result, e)
 	}
 	bad := p
-	bad.DownloadURL = "http://github.com/router-for-me/CLIProxyAPI/releases/download/v1.2.3/" + p.Artifact
+	bad.DownloadURL = "http://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.7/" + p.Artifact
 	if _, e = d.Download(context.Background(), bad, filepath.Join(t.TempDir(), "b")); !errors.Is(e, ErrDownloadOrigin) || calls != 1 {
 		t.Fatalf("origin err=%v calls=%d", e, calls)
 	}
 }
 
 func TestDownloaderFailures(t *testing.T) {
-	p := upstreamlock.Platform{Artifact: "CLIProxyAPI_1.2.3_windows_amd64.zip", DownloadURL: "https://github.com/router-for-me/CLIProxyAPI/releases/download/v1.2.3/CLIProxyAPI_1.2.3_windows_amd64.zip", ArchiveSHA256: strings.Repeat("0", 64)}
+	p := upstreamlock.Platform{Artifact: "CLIProxyAPI_7.3.7_windows_amd64.zip", DownloadURL: "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.7/CLIProxyAPI_7.3.7_windows_amd64.zip", ArchiveSHA256: strings.Repeat("0", 64)}
 	for name, tc := range map[string]struct {
 		rt   roundTripFunc
 		want error
@@ -334,7 +334,7 @@ func TestDownloaderFailures(t *testing.T) {
 
 func TestDownloaderEnforcesStreamingLimit(t *testing.T) {
 	body := []byte("123456789")
-	p := upstreamlock.Platform{Artifact: "CLIProxyAPI_1.2.3_windows_amd64.zip", DownloadURL: "https://github.com/router-for-me/CLIProxyAPI/releases/download/v1.2.3/CLIProxyAPI_1.2.3_windows_amd64.zip", ArchiveSHA256: hashBytes(body)}
+	p := upstreamlock.Platform{Artifact: "CLIProxyAPI_7.3.7_windows_amd64.zip", DownloadURL: "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.7/CLIProxyAPI_7.3.7_windows_amd64.zip", ArchiveSHA256: hashBytes(body)}
 	d := NewHTTPDownloaderWithTransport(roundTripFunc(func(*http.Request) (*http.Response, error) { return response(200, body, -1), nil }))
 	d.maxBytes = 8
 	if _, err := d.Download(context.Background(), p, filepath.Join(t.TempDir(), "x")); !errors.Is(err, ErrDownloadTooLarge) {

@@ -14,6 +14,7 @@ import (
 )
 
 const MaxBytes = 64 * 1024
+const ConfigAdapterVersion = "dualpool-cpa-v7.3.7-config-v1"
 
 var (
 	ErrLockInvalid = errors.New("upstream lock is invalid")
@@ -76,7 +77,7 @@ func Decode(data []byte) (Lock, error) {
 
 func (l Lock) Validate() error {
 	p := l.Platforms.WindowsAMD64
-	if l.SchemaVersion != 1 || l.Product != "CLIProxyAPI" || l.Status != "candidate" || !semver.MatchString(l.Version) || l.Tag != "v"+l.Version || !hex40.MatchString(l.Commit) || l.ConfigAdapterVersion != "UNIMPLEMENTED" || l.RetrievedAt == "" || l.Evidence == "" || len(l.raw) == 0 {
+	if l.SchemaVersion != 1 || l.Product != "CLIProxyAPI" || l.Status != "candidate" || !semver.MatchString(l.Version) || l.Version != "7.3.7" || l.Tag != "v"+l.Version || !hex40.MatchString(l.Commit) || l.Commit != "b773607e3e7756dc6020a291825e4eb08899595a" || l.ConfigAdapterVersion != ConfigAdapterVersion || l.RetrievedAt == "" || l.Evidence == "" || len(l.raw) == 0 {
 		return ErrLockInvalid
 	}
 	if p.Artifact != "CLIProxyAPI_"+l.Version+"_windows_amd64.zip" || !hex64.MatchString(p.ArchiveSHA256) || !hex64.MatchString(p.ExecutableSHA256) {

@@ -7,7 +7,7 @@
   "commit": "b773607e3e7756dc6020a291825e4eb08899595a",
   "retrieved_at": "2026-09-18T19:38:11Z",
   "release_metadata_url": "https://github.com/router-for-me/CLIProxyAPI/releases/tag/v7.3.7",
-  "config_adapter_version": "UNIMPLEMENTED",
+  "config_adapter_version": "dualpool-cpa-v7.3.7-config-v1",
   "platforms": {
     "windows_amd64": {
       "artifact": "CLIProxyAPI_7.3.7_windows_amd64.zip",

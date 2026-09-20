@@ -44,10 +44,57 @@ func (m *Manager) Create(path string) error {
 	return m.Inspect(path)
 }
 
+// CreateFile opens a new regular file with the protected product DACL already
+// attached at creation time. The caller must close the returned handle.
+func (m *Manager) CreateFile(path string) (*os.File, error) {
+	if err := validateParent(path); err != nil {
+		return nil, err
+	}
+	sd, err := windows.SecurityDescriptorFromString("O:" + m.user + "D:P(A;;FA;;;" + m.user + ")(A;;FA;;;SY)")
+	if err != nil {
+		return nil, ErrUnsafeACL
+	}
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return nil, ErrUnsafeACL
+	}
+	sa := &windows.SecurityAttributes{Length: uint32(unsafe.Sizeof(windows.SecurityAttributes{})), SecurityDescriptor: sd}
+	h, err := windows.CreateFile(p, windows.GENERIC_WRITE|windows.GENERIC_READ, 0, sa, windows.CREATE_NEW, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	if err != nil {
+		return nil, ErrUnsafeACL
+	}
+	f := os.NewFile(uintptr(h), path)
+	if err = m.InspectFile(path); err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+	return f, nil
+}
+
+func (m *Manager) InspectFile(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+		return ErrUnsafeACL
+	}
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return ErrUnsafeACL
+	}
+	a, err := windows.GetFileAttributes(p)
+	if err != nil || a&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 || a&windows.FILE_ATTRIBUTE_DIRECTORY != 0 {
+		return ErrUnsafeACL
+	}
+	return m.inspectACL(path, 0)
+}
+
 func (m *Manager) Inspect(path string) error {
 	if !safeDirectory(path) {
 		return ErrUnsafeACL
 	}
+	return m.inspectACL(path, windows.OBJECT_INHERIT_ACE|windows.CONTAINER_INHERIT_ACE)
+}
+
+func (m *Manager) inspectACL(path string, expectedFlags byte) error {
 	sd, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.OWNER_SECURITY_INFORMATION|windows.DACL_SECURITY_INFORMATION)
 	if err != nil || sd == nil {
 		return ErrUnsafeACL
@@ -67,7 +114,7 @@ func (m *Manager) Inspect(path string) error {
 	allowed := map[string]bool{m.user: false, "S-1-5-18": false}
 	for i := uint32(0); i < uint32(dacl.AceCount); i++ {
 		var ace *windows.ACCESS_ALLOWED_ACE
-		if windows.GetAce(dacl, i, &ace) != nil || ace == nil || ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE || ace.Header.AceFlags != windows.OBJECT_INHERIT_ACE|windows.CONTAINER_INHERIT_ACE || ace.Mask != fileAllAccess {
+		if windows.GetAce(dacl, i, &ace) != nil || ace == nil || ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE || ace.Header.AceFlags != expectedFlags || ace.Mask != fileAllAccess {
 			return ErrUnsafeACL
 		}
 		sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart))

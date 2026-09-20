@@ -22,6 +22,30 @@ func TestCreateAppliesProtectedExactACL(t *testing.T) {
 	}
 }
 
+func TestCreateFileAppliesProtectedExactACLAtCreation(t *testing.T) {
+	m, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	f, err := m.CreateFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = m.InspectFile(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.Write([]byte("fixture")); err != nil {
+		t.Fatal(err)
+	}
+	if err = f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = m.CreateFile(path); err == nil {
+		t.Fatal("existing file replaced")
+	}
+}
+
 func TestInspectRejectsInheritedBroadACL(t *testing.T) {
 	m, err := New()
 	if err != nil {

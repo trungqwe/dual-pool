@@ -150,3 +150,6 @@ If the Codex instance fails, the bridge may still serve native passthrough and G
 | Donor model ID | Poolbridge | exact observed identifier |
 | Prompt/output/tool payload | Client/provider | transient forwarding only |
 | Evidence | Poolbridge | redacted, versioned, no sensitive payloads |
+# Cây instance Phase 2
+
+Dual Pool sở hữu hai cây riêng dưới product root: `instances/codex` và `instances/google`. Mỗi cây có `config.yaml`, `auth/`, `logs/`; auth và logs rỗng trong slice tạo cấu hình. Adapter tạo file và thư mục bằng DACL protected ngay lúc tạo, marker trước candidate, cài đặt same-volume không ghi đè, rồi kiểm tra lại. Hai port cố định là 8317 và 8318. Không có process hay listener trong slice này.

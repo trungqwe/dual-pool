@@ -166,3 +166,12 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P2-BINARY-IDENTITY-001 | [Windows verifier](../internal/upstreamstage/stage.go), [pinned result](../evidence/phase-2-upstream-stager/pinned-integration.json) | E3 PASS locally; CI delivery gate pending implementation push |
 | P2-STAGE-IDEMPOTENCE-001 | [stage tests](../internal/upstreamstage/stage_test.go) | E3 PASS for reuse and fail-closed conflicts under the existing global lock |
 | P2-PINNED-INTEGRATION-001 / SUP-001 / T-06 | [real integration](../internal/upstreamstage/pinned_integration_test.go), [normalized evidence](../evidence/phase-2-upstream-stager/pinned-integration.json) | Runtime pin/origin/hash/binary-identity component proof; update promotion/rollback remains open |
+# Liên kết gate cấu hình Phase 2
+
+| Yêu cầu | Kiểm tra | Trạng thái |
+|---|---|---|
+| Wire key 32 bytes → base64url 43 ký tự | `internal/keymaterial/wire_test.go` | Component PASS |
+| Adapter pinned, YAML strict, bcrypt và secret placement | `internal/cliproxyconfig/adapter_test.go` | Component PASS |
+| ACL, atomic install, partial pair, fault/crash recovery | `internal/cliproxyconfig/recovery_test.go` | Component PASS |
+| Real generation và byte idempotence | `internal/cliproxyconfig/real_windows_test.go` | PENDING Source CI trước mutation |
+| Listener và runtime authentication | Slice lifecycle kế tiếp | OPEN |

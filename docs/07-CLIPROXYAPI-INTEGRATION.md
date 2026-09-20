@@ -147,3 +147,8 @@ These values are starting hypotheses. Benchmarks may justify another documented 
 8. automatically restore previous pointer if startup/health fails.
 
 OAuth credentials are never migrated by the updater; both versions point to the same instance auth root only after compatibility is proven.
+# Adapter cấu hình v7.3.7
+
+Adapter `dualpool-cpa-v7.3.7-config-v1` dựa trên commit upstream `b773607e3e7756dc6020a291825e4eb08899595a`. Hai cấu hình do Dual Pool sở hữu dùng host `127.0.0.1`, port 8317/8318, auth root riêng, một `api-keys` riêng, và bcrypt verifier cho management key. `MANAGEMENT_PASSWORD` không thuộc hợp đồng chạy vì nguồn pinned bật `allowRemoteOverride` khi biến này có giá trị. Các trường và nguồn chính xác nằm trong báo cáo Phase 2. Việc cấu hình loopback chưa chứng minh listener thực tế.
+
+Bốn key trong Credential Manager giữ nguyên 32 raw bytes. Mọi consumer phải gọi `internal/keymaterial.Encode` để nhận chuỗi base64url không padding dài 43 ký tự; không tự dùng raw string, hex hoặc biến thể base64 khác. Pinned upstream so khớp plaintext `api-keys`, nên mỗi config protected chứa một client wire key dạng plaintext. Management key chỉ xuất hiện dưới dạng bcrypt verifier. Lần chạy lại giữ nguyên byte cấu hình và bcrypt salt đã được chấp nhận.

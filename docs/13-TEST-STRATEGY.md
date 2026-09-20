@@ -135,3 +135,6 @@ Skipped mandatory tests fail the release gate unless the owner explicitly accept
 - `P1-CONFIG-ROLLBACK-STATUS-001` proves target preservation, persisted conflict status and repeated conflict behavior.
 - `P1-CONFIG-TOML-EDGE-001` proves deterministic no-table insertion and exact no-terminal-newline rollback with an unrelated later edit.
 - `P1-SENTINEL-NONDISCLOSURE-001` generates runtime-only sentinels and scans Phase 1 error, log, state, lock, secret-store, config, CLI, docs and evidence surfaces for zero forbidden matches.
+# Gate cấu hình instance Phase 2
+
+Fixture TEMP kiểm tra wire encoding, YAML strict decode, bcrypt, secret placement, ACL, idempotence, partial-pair recovery, fault injection và subprocess crash. `TestRealInstanceConfigGeneration` chỉ chạy khi `DUALPOOL_RUN_REAL_INSTANCE_CONFIG=1`; CI thường bỏ qua gate này. Gate thực tế chỉ được mở sau implementation Source CI PASS, sau đó chạy hai lần để chứng minh không rewrite hoặc xoay key. Kiểm tra process/listener được giữ cho slice kế tiếp.

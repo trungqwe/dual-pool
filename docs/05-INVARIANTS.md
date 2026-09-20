@@ -63,3 +63,6 @@ These invariants are release blockers. Tests must prove them; comments and inten
 ## Enforcement
 
 Each invariant must map to one or more automated test IDs in `23-TRACEABILITY-MATRIX.md`. An invariant without a test is open work. A failing invariant test blocks commit promotion and push.
+# Bổ sung hợp đồng wire key Phase 2
+
+`INV-KEY-WIRE-01`: mỗi raw product key dài đúng 32 bytes và chỉ được chuyển sang dạng wire bằng `internal/keymaterial.Encode` (base64url không padding, 43 ký tự ASCII). Bốn raw key không được ghi lại hoặc xoay trong adapter cấu hình. Kiểm tra này độc lập với các gate runtime còn mở.

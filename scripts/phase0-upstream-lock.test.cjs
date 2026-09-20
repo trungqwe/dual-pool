@@ -19,7 +19,7 @@ test('candidate lock pins the independently verified Windows artifact', () => {
 
 test('candidate lock cannot claim credentialed provider support', () => {
   const lock = loadAndValidate(lockPath);
-  assert.equal(lock.config_adapter_version, 'UNIMPLEMENTED');
+  assert.equal(lock.config_adapter_version, 'dualpool-cpa-v7.3.7-config-v1');
   assert.ok(lock.unverified_capabilities.includes('credential_specific_model_inventory'));
   assert.ok(lock.unverified_capabilities.includes('provider_specific_response_shapes'));
   assert.ok(lock.unverified_capabilities.includes('dedicated_health_endpoint'));
@@ -42,6 +42,15 @@ test('non-string verified capability is rejected', () => {
   const lock = structuredClone(loadAndValidate(lockPath));
   lock.verified_capabilities.push({ name: 'loopback_ipv4_bind' });
   assert.throws(() => validate(lock), /LOCK_VERIFIED_CAPABILITY_UNKNOWN/);
+});
+
+test('pinned config adapter rejects unimplemented and mismatched claims', () => {
+  const base = loadAndValidate(lockPath);
+  for (const value of ['UNIMPLEMENTED', '', 'dualpool-cpa-v7.3.8-config-v1', 'other']) {
+    const lock = structuredClone(base);
+    lock.config_adapter_version = value;
+    assert.throws(() => validate(lock), /LOCK_ADAPTER_CLAIM_INVALID/);
+  }
 });
 
 test('download URL must exactly bind tag and artifact without URL metadata', () => {

@@ -41,6 +41,8 @@ func TestDecodeRejectsMalformedLocks(t *testing.T) {
 		"missing":          []byte(strings.Replace(base, `"product": "CLIProxyAPI",`, ``, 1)),
 		"query":            []byte(strings.Replace(base, `.zip",`, `.zip?x=1",`, 1)),
 		"latest":           []byte(strings.Replace(base, `/download/v7.3.7/`, `/download/latest/`, 1)),
+		"old adapter":      []byte(strings.Replace(base, `"config_adapter_version": "`+ConfigAdapterVersion+`"`, `"config_adapter_version": "UNIMPLEMENTED"`, 1)),
+		"unknown adapter":  []byte(strings.Replace(base, `"config_adapter_version": "`+ConfigAdapterVersion+`"`, `"config_adapter_version": "other"`, 1)),
 	}
 	for name, data := range tests {
 		t.Run(name, func(t *testing.T) {

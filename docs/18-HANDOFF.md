@@ -570,3 +570,10 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Push: normal fast-forward to `origin/phase-2/upstream-lifecycle`; no force push. PR: not requested or created.
 - Delivery receipt commit: this commit; its SHA, Source CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA.
 - Exact next task: **Phase 2 — pinned v7.3.7 config adapter + two isolated instance config generation**. Do not start processes until config schema and isolation gates separately pass.
+# Phase 2 slice thứ ba — adapter cấu hình v7.3.7 đang kiểm chứng
+
+- Bắt đầu từ `ab03ba3d72e2ae254a0df01c5d6091d044547d80` trên `phase-2/upstream-lifecycle`.
+- Adapter `dualpool-cpa-v7.3.7-config-v1` và canonical base64url wire key đã triển khai trên fixture. Lock digest mới: `db57fef18b915105e7a2fac6e0505d967945152ceeb614e638f7a8821b0e50ea`.
+- Hai cây instance/config chỉ được tạo trên product root sau implementation Source CI PASS. Chưa chạy CLIProxyAPI, mở listener hoặc tạo provider auth file.
+- Bốn raw key trong Credential Manager giữ nguyên. Theo pinned upstream, mỗi client wire key sẽ là plaintext trong đúng một config protected; management chỉ lưu bcrypt verifier.
+- Report: [Phase 2 config adapter](reports/20260920T045418Z-phase-2-v737-config-adapter.md). Real-generation gate và delivery receipt đang PENDING; Phase 2 vẫn OPEN.

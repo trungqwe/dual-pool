@@ -88,3 +88,6 @@ Release is blocked if any listener is non-loopback, management works without a k
 `P2-ENTRY-KEYS-001`: before two real CLIProxyAPI configs/processes are created, generate four independent `crypto/rand` product keys, persist them only through the four-purpose secret store, prove all four differ, and prove none enters config evidence or logs.
 
 These are Phase 2 entry gates. Phase 1 used disposable fixtures and did not create the real product root or product keys.
+# Rủi ro còn lại của cấu hình pinned v7.3.7
+
+CLIProxyAPI v7.3.7 so khớp `api-keys` bằng chuỗi plaintext. Vì vậy, hai client wire key nằm trong đúng hai `config.yaml` thuộc instance, được bảo vệ bằng DACL current-user/SYSTEM; đây là rủi ro tồn dư đã chấp nhận cho adapter pinned. Không sao chép nội dung cấu hình vào repository, evidence, log hay chẩn đoán. Management key chỉ lưu bcrypt verifier. Không tuyên bố “không có plaintext secret trên đĩa”. Phạm vi chứng minh là không có plaintext secret ngoài hai config protected cần thiết cho upstream.
