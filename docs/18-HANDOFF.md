@@ -577,3 +577,17 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Hai cây instance/config chỉ được tạo trên product root sau implementation Source CI PASS. Chưa chạy CLIProxyAPI, mở listener hoặc tạo provider auth file.
 - Bốn raw key trong Credential Manager giữ nguyên. Theo pinned upstream, mỗi client wire key sẽ là plaintext trong đúng một config protected; management chỉ lưu bcrypt verifier.
 - Report: [Phase 2 config adapter](reports/20260920T045418Z-phase-2-v737-config-adapter.md). Real-generation gate và delivery receipt đang PENDING; Phase 2 vẫn OPEN.
+# Delivery receipt — Phase 2 adapter cấu hình v7.3.7 và instance isolation
+
+- Start HEAD: `ab03ba3d72e2ae254a0df01c5d6091d044547d80`; branch: `phase-2/upstream-lifecycle`.
+- Implementation: `1204f0ab5007f3493266002da24ce108bb1b7ed1`; Source CI [35491189796](https://github.com/trungqwe/dual-pool/actions/runs/35491189796) **PASS**.
+- Real evidence: `295d90442d8e782a8c794b350fdda3c6fbbe569f`; Source CI [35491944956](https://github.com/trungqwe/dual-pool/actions/runs/35491944956) **PASS**.
+- Adapter: `dualpool-cpa-v7.3.7-config-v1`; CLIProxyAPI `v7.3.7` commit `b773607e3e7756dc6020a291825e4eb08899595a`; `upstream.lock` digest `db57fef18b915105e7a2fac6e0505d967945152ceeb614e638f7a8821b0e50ea`.
+- Wire-key contract: 32 raw bytes → `base64.RawURLEncoding` → 43 ASCII chars. Mọi consumer sau này phải dùng `internal/keymaterial`; 0 key rotation.
+- Codex và Google config hiện tồn tại trong product root theo layout protected, với host intent `127.0.0.1`, port lần lượt 8317/8318, auth root tách biệt và rỗng. Client wire key plaintext chỉ ở config instance bắt buộc; management key chỉ là bcrypt verifier. `MANAGEMENT_PASSWORD` bị loại khỏi runtime contract.
+- Recovery: 11 fault points và 4 subprocess crash points PASS; marker trước candidate, DACL protected và no-replace installation PASS. Lần real thứ hai có 0 config rewrite, 0 key rotation, 0 auth file.
+- Không khởi chạy CLIProxyAPI, listener, OAuth hoặc provider auth. Kiểm tra sau real gate: 0 CLIProxyAPI process, 0 listener ở 8317/8318. Đây là proof cấu hình, không phải runtime listener/authentication proof.
+- Bằng chứng đã sanitize: [manifest](../evidence/phase-2-instance-config/evidence-manifest.json), [security gate](../evidence/phase-2-instance-config/security-gate.json), [real generation](../evidence/phase-2-instance-config/real-generation.json). Không có YAML, secret/hash, SID hoặc absolute path.
+- Checklist đã đóng config-adapter mismatch và config path/key/port isolation. Runtime bind loopback, management/client authentication, process identity, start/stop/restart/status, health, auth inventory và update rollback vẫn OPEN. U-001..U-004/U-006 vẫn BLOCKED; U-008 vẫn PARTIAL_UNKNOWN.
+- Push receipt/receipt CI/remote HEAD: được xác nhận sau commit này vì commit không thể chứa SHA của chính nó.
+- Exact next task: **Phase 2 — protected pinned-binary installation + two-instance empty lifecycle L0/L1/L2 smoke**. Không bắt đầu task đó trong run này.
