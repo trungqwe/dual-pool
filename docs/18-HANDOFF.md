@@ -553,3 +553,20 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Evidence commit `6899d95663de12d924f313226d7ad5bf987731bd` Source CI [run 35488802945](https://github.com/trungqwe/dual-pool/actions/runs/35488802945) **FAIL** at the existing `lockfile` stale-reclaim stress (`canonical_lstat` transient). The product initializer and ACL package tests passed in that run. The failed CI is not accepted as a delivery gate.
 - A bounded `os.Lstat` retry for only Windows transient access/share errors is under verification; all other errors remain fail closed. Correction report: `docs/reports/20260920T0435Z-phase-2-lock-ci-correction.md`.
 - Correction commit/CI: PENDING. Product root and four production credentials remain intentionally present; no additional product mutation was performed for this CI repair.
+
+### Delivery receipt — Phase 2 product-root ACL and four-key initialization
+
+- Start HEAD: `20934d794f03770f4f779a9309367a3da56ca1ae` on `phase-2/upstream-lifecycle`.
+- Implementation commit: `9b0aabc1306b7e11f8c395a5a08d0cc325775bcf`; Source CI **PASS**, [run 35488118466](https://github.com/trungqwe/dual-pool/actions/runs/35488118466).
+- Live-gate/evidence commit: `6899d95663de12d924f313226d7ad5bf987731bd`. Its Source CI [run 35488802945](https://github.com/trungqwe/dual-pool/actions/runs/35488802945) **FAIL** at the pre-existing stale-reclaim `canonical_lstat` transition; this failed run was not accepted.
+- Scoped lock correction commit: `e33122e98c5fefcf84253e895a21874fc1aa12ba`; Source CI **PASS**, [run 35489070213](https://github.com/trungqwe/dual-pool/actions/runs/35489070213), including full race and pinned upstream integration.
+- `P2-ENTRY-ACL-001`: **PASS**. Creation-time protected DACL and exact current-user/SYSTEM Full Control ACEs with child inheritance were verified on root and seven standard children; no broad principals, reparse points or unexpected product artifacts were accepted. Initial root classification: absent.
+- `P2-ENTRY-KEYS-001`: **PASS**. Four independent 32-byte production keys persist in Windows Credential Manager; all six pairs differ, 0–4 partial recovery fixtures pass, and the second real run created zero keys and preserved all four values.
+- Real product root now persists: true. Four product credentials now persist: true. This is intentional product initialization, not TEMP cleanup.
+- CLIProxyAPI config/process/listener, provider auth root and provider credentials created/touched: false. No key bytes, hashes, literal SID, credential target or absolute product path were committed.
+- Local verification: 131 Go test functions, full race, vet, build and module verify PASS; stale-reclaim stress repeated five times before correction delivery; 54/54 Node tests and `UPSTREAM_LOCK_VALID` PASS. Redirect explicit-port regression PASS; Source CI race gate PASS.
+- Evidence: `evidence/phase-2-product-init/`; reports: `docs/reports/20260920T034857Z-phase-2-product-init.md`, `docs/reports/20260920T0420Z-phase-2-product-init-live.md`, `docs/reports/20260920T0435Z-phase-2-lock-ci-correction.md`.
+- U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN. Phase 2 remains OPEN. Config adapter, two-instance configuration, process lifecycle and isolation remain unimplemented.
+- Push: normal fast-forward to `origin/phase-2/upstream-lifecycle`; no force push. PR: not requested or created.
+- Delivery receipt commit: this commit; its SHA, Source CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA.
+- Exact next task: **Phase 2 — pinned v7.3.7 config adapter + two isolated instance config generation**. Do not start processes until config schema and isolation gates separately pass.
