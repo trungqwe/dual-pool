@@ -105,8 +105,8 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 ## Security and privacy
 
 - [ ] No wildcard/LAN listeners.
-- [ ] Four distinct strong secrets. Deferred entry gate `P2-ENTRY-KEYS-001` must pass before two real CLIProxyAPI configs/processes are created.
-- [ ] Restricted ACLs verified. Deferred entry gate `P2-ENTRY-ACL-001` must pass before any real product-root/config generation.
+- [x] Four distinct strong secrets. `P2-ENTRY-KEYS-001` PASS: four independent 32-byte product keys in Windows Credential Manager, pairwise distinct and unchanged on the second run. Evidence: `evidence/phase-2-product-init/key-gate.json`, `docs/reports/20260920T034857Z-phase-2-product-init.md` and `docs/reports/20260920T0420Z-phase-2-product-init-live.md`.
+- [x] Restricted ACLs verified. `P2-ENTRY-ACL-001` PASS: creation-time protected DACL, current user and LocalSystem only, seven children verified. Evidence: `evidence/phase-2-product-init/acl-gate.json` and `docs/reports/20260920T0420Z-phase-2-product-init-live.md`.
 - [ ] No open proxy/SSRF route.
 - [ ] No prompt/output/tool/source persistence.
 - [ ] No raw session/account identity in logs.

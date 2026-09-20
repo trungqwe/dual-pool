@@ -534,3 +534,16 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Report: `docs/reports/20260920T034857Z-phase-2-product-init.md`.
 - Implementation commit/CI: PENDING.
 - Exact next action after CI PASS: run the explicitly gated real initializer twice, capture sanitized evidence, then close `P2-ENTRY-ACL-001` and `P2-ENTRY-KEYS-001`.
+
+## Phase 2 product initialization — live gates PASS, evidence delivery pending
+
+- Implementation `9b0aabc1306b7e11f8c395a5a08d0cc325775bcf` Source CI **PASS**, [run 35488118466](https://github.com/trungqwe/dual-pool/actions/runs/35488118466), including the new full race step and pinned upstream integration.
+- Before real mutation, the product root was absent. The gated initializer passed its exact four-purpose secret preflight, created the protected root and seven standard child directories, then wrote four independent 32-byte keys to Windows Credential Manager under GLOBAL.
+- Actual ACL verification: current user and LocalSystem Full Control only, protected DACL, exact inheritable ACE flags, no inherited or broad principals, owner=current user. The seven children have the same contract.
+- Real gated test PASS twice. The second run created zero directories and zero keys; all four keys were read and compared in memory and remained unchanged. Child directories were empty after lock release.
+- Product root and four production credentials now persist intentionally. No CLIProxyAPI config, binary copy, process, listener, provider auth root or provider credential was created/touched.
+- Local regression after correction: 131 Go test functions, full race, vet, build, module verification, 54/54 Node tests and `UPSTREAM_LOCK_VALID` PASS.
+- `P2-ENTRY-ACL-001` and `P2-ENTRY-KEYS-001`: **PASS**, subject to final evidence commit Source CI. Evidence: `evidence/phase-2-product-init/`; report: `docs/reports/20260920T0420Z-phase-2-product-init-live.md`.
+- U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN. Phase 2 remains OPEN.
+- Evidence/correction commit and Source CI: PENDING.
+- Exact next task after receipt: **pinned v7.3.7 config adapter + two isolated instance config generation**. Do not start processes in that slice before separate gates.

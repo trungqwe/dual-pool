@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "staged_secret_scan": "PASS",
+  "documentation_links": "PASS",
+  "runtime_sentinel_test": "PASS",
+  "key_bytes_in_product_files": false,
+  "key_bytes_or_hashes_in_evidence": false,
+  "literal_sid_in_evidence": false,
+  "absolute_product_path_in_evidence": false,
+  "provider_credentials_touched": false
+}

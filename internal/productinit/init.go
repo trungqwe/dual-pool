@@ -28,6 +28,12 @@ type Result struct {
 	CreatedDirectories, CreatedKeys int
 	Ready                           bool
 }
+type Inspection struct {
+	RootExists       bool
+	DirectoriesReady int
+	KeysPresent      int
+	Ready            bool
+}
 type Initializer struct {
 	layout dataroot.Layout
 	acl    ACL
@@ -45,6 +51,52 @@ func NewCurrent() (*Initializer, error) {
 		return nil, err
 	}
 	return New(l, a, secretstore.New(), rand.Reader), nil
+}
+
+// InspectCurrent reads the real product layout and exact four credentials without mutation.
+func InspectCurrent() (Inspection, error) {
+	i, err := NewCurrent()
+	if err != nil {
+		return Inspection{}, err
+	}
+	return i.Inspect()
+}
+
+func (i *Initializer) Inspect() (Inspection, error) {
+	keys, err := i.readKeys()
+	if err != nil {
+		return Inspection{}, err
+	}
+	defer zeroMap(keys)
+	state := Inspection{KeysPresent: len(keys)}
+	_, err = os.Lstat(i.layout.Root)
+	if errors.Is(err, os.ErrNotExist) {
+		if state.KeysPresent != 0 {
+			return Inspection{}, ErrConflict
+		}
+		return state, nil
+	}
+	if err != nil {
+		return Inspection{}, ErrConflict
+	}
+	state.RootExists = true
+	if err = i.inspectTree(); err != nil {
+		return Inspection{}, err
+	}
+	for _, dir := range i.directories() {
+		_, err = os.Lstat(dir)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil || i.acl.Inspect(dir) != nil {
+			return Inspection{}, ErrConflict
+		}
+		if dir != i.layout.Root {
+			state.DirectoriesReady++
+		}
+	}
+	state.Ready = state.DirectoriesReady == 7 && state.KeysPresent == 4
+	return state, nil
 }
 
 func New(l dataroot.Layout, a ACL, s secretstore.Store, r io.Reader) *Initializer {
@@ -91,7 +143,12 @@ func (i *Initializer) Initialize() (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	defer guard.Release()
+	released := false
+	defer func() {
+		if !released {
+			_ = guard.Release()
+		}
+	}()
 	for _, dir := range i.directories() {
 		if err := i.acl.Inspect(dir); err != nil {
 			return Result{}, err
@@ -117,6 +174,23 @@ func (i *Initializer) Initialize() (Result, error) {
 		present[purpose] = key
 		result.CreatedKeys++
 	}
+	verified, err := i.readKeys()
+	if err != nil {
+		return Result{}, err
+	}
+	defer zeroMap(verified)
+	if len(verified) != len(purposes) {
+		return Result{}, ErrInvalidKeys
+	}
+	for _, purpose := range purposes {
+		if subtle.ConstantTimeCompare(present[purpose], verified[purpose]) != 1 {
+			return Result{}, ErrInvalidKeys
+		}
+	}
+	if err := guard.Release(); err != nil {
+		return Result{}, err
+	}
+	released = true
 	result.Ready = true
 	return result, nil
 }

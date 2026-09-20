@@ -67,7 +67,7 @@ func (m *Manager) Inspect(path string) error {
 	allowed := map[string]bool{m.user: false, "S-1-5-18": false}
 	for i := uint32(0); i < uint32(dacl.AceCount); i++ {
 		var ace *windows.ACCESS_ALLOWED_ACE
-		if windows.GetAce(dacl, i, &ace) != nil || ace == nil || ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE || ace.Header.AceFlags&windows.INHERITED_ACE != 0 || ace.Mask != fileAllAccess {
+		if windows.GetAce(dacl, i, &ace) != nil || ace == nil || ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE || ace.Header.AceFlags != windows.OBJECT_INHERIT_ACE|windows.CONTAINER_INHERIT_ACE || ace.Mask != fileAllAccess {
 			return ErrUnsafeACL
 		}
 		sid := (*windows.SID)(unsafe.Pointer(&ace.SidStart))

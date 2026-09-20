@@ -1,7 +1,7 @@
 package productinit
 
 import (
-	"bytes"
+	"crypto/subtle"
 	"os"
 	"testing"
 
@@ -20,6 +20,10 @@ func TestRealProductInitialization(t *testing.T) {
 	if err != nil || !first.Ready {
 		t.Fatalf("first initialization failed: %v", err)
 	}
+	state, err := InspectCurrent()
+	if err != nil || !state.Ready || !state.RootExists || state.DirectoriesReady != 7 || state.KeysPresent != 4 {
+		t.Fatal("post-initialization inspection failed")
+	}
 	store := secretstore.New()
 	before := map[secretstore.Purpose][]byte{}
 	for _, p := range purposes {
@@ -34,9 +38,19 @@ func TestRealProductInitialization(t *testing.T) {
 	if err != nil || !second.Ready || second.CreatedDirectories != 0 || second.CreatedKeys != 0 {
 		t.Fatalf("idempotence failed: %v", err)
 	}
+	state, err = InspectCurrent()
+	if err != nil || !state.Ready || state.DirectoriesReady != 7 || state.KeysPresent != 4 {
+		t.Fatal("second inspection failed")
+	}
+	for _, dir := range i.directories()[1:] {
+		entries, e := os.ReadDir(dir)
+		if e != nil || len(entries) != 0 {
+			t.Fatal("unexpected product artifact")
+		}
+	}
 	for _, p := range purposes {
 		v, e := store.Get(p)
-		if e != nil || !bytes.Equal(before[p], v) {
+		if e != nil || len(v) != len(before[p]) || subtle.ConstantTimeCompare(before[p], v) != 1 {
 			secretstore.Zero(v)
 			t.Fatal("key stability failed")
 		}

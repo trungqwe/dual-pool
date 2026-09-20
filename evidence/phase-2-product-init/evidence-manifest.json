@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "artifacts": [
+    {
+      "path": "acl-gate.json",
+      "sha256": "a6d3cfcac6c366163b6ac2996813253637e60e7bc4f19a82edaf990fb385244a"
+    },
+    {
+      "path": "key-gate.json",
+      "sha256": "bed52b095a46353d5bd963843dc61a98dba8854cda8fa16cd263ee38732ca3b6"
+    },
+    {
+      "path": "real-initialization.json",
+      "sha256": "2439920497c388464814fcc4ed1211dbc4f1db312ead20e5b96c199e53dd1005"
+    },
+    {
+      "path": "security-gate.json",
+      "sha256": "ffb9fa910afeadd349a1a4cc4ec3ea3906f236f1d0e361b15807c4bbccb6cd35"
+    },
+    {
+      "path": "test-result.json",
+      "sha256": "3fe10d6e2c5200b61ee0f6e13a178602cb67e2d8cf96f395c531d53d55c5318d"
+    }
+  ],
+  "sources": [
+    {
+      "path": "internal/productinit/init.go",
+      "sha256": "98c014217b6177cab9b209b76072db46feecce51302bb1aa9dd19dc296bec10b"
+    },
+    {
+      "path": "internal/productinit/init_test.go",
+      "sha256": "f60e90a10919fbdc3a9fb3776e840c9a969da8f377bd84a509d3b8ab18581e53"
+    },
+    {
+      "path": "internal/productinit/real_windows_test.go",
+      "sha256": "69b05e274485f4a5da48f43c3e72f2cdc2ee380b1429dd239364f508dc0b189d"
+    },
+    {
+      "path": "internal/winacl/winacl.go",
+      "sha256": "0b36b61fb38ba4b1359c070996f4b6907cee1908c938ff55282027403dcc26f6"
+    },
+    {
+      "path": "internal/winacl/winacl_test.go",
+      "sha256": "188328069c4fcb3b1360876a9d66a34cb39fd783a751edd40c2545029f10170e"
+    },
+    {
+      "path": "internal/upstreamstage/stage.go",
+      "sha256": "81085b26b883c9fea1318b43b3cd6e004afe7a94092b1979bcc6df346dcef577"
+    },
+    {
+      "path": "internal/upstreamstage/stage_test.go",
+      "sha256": "a3b946ea66b0a83ad3bea4bdd91f130d9da623ae7a87c9ac53782feb2e6d6bdd"
+    }
+  ]
+}

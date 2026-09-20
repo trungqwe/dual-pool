@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "go_test_functions": 131,
+  "go_test_full": "PASS",
+  "go_race_full": "PASS",
+  "go_vet": "PASS",
+  "go_build_windows": "PASS",
+  "go_mod_verify": "PASS",
+  "phase_0_node_tests_passed": 54,
+  "upstream_lock_validation": "PASS",
+  "pinned_upstream_integration_ci": "PASS",
+  "redirect_explicit_port_regression": "PASS",
+  "real_product_init_gate_default": "SKIP",
+  "real_product_init_gate_explicit": "PASS"
+}

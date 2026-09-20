@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "test_id": "P2-PRODUCT-INIT-LIVE-001",
+  "result": "PASS",
+  "implementation_head": "9b0aabc1306b7e11f8c395a5a08d0cc325775bcf",
+  "implementation_source_ci_run": 35488118466,
+  "real_product_root_touched": true,
+  "real_product_root_acl_verified": true,
+  "production_keys_present": 4,
+  "second_run_idempotence": "PASS",
+  "post_correction_live_recheck": "PASS",
+  "product_root_persists": true,
+  "product_credentials_persist": true,
+  "cliproxyapi_config_created": false,
+  "cliproxyapi_process_started": false,
+  "listener_started": false,
+  "provider_auth_root_created": false,
+  "provider_credentials_touched": false
+}

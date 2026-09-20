@@ -3,6 +3,7 @@ package productinit
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -34,6 +35,28 @@ func (fixtureACL) Inspect(p string) error {
 type failingACL struct{ fixtureACL }
 
 func (failingACL) Create(string) error { return winacl.ErrUnsafeACL }
+
+type failingChildACL struct {
+	fixtureACL
+	target string
+}
+
+func (a failingChildACL) Create(path string) error {
+	if path == a.target {
+		return winacl.ErrUnsafeACL
+	}
+	return a.fixtureACL.Create(path)
+}
+
+type failingReadStore struct{ *memoryStore }
+
+func (s failingReadStore) Get(secretstore.Purpose) ([]byte, error) {
+	return nil, errors.New("read failed")
+}
+
+type failingRandom struct{}
+
+func (failingRandom) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
 
 type memoryStore struct {
 	mu     sync.Mutex
@@ -222,6 +245,56 @@ func TestInitializeACLFailureWritesNoKeys(t *testing.T) {
 	}
 }
 
+func TestChildACLFailureWritesNoKeys(t *testing.T) {
+	l := layout(t)
+	s := &memoryStore{values: map[secretstore.Purpose][]byte{}}
+	_, err := New(l, failingChildACL{target: l.Config}, s, bytes.NewReader(randomBytes())).Initialize()
+	if !errors.Is(err, winacl.ErrUnsafeACL) || s.writes != 0 {
+		t.Fatalf("%v writes=%d", err, s.writes)
+	}
+}
+
+func TestSecretReadFailureWritesNoKeys(t *testing.T) {
+	l := layout(t)
+	s := &memoryStore{values: map[secretstore.Purpose][]byte{}}
+	_, err := New(l, fixtureACL{}, failingReadStore{s}, bytes.NewReader(randomBytes())).Initialize()
+	if err == nil || s.writes != 0 || exists(l.Root) {
+		t.Fatalf("%v writes=%d", err, s.writes)
+	}
+}
+
+func TestRandomFailureWritesNoKeys(t *testing.T) {
+	l := layout(t)
+	s := &memoryStore{values: map[secretstore.Purpose][]byte{}}
+	_, err := New(l, fixtureACL{}, s, failingRandom{}).Initialize()
+	if !errors.Is(err, io.ErrUnexpectedEOF) || s.writes != 0 {
+		t.Fatalf("%v writes=%d", err, s.writes)
+	}
+}
+
+func TestGlobalLockFailureWritesNoKeys(t *testing.T) {
+	l := layout(t)
+	s := &memoryStore{values: map[secretstore.Purpose][]byte{}}
+	for _, d := range []string{l.Root, l.Bin, l.Instances, l.Config, l.State, l.Backups, l.Evidence, l.Locks} {
+		if err := (fixtureACL{}).Create(d); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m, err := lockfile.NewManager(l.Locks)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := m.AcquireGlobal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer g.Release()
+	_, err = New(l, fixtureACL{}, s, bytes.NewReader(randomBytes())).Initialize()
+	if !errors.Is(err, lockfile.ErrLockHeld) || s.writes != 0 {
+		t.Fatalf("%v writes=%d", err, s.writes)
+	}
+}
+
 func TestInitializeRejectsExhaustedRandomCollisions(t *testing.T) {
 	l := layout(t)
 	s := &memoryStore{values: map[secretstore.Purpose][]byte{}}
@@ -241,5 +314,83 @@ func TestInitializeRejectsExhaustedRandomCollisions(t *testing.T) {
 	}
 	if s.writes != 0 {
 		t.Fatal("collision was written")
+	}
+}
+
+func TestInspectIsReadOnlyAndFreshKeyConflict(t *testing.T) {
+	l := layout(t)
+	s := &memoryStore{values: map[secretstore.Purpose][]byte{}}
+	i := New(l, fixtureACL{}, s, bytes.NewReader(randomBytes()))
+	state, err := i.Inspect()
+	if err != nil || state.RootExists || state.KeysPresent != 0 || exists(l.Root) {
+		t.Fatal("fresh inspection changed state")
+	}
+	s.values[secretstore.CodexClientKey] = bytes.Repeat([]byte{7}, 32)
+	if _, err = i.Inspect(); !errors.Is(err, ErrConflict) {
+		t.Fatalf("%v", err)
+	}
+	if _, err = i.Initialize(); !errors.Is(err, ErrConflict) {
+		t.Fatalf("%v", err)
+	}
+	if exists(l.Root) || s.writes != 0 {
+		t.Fatal("conflict changed state")
+	}
+}
+
+type corruptFinalStore struct {
+	*memoryStore
+	reads int
+}
+
+func (s *corruptFinalStore) Get(p secretstore.Purpose) ([]byte, error) {
+	s.reads++
+	v, err := s.memoryStore.Get(p)
+	if s.reads == 9 && err == nil {
+		v[0] ^= 0xff
+	}
+	return v, err
+}
+
+func TestFinalKeyVerificationRejectsChangedStoreValue(t *testing.T) {
+	l := layout(t)
+	base := &memoryStore{values: map[secretstore.Purpose][]byte{}}
+	s := &corruptFinalStore{memoryStore: base}
+	_, err := New(l, fixtureACL{}, s, bytes.NewReader(randomBytes())).Initialize()
+	if !errors.Is(err, ErrInvalidKeys) || base.writes != 4 {
+		t.Fatalf("%v writes=%d", err, base.writes)
+	}
+	r, err := New(l, fixtureACL{}, base, bytes.NewReader(nil)).Initialize()
+	if err != nil || !r.Ready || r.CreatedKeys != 0 {
+		t.Fatalf("%#v %v", r, err)
+	}
+}
+
+func TestInitializerDoesNotPersistSyntheticKeySentinel(t *testing.T) {
+	l := layout(t)
+	s := &memoryStore{values: map[secretstore.Purpose][]byte{}}
+	r, err := New(l, fixtureACL{}, s, bytes.NewReader(randomBytes())).Initialize()
+	if err != nil || !r.Ready {
+		t.Fatalf("%v", err)
+	}
+	for _, value := range s.values {
+		walkErr := filepath.WalkDir(l.Root, func(path string, entry os.DirEntry, readErr error) error {
+			if readErr != nil {
+				return readErr
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			data, e := os.ReadFile(path)
+			if e != nil {
+				return e
+			}
+			if bytes.Contains(data, value) {
+				t.Fatal("file disclosed key")
+			}
+			return nil
+		})
+		if walkErr != nil {
+			t.Fatal(walkErr)
+		}
 	}
 }

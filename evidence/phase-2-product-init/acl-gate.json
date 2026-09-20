@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "test_id": "P2-ENTRY-ACL-001",
+  "result": "PASS",
+  "initial_root_classification": "root_absent",
+  "creation_time_security_descriptor": true,
+  "dacl_present": true,
+  "dacl_non_null": true,
+  "dacl_protected": true,
+  "current_user_full_control": true,
+  "system_full_control": true,
+  "required_inheritance_flags_verified": true,
+  "unexpected_allow_aces": 0,
+  "users_allow": false,
+  "everyone_allow": false,
+  "authenticated_users_allow": false,
+  "layout_directories_verified": 7,
+  "unexpected_product_artifacts": 0
+}

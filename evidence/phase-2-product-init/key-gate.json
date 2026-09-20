@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "test_id": "P2-ENTRY-KEYS-001",
+  "result": "PASS",
+  "initial_absent_count": 4,
+  "purpose_count": 4,
+  "secret_bytes_each": 32,
+  "all_present": true,
+  "pairwise_distinct": true,
+  "storage": "windows_credential_manager",
+  "second_run_generated_count": 0,
+  "second_run_all_unchanged": true,
+  "partial_recovery_fixture": "PASS",
+  "provider_credentials_touched": false,
+  "plaintext_product_files": 0
+}
