@@ -2,6 +2,9 @@ package instance
 
 import (
 	"encoding/binary"
+	"net"
+	"os"
+	"strconv"
 	"testing"
 	"unsafe"
 )
@@ -23,6 +26,46 @@ func TestDecodeTCP4UsesABIDerivedLayout(t *testing.T) {
 	if got[1].address != "0.0.0.0" || got[1].port != 8318 || got[1].pid != 99 {
 		t.Fatalf("row1=%+v", got[1])
 	}
+}
+
+func TestTCP4WindowsABI(t *testing.T) {
+	l, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	port, _ := strconv.Atoi(p)
+	rows, err := tcpListeners()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range rows {
+		if !row.ipv6 && row.address == "127.0.0.1" && row.port == port && row.pid == uint32(os.Getpid()) {
+			return
+		}
+	}
+	t.Fatal("P2-TCP4-WINDOWS-ABI-001: listener not found")
+}
+
+func TestTCP6WindowsABI(t *testing.T) {
+	l, err := net.Listen("tcp6", "[::1]:0")
+	if err != nil {
+		t.Skipf("P2-TCP6-WINDOWS-ABI-001 unavailable: %v", err)
+	}
+	defer l.Close()
+	_, p, _ := net.SplitHostPort(l.Addr().String())
+	port, _ := strconv.Atoi(p)
+	rows, err := tcpListeners()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range rows {
+		if row.ipv6 && row.port == port && row.pid == uint32(os.Getpid()) {
+			return
+		}
+	}
+	t.Fatal("P2-TCP6-WINDOWS-ABI-001: listener not found")
 }
 
 func TestDecodeTCP6UsesABIDerivedLayoutAndRejectsTruncation(t *testing.T) {

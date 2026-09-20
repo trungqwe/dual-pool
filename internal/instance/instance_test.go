@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
+	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
 
 func TestProcessRecordRejectsPIDReuseAndUnsafeValues(t *testing.T) {
@@ -22,6 +23,22 @@ func TestProcessRecordRejectsPIDReuseAndUnsafeValues(t *testing.T) {
 		mutate(&v)
 		if validRecord(v) {
 			t.Fatal("unsafe process record accepted")
+		}
+	}
+}
+
+func TestInstallMarkerTransactionIDValidation(t *testing.T) {
+	m := &Manager{lock: upstreamlock.Lock{Version: "7.3.7", ConfigAdapterVersion: "dualpool-cpa-v7.3.7-config-v1"}}
+	txn, err := randomTransaction()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !validMarker(m.marker(txn, "."+m.lock.Version+".install-"+txn), m) {
+		t.Fatal("P2-INSTALL-MARKER-TXN-001: generated transaction rejected")
+	}
+	for _, bad := range []string{txn[:31], txn + "a", "A" + txn[1:], "z" + txn[1:]} {
+		if validMarker(m.marker(bad, "."+m.lock.Version+".install-"+bad), m) {
+			t.Fatalf("bad transaction accepted: %q", bad)
 		}
 	}
 }

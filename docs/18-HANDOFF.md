@@ -1,5 +1,9 @@
 # Current Handoff
 
+## Phase 2 pre-live closure — pending Source CI (2026-09-20)
+
+Starting at `8710e5f`, the correction fixes the 32-hex transaction ID contract, permits deletion of strictly marker-owned partial install candidates without promotion, validates `GetExtendedTcpTable` parsing against live IPv4/IPv6 loopback sockets, and requires one global expected-port owner in L1. Local Go/Node/upstream-lock checks passed. The existing real-gate test remains intentionally fail-closed and no real lifecycle action has occurred. New CI is required before any further gate decision.
+
 ## Phase 2 final pre-live correction — pending Source CI (2026-09-20)
 
 Starting at `b20b3f5`, this correction uses ABI-derived TCP table layout offsets, verifies parser behavior with synthetic IPv4/IPv6 buffers, handles safe partial install candidates, validates semantic config before existing-process idempotence, and makes stale Stop remove a record only with PID absence plus a verified free port. `TestRealLifecycle` is committed and skips without its explicit gate; it fails closed if the gate is set before a complete approved harness is installed. No real lifecycle action occurred. New CI is required before further work.

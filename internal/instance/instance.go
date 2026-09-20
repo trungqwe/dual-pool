@@ -256,19 +256,16 @@ func (m *Manager) validatePartialCandidate(ctx context.Context, dir string) erro
 		}
 		seen[entry.Name()] = true
 	}
-	if seen[manifestName] && !seen["cliproxyapi.exe"] {
-		return ErrUnsafeInstance
-	}
 	if seen["cliproxyapi.exe"] && seen[manifestName] {
-		return m.validateInstall(ctx, dir)
-	}
-	if seen["cliproxyapi.exe"] && digest(filepath.Join(dir, "cliproxyapi.exe")) != "" && digest(filepath.Join(dir, "cliproxyapi.exe")) != m.lock.Platforms.WindowsAMD64.ExecutableSHA256 {
-		return ErrUnsafeInstance
+		// A complete candidate is additionally validated. A failed validation is
+		// still a safe crash artifact when the marker, topology and filenames
+		// prove ownership; recovery discards it rather than promoting it.
+		_ = m.validateInstall(ctx, dir)
 	}
 	return nil
 }
 func validMarker(v installMarker, m *Manager) bool {
-	return v.SchemaVersion == 1 && digestPattern.MatchString(v.TransactionID) && v.Version == m.lock.Version && v.LockSHA256 == m.lock.Digest() && v.AdapterVersion == m.lock.ConfigAdapterVersion && v.CandidateBasename == "."+v.Version+".install-"+v.TransactionID
+	return v.SchemaVersion == 1 && transactionPattern.MatchString(v.TransactionID) && v.Version == m.lock.Version && v.LockSHA256 == m.lock.Digest() && v.AdapterVersion == m.lock.ConfigAdapterVersion && v.CandidateBasename == "."+v.Version+".install-"+v.TransactionID
 }
 
 func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, error) {
@@ -671,6 +668,7 @@ func digest(path string) string {
 }
 
 var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
+var transactionPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
 func validRecord(r ProcessRecord) bool {
 	return r.SchemaVersion == 1 && r.PID > 0 && r.StartTime > 0 && digestPattern.MatchString(r.ExecutableSHA256) && digestPattern.MatchString(r.ConfigSHA256) && ((r.InstanceID == "codex" && r.Port == cliproxyconfig.CodexPort) || (r.InstanceID == "google" && r.Port == cliproxyconfig.GooglePort))
@@ -856,21 +854,24 @@ func (m *Manager) checkL0(id cliproxyconfig.ID, r ProcessRecord) error {
 	return nil
 }
 func (m *Manager) checkL1(ctx context.Context, r ProcessRecord) error {
-	count := 0
 	all, err := tcpListeners()
 	if err != nil {
 		return ErrUnverifiable
 	}
+	expectedPortCount:=0
+	managedCount:=0
 	for _, l := range all {
-		if l.pid != r.PID {
-			continue
+		if l.port==r.Port {
+			expectedPortCount++
+			if l.ipv6||l.address!="127.0.0.1"||l.pid!=r.PID{return ErrPersistence}
 		}
+		if l.pid!=r.PID {continue}
+		managedCount++
 		if l.ipv6 || l.address != "127.0.0.1" || l.port != r.Port {
 			return ErrPersistence
 		}
-		count++
 	}
-	if count != 1 {
+	if expectedPortCount != 1 || managedCount != 1 {
 		return ErrPersistence
 	}
 	return m.request(ctx, r.Port, "/healthz", "", "", 200)
