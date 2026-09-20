@@ -71,6 +71,7 @@ func TestRealEmptyManagementInventory(t *testing.T) {
 	for _, p := range []secretstore.Purpose{secretstore.CodexClientKey, secretstore.CodexManagementKey, secretstore.GoogleClientKey, secretstore.GoogleManagementKey} {
 		v, e := store.Get(p)
 		if e != nil || len(v) != 32 {
+			secretstore.Zero(v)
 			t.Fatal("invalid product key")
 		}
 		beforeKeys[p] = v
