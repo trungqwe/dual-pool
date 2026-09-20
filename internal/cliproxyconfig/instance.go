@@ -266,7 +266,7 @@ func (g *Generator) inspectInstance(root string, id ID, m *material, candidate b
 		return ErrUnsafeInstanceArtifact
 	}
 	entries, err := os.ReadDir(root)
-	if err != nil || len(entries) != 3 {
+	if err != nil || len(entries) < 3 || len(entries) > 4 {
 		return ErrUnsafeInstanceArtifact
 	}
 	for _, e := range entries {
@@ -277,6 +277,10 @@ func (g *Generator) inspectInstance(root string, id ID, m *material, candidate b
 			}
 		case "auth", "logs":
 			if !e.IsDir() {
+				return ErrUnsafeInstanceArtifact
+			}
+		case "process.json":
+			if e.IsDir() || g.acl.InspectFile(filepath.Join(root, e.Name())) != nil {
 				return ErrUnsafeInstanceArtifact
 			}
 		default:

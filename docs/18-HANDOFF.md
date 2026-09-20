@@ -1,5 +1,11 @@
 # Current Handoff
 
+## Phase 2 lifecycle slice — implementation pending gates (2026-09-20)
+
+Worktree `phase2-empty-lifecycle` starts at `6d6cfd28600c26a3188455df9ef3b7c258bdaab6`; it does not alter the dirty Phase 0 checkout. The uncommitted slice adds `internal/instance` for protected installation of the verified v7.3.7 binary and PID-safe lifecycle records, and extends `cliproxyconfig` to admit only a protected optional `process.json` artifact.
+
+Local `go test ./...`, `go vet ./...` and `go build ./cmd/poolbridge` passed. Race, source CI and the gated credential-free real smoke are still PENDING. No OAuth, provider request, credential inventory, IDE configuration mutation or evidence artifact has been performed. Do not mark Phase 2 lifecycle gates until those pending gates pass.
+
 ## Latest authoritative Phase 0B status — 2026-09-19
 
 Delivery receipt: implementation/evidence commit `e31fd58` (`probe(phase-0): verify parallel Codex picker routing`) đã push thành công từ `c55cd44` lên remote branch `phase-0/reversible-compatibility`. Chưa tạo PR.
