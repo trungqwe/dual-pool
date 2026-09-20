@@ -51,8 +51,8 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Candidate `upstream.lock` populated with independently verified Windows artifact metadata; provider support remains unverified. Evidence: `evidence/phase-0-closure.json`.
 - [x] Download checksum mismatch fails closed. Evidence: `internal/upstreamstage/stage_test.go` and `evidence/phase-2-upstream-stager/pinned-integration.json`.
 - [x] Pinned binary version/commit mismatch fails closed after both artifact hashes pass.
-- [ ] Config adapter version mismatch fails closed; `config_adapter_version` remains `UNIMPLEMENTED` until the config-generator slice.
-- [ ] Codex and Google configs have disjoint paths/keys/ports.
+- [x] Config adapter version mismatch fails closed; pinned `config_adapter_version` is `dualpool-cpa-v7.3.7-config-v1`. Evidence: [security gate](../evidence/phase-2-instance-config/security-gate.json).
+- [x] Codex and Google configs have disjoint paths/keys/ports. Evidence: [isolation gate](../evidence/phase-2-instance-config/isolation-gate.json).
 - [ ] Both instances bind only `127.0.0.1`.
 - [ ] Management requires key and disallows remote.
 - [ ] Process identity prevents foreign PID termination.

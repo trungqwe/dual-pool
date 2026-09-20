@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "instance_count": 2,
+  "ports_distinct": true,
+  "config_paths_distinct": true,
+  "auth_roots_distinct": true,
+  "log_roots_distinct": true,
+  "client_keys_distinct": true,
+  "management_keys_distinct": true,
+  "opposite_client_key_in_config": false,
+  "management_plaintext_in_config": false,
+  "provider_auth_files": 0
+}

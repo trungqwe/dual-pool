@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "fault_points": 11,
+  "subprocess_crash_points": 4,
+  "marker_before_candidate": true,
+  "candidate_acl_protected": true,
+  "same_volume_no_replace_install": true,
+  "unknown_or_corrupt_marker_candidate_final": "FAIL_CLOSED",
+  "partial_pair_completion": "PASS"
+}

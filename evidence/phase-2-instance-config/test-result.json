@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "local": {
+    "go_test": "PASS",
+    "go_race": "PASS",
+    "go_vet": "PASS",
+    "go_build": "PASS",
+    "go_mod_verify": "PASS",
+    "pinned_upstream_integration": "PASS",
+    "node_tests": "55/55 PASS",
+    "upstream_lock": "UPSTREAM_LOCK_VALID",
+    "doc_links": "PASS",
+    "git_diff_check": "PASS",
+    "changed_file_secret_pattern_matches": 0
+  },
+  "hosted": {
+    "source_ci_run": "35491189796",
+    "source_ci": "PASS"
+  },
+  "real": {
+    "gated_test": "PASS",
+    "auth_files": 0,
+    "config_rewrites_second_run": 0,
+    "key_rotations": 0
+  }
+}

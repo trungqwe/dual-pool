@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "implementation_commit": "1204f0ab5007f3493266002da24ce108bb1b7ed1",
+  "implementation_ci_run": "35491189796",
+  "implementation_ci_result": "PASS",
+  "real_gate": "TestRealInstanceConfigGeneration",
+  "instances_created_or_validated": 2,
+  "second_run_configs_rewritten": 0,
+  "key_rotation_count": 0,
+  "provider_auth_files": 0,
+  "cli_proxy_api_processes": 0,
+  "instance_listeners": 0
+}

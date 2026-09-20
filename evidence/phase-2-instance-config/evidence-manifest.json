@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "scope": "Phase 2 pinned v7.3.7 instance configuration",
+  "files": [
+    "adapter-source.json",
+    "config-schema.json",
+    "isolation-gate.json",
+    "secret-placement.json",
+    "recovery-matrix.json",
+    "real-generation.json",
+    "security-gate.json",
+    "test-result.json"
+  ],
+  "contains_config_body": false,
+  "contains_secret_or_hash": false,
+  "contains_machine_path_or_sid": false
+}

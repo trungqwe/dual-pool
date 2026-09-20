@@ -170,8 +170,8 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 | Yêu cầu | Kiểm tra | Trạng thái |
 |---|---|---|
-| Wire key 32 bytes → base64url 43 ký tự | `internal/keymaterial/wire_test.go` | Component PASS |
-| Adapter pinned, YAML strict, bcrypt và secret placement | `internal/cliproxyconfig/adapter_test.go` | Component PASS |
-| ACL, atomic install, partial pair, fault/crash recovery | `internal/cliproxyconfig/recovery_test.go` | Component PASS |
-| Real generation và byte idempotence | `internal/cliproxyconfig/real_windows_test.go` | PENDING Source CI trước mutation |
+| Wire key 32 bytes → base64url 43 ký tự | `internal/keymaterial/wire_test.go`, [secret placement](../evidence/phase-2-instance-config/secret-placement.json) | PASS |
+| Adapter pinned, YAML strict, bcrypt và secret placement | `internal/cliproxyconfig/adapter_test.go`, [config schema](../evidence/phase-2-instance-config/config-schema.json) | PASS |
+| ACL, atomic install, partial pair, fault/crash recovery | `internal/cliproxyconfig/recovery_test.go`, [recovery matrix](../evidence/phase-2-instance-config/recovery-matrix.json) | PASS |
+| Real generation và byte idempotence | `internal/cliproxyconfig/real_windows_test.go`, [real generation](../evidence/phase-2-instance-config/real-generation.json) | PASS |
 | Listener và runtime authentication | Slice lifecycle kế tiếp | OPEN |

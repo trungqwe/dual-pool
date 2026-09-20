@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "gates": {
+    "P2-KEY-WIRE-001": "PASS",
+    "P2-CONFIG-SCHEMA-001": "PASS",
+    "P2-CONFIG-ADAPTER-MISMATCH-001": "PASS",
+    "P2-CONFIG-SECRET-PLACEMENT-001": "PASS",
+    "P2-CONFIG-MGMT-BCRYPT-001": "PASS",
+    "P2-CONFIG-ACL-001": "PASS",
+    "P2-CONFIG-INSTALL-RECOVERY-001": "PASS",
+    "P2-CONFIG-ISOLATION-001": "PASS",
+    "P2-CONFIG-IDEMPOTENCE-001": "PASS",
+    "P2-CONFIG-LIVE-001": "PASS"
+  },
+  "existing_product_acl_gate": "PASS",
+  "existing_four_key_gate": "PASS",
+  "management_password_runtime_contract": "REJECTED",
+  "pinned_adapter_source": "PASS",
+  "upstream_lock_adapter_activation": "PASS",
+  "node_lock_regression": "PASS",
+  "stager_regression": "PASS",
+  "process_started": false,
+  "listener_started": false,
+  "provider_credentials_touched": false,
+  "runtime_listener_and_authentication": "OPEN"
+}

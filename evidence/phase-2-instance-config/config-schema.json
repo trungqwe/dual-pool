@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "adapter_version": "dualpool-cpa-v7.3.7-config-v1",
+  "instances": [
+    {"id": "codex", "host": "127.0.0.1", "port": 8317},
+    {"id": "google", "host": "127.0.0.1", "port": 8318}
+  ],
+  "static_security_values": {
+    "tls_enable": false,
+    "allow_remote": false,
+    "disable_control_panel": true,
+    "disable_auto_update_panel": true,
+    "debug": false,
+    "pprof_enable": false,
+    "discovery_enabled": false,
+    "request_log": false,
+    "logging_to_file": false,
+    "usage_statistics_enabled": false,
+    "save_cooldown_status": false,
+    "passthrough_headers": false,
+    "ws_auth": true,
+    "routing_strategy": "round-robin",
+    "session_affinity": true,
+    "session_affinity_ttl": "1h",
+    "session_affinity_subagents": true
+  },
+  "strict_parse": "PASS",
+  "unknown_duplicate_anchor_alias_multidoc_type_invalid_utf8_rejected": true
+}
