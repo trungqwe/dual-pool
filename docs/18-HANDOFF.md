@@ -1,5 +1,9 @@
 # Current Handoff
 
+## Phase 2 gated real harness — pending Source CI (2026-09-20)
+
+At `f06bab5`, Source CI `35500953921` passed. The next implementation replaces the deliberately fail-closed real test stub with `TestRealLifecycle`, an opt-in gated harness. It stages/installs the pinned binary and executes start/idempotence/status/restart/stop verification only when `DUALPOOL_RUN_REAL_LIFECYCLE=1`. The harness implementation requires its own CI PASS before execution; no real lifecycle action has occurred.
+
 ## Phase 2 format and recovery correction — pending Source CI (2026-09-20)
 
 Historical CI `35500189251` failed only at the Go format gate in `internal/instance/instance.go`; it is not a passing gate. The next correction formats the lifecycle package and rejects manifest-only recovery candidates. Real lifecycle remains NOT RUN and must await the correction CI.
