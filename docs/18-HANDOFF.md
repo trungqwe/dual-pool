@@ -507,3 +507,18 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - `P2-ENTRY-ACL-001` and `P2-ENTRY-KEYS-001` remain OPEN and untriggered. U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN.
 - Implementation commit/CI and delivery receipt: PENDING.
 - Exact next task after successful delivery: **Phase 2 — product-root ACL gate + four-key initialization**. Do not start it in this run.
+
+### Delivery receipt — Phase 2 pinned upstream downloader/stager
+
+- Branch: `phase-2/upstream-lifecycle`; start HEAD: `64a4d86947af96a5ee71baeb4671fa6932614511`.
+- Implementation commit: `b736158a88e9266cedb9165611acc2531bb01a99`.
+- Implementation Source CI: **PASS**, run `35486649318`, including the mandatory real pinned download/stage integration.
+- Verification: 112 Go test functions, full race, vet, build and module verification PASS; Phase 0 regression 54/54 and `UPSTREAM_LOCK_VALID` PASS.
+- Exact lock: schema v1, status `candidate`, version `7.3.7`, tag `v7.3.7`, platform `windows_amd64`, lock SHA-256 `ae88ec7b0ca92aef29fdbbf0d1dbe31e3218d9861a556fca1e4b04a49b232b51`.
+- Real integration: 22,671,469-byte archive; archive/executable hashes PASS; PE AMD64 PASS; version/commit PASS; final manifest and TEMP cleanup PASS; execution before both hashes false.
+- Product root touched: false. Product secrets created: false. CLIProxyAPI listener started: false. Provider credentials touched: false.
+- `P2-ENTRY-ACL-001`: OPEN and untriggered. `P2-ENTRY-KEYS-001`: OPEN and untriggered.
+- U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN. Config adapter and the remaining lifecycle/isolation work remain open; Phase 2 is not closed.
+- Push: normal new-branch push; remote implementation HEAD verified. PR: not requested and not created.
+- Delivery receipt commit: this commit; its SHA, CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA.
+- Exact next task: **Phase 2 — product-root ACL gate + four-key initialization**.
