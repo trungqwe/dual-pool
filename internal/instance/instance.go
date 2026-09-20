@@ -229,7 +229,7 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 		if mark.CandidateBasename != "."+m.lock.Version+".install-"+mark.TransactionID || m.acl.Inspect(candidate) != nil {
 			return ErrBinaryInstallConflict
 		}
-		if m.validateInstall(ctx, candidate) != nil {
+		if e = m.validatePartialCandidate(ctx, candidate); e != nil {
 			return ErrBinaryInstallConflict
 		}
 		if e = os.RemoveAll(candidate); e != nil {
@@ -238,6 +238,32 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 	}
 	if e := os.Remove(path); e != nil {
 		return ErrPersistence
+	}
+	return nil
+}
+func (m *Manager) validatePartialCandidate(ctx context.Context, dir string) error {
+	if m.acl.Inspect(dir) != nil {
+		return ErrUnsafeInstance
+	}
+	entries, e := os.ReadDir(dir)
+	if e != nil || len(entries) > 2 {
+		return ErrUnsafeInstance
+	}
+	seen := map[string]bool{}
+	for _, entry := range entries {
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || (entry.Name() != "cliproxyapi.exe" && entry.Name() != manifestName) || seen[entry.Name()] || m.acl.InspectFile(filepath.Join(dir, entry.Name())) != nil {
+			return ErrUnsafeInstance
+		}
+		seen[entry.Name()] = true
+	}
+	if seen[manifestName] && !seen["cliproxyapi.exe"] {
+		return ErrUnsafeInstance
+	}
+	if seen["cliproxyapi.exe"] && seen[manifestName] {
+		return m.validateInstall(ctx, dir)
+	}
+	if seen["cliproxyapi.exe"] && digest(filepath.Join(dir, "cliproxyapi.exe")) != "" && digest(filepath.Join(dir, "cliproxyapi.exe")) != m.lock.Platforms.WindowsAMD64.ExecutableSHA256 {
+		return ErrUnsafeInstance
 	}
 	return nil
 }
@@ -268,6 +294,11 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 	if err = m.validateInstanceRoot(root); err != nil {
 		return Status{}, err
 	}
+	if validator, validateErr := cliproxyconfig.New(m.layout, m.acl, m.reader, m.lock); validateErr != nil {
+		return Status{}, ErrUnsafeInstance
+	} else if state, validateErr := validator.InspectPair(); validateErr != nil || !state.Ready {
+		return Status{}, ErrUnsafeInstance
+	}
 	if status, e := m.statusLocked(id); e == nil && status.Running {
 		if e = m.awaitReady(ctx, id, status.Record); e != nil {
 			return Status{}, e
@@ -287,11 +318,6 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 		}
 	} else if e != nil && !errors.Is(e, ErrNotRunning) {
 		return Status{}, e
-	}
-	if validator, validateErr := cliproxyconfig.New(m.layout, m.acl, m.reader, m.lock); validateErr != nil {
-		return Status{}, ErrUnsafeInstance
-	} else if state, validateErr := validator.InspectPair(); validateErr != nil || !state.Ready {
-		return Status{}, ErrUnsafeInstance
 	}
 	if occupied, inspectErr := m.portOccupied(port); inspectErr != nil {
 		return Status{}, ErrUnverifiable
@@ -342,6 +368,27 @@ func (m *Manager) Stop(id cliproxyconfig.ID) error {
 func (m *Manager) stopLocked(id cliproxyconfig.ID) error {
 	status, err := m.statusLocked(id)
 	if errors.Is(err, ErrNotRunning) {
+		if status.Record.PID == 0 {
+			return nil
+		}
+		occupied, e := m.portOccupied(status.Record.Port)
+		if e != nil {
+			return ErrUnverifiable
+		}
+		if occupied {
+			return ErrPortOccupied
+		}
+		path := filepath.Join(m.instancePath(id), "process.json")
+		if m.acl.InspectFile(path) != nil {
+			return ErrUnsafeInstance
+		}
+		var current ProcessRecord
+		if e = readJSON(path, &current); e != nil || current != status.Record {
+			return ErrIdentityMismatch
+		}
+		if e = os.Remove(path); e != nil {
+			return ErrPersistence
+		}
 		return nil
 	}
 	if err != nil {
@@ -660,6 +707,14 @@ type tcp4row struct {
 	remotePort uint32
 	pid        uint32
 }
+type tcp4tableLayout struct {
+	count uint32
+	rows  [1]tcp4row
+}
+type tcp6tableLayout struct {
+	count uint32
+	rows  [1]tcp6row
+}
 type tcp6row struct {
 	localAddr     [16]byte
 	localScopeID  uint32
@@ -720,13 +775,28 @@ func tcpTable4() ([]listener, error) {
 	if e != nil {
 		return nil, e
 	}
+	return decodeTCP4(b)
+}
+func tcpTable6() ([]listener, error) {
+	b, e := tcpBuffer(23)
+	if e != nil {
+		return nil, e
+	}
+	return decodeTCP6(b)
+}
+func decodeTCP4(b []byte) ([]listener, error) {
+	const first = unsafe.Offsetof(tcp4tableLayout{}.rows)
+	const stride = unsafe.Sizeof(tcp4row{})
+	if first < 4 || stride != 24 || len(b) < int(first) {
+		return nil, ErrUnverifiable
+	}
 	n := binary.LittleEndian.Uint32(b[:4])
-	if uint64(n)*uint64(unsafe.Sizeof(tcp4row{}))+4 > uint64(len(b)) {
+	if uint64(first)+uint64(n)*uint64(stride) > uint64(len(b)) {
 		return nil, ErrUnverifiable
 	}
 	out := make([]listener, 0, n)
 	for i := uint32(0); i < n; i++ {
-		offset := 4 + uintptr(i)*unsafe.Sizeof(tcp4row{})
+		offset := first + uintptr(i)*stride
 		row := (*tcp4row)(unsafe.Pointer(&b[offset]))
 		if row.state != 2 {
 			continue
@@ -737,18 +807,19 @@ func tcpTable4() ([]listener, error) {
 	}
 	return out, nil
 }
-func tcpTable6() ([]listener, error) {
-	b, e := tcpBuffer(23)
-	if e != nil {
-		return nil, e
+func decodeTCP6(b []byte) ([]listener, error) {
+	const first = unsafe.Offsetof(tcp6tableLayout{}.rows)
+	const stride = unsafe.Sizeof(tcp6row{})
+	if first < 4 || stride != 56 || len(b) < int(first) {
+		return nil, ErrUnverifiable
 	}
 	n := binary.LittleEndian.Uint32(b[:4])
-	if uint64(n)*uint64(unsafe.Sizeof(tcp6row{}))+4 > uint64(len(b)) {
+	if uint64(first)+uint64(n)*uint64(stride) > uint64(len(b)) {
 		return nil, ErrUnverifiable
 	}
 	out := make([]listener, 0, n)
 	for i := uint32(0); i < n; i++ {
-		offset := 4 + uintptr(i)*unsafe.Sizeof(tcp6row{})
+		offset := first + uintptr(i)*stride
 		row := (*tcp6row)(unsafe.Pointer(&b[offset]))
 		if row.state != 2 {
 			continue
