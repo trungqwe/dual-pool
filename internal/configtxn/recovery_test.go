@@ -184,6 +184,110 @@ func TestUnsafeArtifactsAndCollision(t *testing.T) {
 	}
 }
 
+func TestRecoveryRejectsReparseArtifactsWithoutPartialCleanup(t *testing.T) {
+	for _, artifact := range []string{"marker", "backup", "candidate"} {
+		t.Run(artifact, func(t *testing.T) {
+			f := newFixture(t)
+			crash, _ := NewEngine(f.journal, f.backup, f.locks, f.store, WithFaultInjector(func(p FaultPoint) error {
+				if p == AfterPendingOwnership {
+					return ErrInjectedCrash
+				}
+				return nil
+			}))
+			if err := crash.Apply(f.plan()); !errors.Is(err, ErrInjectedCrash) {
+				t.Fatal(err)
+			}
+			markerPath := onlyFile(t, f.journal)
+			backupPath := onlyFile(t, f.backup)
+			candidatePath := onlyMatchingFile(t, filepath.Dir(f.target), ".config.toml.candidate-")
+			paths := map[string]string{"marker": markerPath, "backup": backupPath, "candidate": candidatePath}
+			external := filepath.Join(f.root, "external-artifact")
+			if err := os.WriteFile(external, []byte("external"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(paths[artifact]); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(external, paths[artifact]); err != nil {
+				t.Skipf("file symlink unavailable: %v", err)
+			}
+			fresh, _ := NewEngine(f.journal, f.backup, f.locks, f.store)
+			if err := fresh.Recover(f.plan()); !errors.Is(err, ErrRecoveryUnresolved) && !errors.Is(err, ErrUnsafeConfigArtifact) {
+				t.Fatalf("unsafe recovery=%v", err)
+			}
+			for name, path := range paths {
+				if _, err := os.Lstat(path); err != nil {
+					t.Fatalf("%s partially cleaned: %v", name, err)
+				}
+			}
+			o, err := f.store.LoadOwnership()
+			if err != nil || len(o.Records) != 3 || o.Records[0].RollbackStatus != state.RollbackPending {
+				t.Fatal("unsafe recovery changed ownership")
+			}
+		})
+	}
+}
+
+func TestRecoveryCleanupFailureIsRetryable(t *testing.T) {
+	f := newFixture(t)
+	crash, _ := NewEngine(f.journal, f.backup, f.locks, f.store, WithFaultInjector(func(p FaultPoint) error {
+		if p == AfterPendingOwnership {
+			return ErrInjectedCrash
+		}
+		return nil
+	}))
+	if err := crash.Apply(f.plan()); !errors.Is(err, ErrInjectedCrash) {
+		t.Fatal(err)
+	}
+	failOnce := true
+	incomplete, _ := NewEngine(f.journal, f.backup, f.locks, f.store, WithRemoveFile(func(path string) error {
+		if failOnce {
+			failOnce = false
+			return os.ErrPermission
+		}
+		return os.Remove(path)
+	}))
+	if err := incomplete.Recover(f.plan()); !errors.Is(err, ErrRecoveryRequired) {
+		t.Fatalf("cleanup failure=%v", err)
+	}
+	if countFiles(t, f.journal) != 1 {
+		t.Fatal("cleanup failure lost recovery marker")
+	}
+	fresh, _ := NewEngine(f.journal, f.backup, f.locks, f.store)
+	if err := fresh.Recover(f.plan()); err != nil {
+		t.Fatal(err)
+	}
+	if err := fresh.Recover(f.plan()); err != nil {
+		t.Fatal(err)
+	}
+	if countFiles(t, f.journal) != 0 || countFiles(t, f.backup) != 0 {
+		t.Fatal("retry did not finish cleanup")
+	}
+}
+
+func onlyFile(t *testing.T, dir string) string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("expected one artifact: %v count=%d", err, len(entries))
+	}
+	return filepath.Join(dir, entries[0].Name())
+}
+func onlyMatchingFile(t *testing.T, dir, prefix string) string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), prefix) {
+			return filepath.Join(dir, entry.Name())
+		}
+	}
+	t.Fatal("candidate artifact missing")
+	return ""
+}
+
 func TestConfigTxnCrashHelper(t *testing.T) {
 	if os.Getenv("DUALPOOL_CONFIGTXN_HELPER") != "1" {
 		return

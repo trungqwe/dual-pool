@@ -39,6 +39,7 @@ func WithTransactionIDGenerator(f func() (string, error)) Option {
 	return func(e *Engine) { e.transactionID = f }
 }
 func WithReplacementAPI(r replacementAPI) Option { return func(e *Engine) { e.replacer = r } }
+func WithRemoveFile(f func(string) error) Option { return func(e *Engine) { e.removeFile = f } }
 
 type Engine struct {
 	journalDir, backupDir string
@@ -49,6 +50,7 @@ type Engine struct {
 	transactionID         func() (string, error)
 	now                   func() time.Time
 	toolVersion           string
+	removeFile            func(string) error
 }
 
 func NewEngine(journalDir, backupDir string, locks *lockfile.Manager, store *state.Store, options ...Option) (*Engine, error) {
@@ -63,11 +65,11 @@ func NewEngine(journalDir, backupDir string, locks *lockfile.Manager, store *sta
 	if err != nil {
 		return nil, err
 	}
-	e := &Engine{journalDir: j, backupDir: b, locks: locks, store: store, replacer: windowsReplacement{}, transactionID: randomID, now: time.Now, toolVersion: "dev"}
+	e := &Engine{journalDir: j, backupDir: b, locks: locks, store: store, replacer: windowsReplacement{}, transactionID: randomID, now: time.Now, toolVersion: "dev", removeFile: os.Remove}
 	for _, o := range options {
 		o(e)
 	}
-	if e.replacer == nil || e.transactionID == nil {
+	if e.replacer == nil || e.transactionID == nil || e.removeFile == nil {
 		return nil, ErrPersistence
 	}
 	return e, nil
@@ -208,7 +210,7 @@ func (e *Engine) Apply(plan CodexPlan) (result error) {
 	if err = e.inject(BeforeMarkerCleanup); err != nil {
 		return err
 	}
-	if os.Remove(markerPath) != nil {
+	if e.removeRequired(markerPath) != nil {
 		return ErrPersistence
 	}
 	return nil
@@ -242,13 +244,25 @@ func (e *Engine) Rollback(plan CodexPlan) (result error) {
 		return nil
 	}
 	allRolled := true
+	allConflict := true
 	for _, r := range records {
 		if r.RollbackStatus != state.RollbackRolledBack {
 			allRolled = false
 		}
+		if r.RollbackStatus != state.RollbackConflict {
+			allConflict = false
+		}
 	}
 	if allRolled {
 		return nil
+	}
+	if allConflict {
+		return ErrRollbackConflict
+	}
+	for _, r := range records {
+		if r.RollbackStatus != state.RollbackApplied {
+			return ErrRecoveryRequired
+		}
 	}
 	current, err := os.ReadFile(target)
 	if err != nil {
@@ -260,7 +274,30 @@ func (e *Engine) Rollback(plan CodexPlan) (result error) {
 	}
 	applied := valuesFromRecords(records, false)
 	if !semanticMatches(parsed.semantic, applied) {
-		return ErrRollbackConflict
+		guard, lockErr := e.locks.AcquireFile(target)
+		if lockErr != nil {
+			return lockErr
+		}
+		lockedBytes, readErr := os.ReadFile(target)
+		lockedParsed, parseErr := parseDocument(lockedBytes)
+		if readErr != nil || parseErr != nil {
+			_ = guard.Release()
+			return ErrPersistence
+		}
+		if !semanticMatches(lockedParsed.semantic, applied) {
+			setStatus(&ownership, target, state.RollbackApplied, state.RollbackConflict)
+			if err = guard.Release(); err != nil {
+				return err
+			}
+			if err = e.store.SaveOwnership(ownership); err != nil {
+				return ErrPersistence
+			}
+			return ErrRollbackConflict
+		}
+		if err = guard.Release(); err != nil {
+			return err
+		}
+		current, parsed = lockedBytes, lockedParsed
 	}
 	original := valuesFromRecords(records, true)
 	candidateBytes, err := parsed.restore(original)
@@ -346,7 +383,7 @@ func (e *Engine) Rollback(plan CodexPlan) (result error) {
 	if err = e.inject(BeforeMarkerCleanup); err != nil {
 		return err
 	}
-	if os.Remove(markerPath) != nil {
+	if e.removeRequired(markerPath) != nil {
 		return ErrPersistence
 	}
 	return nil
@@ -368,7 +405,7 @@ func (e *Engine) Recover(plan CodexPlan) (result error) {
 	}
 	resource := resourceID(target)
 	mp := e.markerPath(resource)
-	data, err := os.ReadFile(mp)
+	data, err := readOwnedArtifact(mp, e.journalDir, filepath.Base(mp), true)
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -401,9 +438,12 @@ func (e *Engine) Recover(plan CodexPlan) (result error) {
 		currentHash = hash(current)
 	}
 	backup := filepath.Join(e.backupDir, m.BackupBasename)
-	backupBytes, backupErr := os.ReadFile(backup)
+	backupBytes, backupErr := readOwnedArtifact(backup, e.backupDir, m.BackupBasename, true)
 	if backupErr != nil || hash(backupBytes) != m.BackupHash {
 		return ErrRecoveryUnresolved
+	}
+	if err = e.validateCleanupSet(target, m, true); err != nil {
+		return err
 	}
 	if currentHash == m.PreHash {
 		if m.Operation == "apply" {
@@ -425,8 +465,7 @@ func (e *Engine) Recover(plan CodexPlan) (result error) {
 				return err
 			}
 		}
-		e.cleanupTransient(target, m, true)
-		return nil
+		return e.cleanupTransient(target, m, true)
 	}
 	if currentHash == m.PostHash {
 		parsed, er := parseDocument(current)
@@ -460,8 +499,7 @@ func (e *Engine) Recover(plan CodexPlan) (result error) {
 		if e.store.SaveOwnership(ownership) != nil {
 			return ErrPersistence
 		}
-		e.cleanupTransient(target, m, m.Operation == "rollback")
-		return nil
+		return e.cleanupTransient(target, m, m.Operation == "rollback")
 	}
 	if readErr != nil || parseFailed(current) {
 		restoreCandidate := filepath.Join(filepath.Dir(target), "."+filepath.Base(target)+".restore-"+m.TransactionID)
@@ -485,8 +523,7 @@ func (e *Engine) Recover(plan CodexPlan) (result error) {
 		if e.store.SaveOwnership(ownership) != nil {
 			return ErrPersistence
 		}
-		e.cleanupTransient(target, m, m.Operation == "apply")
-		return nil
+		return e.cleanupTransient(target, m, m.Operation == "apply")
 	}
 	return ErrConfigConflict
 }
@@ -499,12 +536,60 @@ func currentHashOrEmpty(path string) string {
 	return hash(b)
 }
 
-func (e *Engine) cleanupTransient(target string, m marker, removeBackup bool) {
-	_ = os.Remove(filepath.Join(filepath.Dir(target), "."+filepath.Base(target)+".candidate-"+m.TransactionID))
-	if removeBackup {
-		_ = os.Remove(filepath.Join(e.backupDir, m.BackupBasename))
+func (e *Engine) cleanupTransient(target string, m marker, removeBackup bool) error {
+	if err := e.validateCleanupSet(target, m, removeBackup); err != nil {
+		return err
 	}
-	_ = os.Remove(e.markerPath(m.TargetResourceID))
+	if err := e.removeOptional(filepath.Join(filepath.Dir(target), "."+filepath.Base(target)+".candidate-"+m.TransactionID)); err != nil {
+		return ErrRecoveryRequired
+	}
+	if removeBackup {
+		if err := e.removeOptional(filepath.Join(e.backupDir, m.BackupBasename)); err != nil {
+			return ErrRecoveryRequired
+		}
+	}
+	if err := e.removeRequired(e.markerPath(m.TargetResourceID)); err != nil {
+		return ErrRecoveryRequired
+	}
+	return nil
+}
+
+func (e *Engine) validateCleanupSet(target string, m marker, requireBackup bool) error {
+	candidate := filepath.Join(filepath.Dir(target), "."+filepath.Base(target)+".candidate-"+m.TransactionID)
+	if _, err := readOwnedArtifact(candidate, filepath.Dir(target), filepath.Base(candidate), false); err != nil && !os.IsNotExist(err) {
+		return ErrRecoveryUnresolved
+	}
+	if requireBackup {
+		backup := filepath.Join(e.backupDir, m.BackupBasename)
+		if _, err := readOwnedArtifact(backup, e.backupDir, m.BackupBasename, true); err != nil {
+			return ErrRecoveryUnresolved
+		}
+	}
+	markerPath := e.markerPath(m.TargetResourceID)
+	if _, err := readOwnedArtifact(markerPath, e.journalDir, filepath.Base(markerPath), true); err != nil {
+		return ErrRecoveryUnresolved
+	}
+	return nil
+}
+
+func (e *Engine) removeOptional(path string) error {
+	err := e.removeFile(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+func (e *Engine) removeRequired(path string) error { return e.removeFile(path) }
+
+func readOwnedArtifact(path, directory, basename string, required bool) ([]byte, error) {
+	if filepath.Base(path) != basename || !strings.EqualFold(filepath.Dir(path), directory) || !safeLocalAbsolute(path) {
+		return nil, ErrUnsafeConfigArtifact
+	}
+	b, err := readSafeRegular(path)
+	if os.IsNotExist(err) && !required {
+		return nil, err
+	}
+	return b, err
 }
 
 func (e *Engine) idempotentApply(target string, desired map[string]value, records []state.OwnershipRecord) error {
@@ -560,15 +645,10 @@ func safeExistingDir(path string) (string, error) {
 	if e != nil || filepath.Clean(a) != a {
 		return "", ErrUnsafeConfigArtifact
 	}
-	i, e := os.Lstat(a)
-	if e != nil || !i.IsDir() || i.Mode()&os.ModeSymlink != 0 || isReparse(a) {
+	if validatePathHierarchy(a, true) != nil {
 		return "", ErrUnsafeConfigArtifact
 	}
-	r, e := filepath.EvalSymlinks(a)
-	if e != nil {
-		return "", ErrUnsafeConfigArtifact
-	}
-	return filepath.Clean(r), nil
+	return a, nil
 }
 func safeTarget(path string) (string, error) {
 	if !safeLocalAbsolute(path) {
@@ -578,30 +658,34 @@ func safeTarget(path string) (string, error) {
 	if e != nil || filepath.Clean(a) != a {
 		return "", ErrUnsafeConfigArtifact
 	}
-	_, e = safeExistingDir(filepath.Dir(a))
-	if e != nil {
-		return "", ErrUnsafeConfigArtifact
-	}
-	i, e := os.Lstat(a)
-	if e != nil || i.IsDir() || i.Mode()&os.ModeSymlink != 0 || isReparse(a) {
+	if validatePathHierarchy(a, false) != nil {
 		return "", ErrUnsafeConfigArtifact
 	}
 	return a, nil
 }
 func safeLocalAbsolute(path string) bool {
-	if !filepath.IsAbs(path) || strings.HasPrefix(path, `\\`) || strings.HasPrefix(path, `\\?\`) || strings.HasPrefix(path, `\\.\`) {
+	if len(path) < 4 || !filepath.IsAbs(path) || strings.ContainsRune(path, 0) || strings.Contains(path, "/") {
 		return false
 	}
-	for _, part := range strings.Split(filepath.Clean(path), string(os.PathSeparator)) {
-		base := strings.ToUpper(strings.TrimSuffix(strings.TrimSpace(part), "."))
-		if dot := strings.IndexByte(base, '.'); dot >= 0 {
-			base = base[:dot]
-		}
-		if base == "CON" || base == "PRN" || base == "AUX" || base == "NUL" || (len(base) == 4 && (strings.HasPrefix(base, "COM") || strings.HasPrefix(base, "LPT")) && base[3] >= '1' && base[3] <= '9') {
+	volume := filepath.VolumeName(path)
+	if len(volume) != 2 || volume[1] != ':' || !asciiLetter(volume[0]) || len(path) <= len(volume) || path[len(volume)] != '\\' || filepath.Clean(path) != path {
+		return false
+	}
+	for _, part := range strings.Split(path[len(volume)+1:], `\`) {
+		if part == "" || part == "." || part == ".." || strings.HasSuffix(part, ".") || strings.HasSuffix(part, " ") || strings.ContainsAny(part, `<>:"|?*`) || reservedWindowsName(part) {
 			return false
 		}
 	}
 	return true
+}
+
+func asciiLetter(b byte) bool { return b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' }
+func reservedWindowsName(part string) bool {
+	name := strings.ToUpper(strings.SplitN(part, ".", 2)[0])
+	if name == "CON" || name == "PRN" || name == "AUX" || name == "NUL" || name == "CLOCK$" {
+		return true
+	}
+	return len(name) == 4 && (strings.HasPrefix(name, "COM") || strings.HasPrefix(name, "LPT")) && name[3] >= '1' && name[3] <= '9'
 }
 func existsSafe(path string) bool {
 	i, e := os.Lstat(path)

@@ -22,6 +22,7 @@ var (
 	hashPattern                 = regexp.MustCompile(`^[a-f0-9]{64}$`)
 	fingerprintPattern          = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`)
 	keyPathPattern              = regexp.MustCompile(`^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$`)
+	sensitiveTextPattern        = regexp.MustCompile(`(?i)\b(?:bearer|authorization|cookie|refresh[-_ ]?token|raw[-_ ]?session|password|client[-_ ]?secret)\b|\b(?:sk|ghp)[-_][A-Za-z0-9._-]{16,}\b|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(^|[^A-Za-z])[A-Za-z]:[\\/]`)
 )
 
 func ValidateState(s State) error {
@@ -63,7 +64,7 @@ func validateInstance(i Instance) error {
 	return nil
 }
 func validateAccount(a Account) error {
-	if !opaquePattern.MatchString(a.OpaqueID) || !oneOf(string(a.Pool), "codex", "google") || !oneOf(string(a.Eligibility), "unknown", "eligible", "ineligible") || !validNickname(a.Nickname) || (a.ReasonCode != "" && !symbolPattern.MatchString(a.ReasonCode)) || !safeVersionOrEmpty(a.LastProbeVersion) {
+	if !opaquePattern.MatchString(a.OpaqueID) || !oneOf(string(a.Pool), "codex", "google") || !oneOf(string(a.Eligibility), "unknown", "eligible", "ineligible") || !validNickname(a.Nickname) || sensitiveTextPattern.MatchString(a.Nickname) || (a.ReasonCode != "" && !symbolPattern.MatchString(a.ReasonCode)) || !safeVersionOrEmpty(a.LastProbeVersion) {
 		return ErrInvalidDocument
 	}
 	if a.LastProbeAt != "" {
@@ -142,7 +143,7 @@ func validateValue(v TypedValue) error {
 			return ErrInvalidDocument
 		}
 	case ValueString:
-		if n != 1 || v.String == nil || !validText(*v.String, 4096) {
+		if n != 1 || v.String == nil || !validText(*v.String, 4096) || sensitiveTextPattern.MatchString(*v.String) {
 			return ErrInvalidDocument
 		}
 	case ValueBool:
@@ -162,7 +163,7 @@ func validateValue(v TypedValue) error {
 			return ErrInvalidDocument
 		}
 		for k, x := range v.StringMap {
-			if !keyPathPattern.MatchString(k) || !validText(x, 4096) {
+			if !keyPathPattern.MatchString(k) || !validText(x, 4096) || sensitiveTextPattern.MatchString(x) {
 				return ErrInvalidDocument
 			}
 		}

@@ -84,3 +84,48 @@ func TestTOMLUnsupportedShapesFailClosed(t *testing.T) {
 		}
 	}
 }
+
+func TestTOMLEdgeInsertionAndExactRollback(t *testing.T) {
+	for _, input := range [][]byte{
+		[]byte("title = \"fixture\""),
+		[]byte("# comment only\nname = \"fixture\""),
+		[]byte("# comment only"),
+	} {
+		p, err := parseDocument(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, original, err := p.patch(CodexPlan{}.desired())
+		if err != nil {
+			t.Fatal(err)
+		}
+		parsed, err := parseDocument(out)
+		if err != nil || !semanticMatches(parsed.semantic, CodexPlan{}.desired()) {
+			t.Fatalf("invalid deterministic insertion: %v", err)
+		}
+		if bytes.Index(out, []byte("model =")) > bytes.Index(out, []byte("[model_providers.dualpool_codex]")) {
+			t.Fatal("top-level scalar inserted inside provider table")
+		}
+		restored, err := parsed.restore(original)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(restored, input) {
+			t.Fatalf("edge round trip differs: %q != %q", restored, input)
+		}
+
+		withEdit := append(append([]byte(nil), out...), []byte("\n[unrelated_after]\nvalue = false\n")...)
+		parsedEdit, err := parseDocument(withEdit)
+		if err != nil {
+			t.Fatal(err)
+		}
+		restoredEdit, err := parsedEdit.restore(original)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := append(append([]byte(nil), input...), []byte("\n[unrelated_after]\nvalue = false\n")...)
+		if !bytes.Equal(restoredEdit, want) {
+			t.Fatalf("unrelated edge edit lost: %q != %q", restoredEdit, want)
+		}
+	}
+}

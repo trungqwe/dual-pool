@@ -226,7 +226,8 @@ func (p parsedDocument) patch(desired map[string]value) ([]byte, map[string]valu
 			insertScalars = append(insertScalars, key+" = "+encodeString(desiredValue.str)+p.meta.newline)
 		}
 	}
-	if len(insertScalars) > 0 {
+	combineTailInsert := len(insertScalars) > 0 && p.firstTable < 0 && p.table.end <= p.table.start
+	if len(insertScalars) > 0 && !combineTailInsert {
 		pos := p.firstTable
 		if pos < 0 {
 			pos = len(p.raw)
@@ -250,13 +251,48 @@ func (p parsedDocument) patch(desired map[string]value) ([]byte, map[string]valu
 			// inserted table so rollback can remove it byte-for-byte.
 			prefix = p.meta.newline
 		}
-		edits = append(edits, byteEdit{span{len(p.raw), len(p.raw)}, []byte(prefix + tableText)})
+		insert := prefix + tableText
+		if combineTailInsert {
+			scalarPrefix := ""
+			if len(p.raw) > 0 && !bytes.HasSuffix(p.raw, []byte(p.meta.newline)) {
+				scalarPrefix = p.meta.newline
+			}
+			insert = scalarPrefix + strings.Join(insertScalars, "") + p.meta.newline + tableText
+		}
+		edits = append(edits, byteEdit{span{len(p.raw), len(p.raw)}, []byte(insert)})
 	}
 	return applyEdits(p.raw, edits), original, nil
 }
 
 func (p parsedDocument) restore(original map[string]value) ([]byte, error) {
 	var edits []byteEdit
+	allInserted := !original[keyProviderTable].exists
+	earliestInserted := len(p.raw)
+	for _, key := range []string{keyModel, keyModelProvider, keyCatalog} {
+		orig, managed := original[key]
+		if managed && orig.exists {
+			allInserted = false
+		}
+		if managed && !orig.exists {
+			if current, ok := p.scalars[key]; ok {
+				line := wholeLine(p.raw, current)
+				if line.start < earliestInserted {
+					earliestInserted = line.start
+				}
+			}
+		}
+	}
+	if allInserted && earliestInserted < len(p.raw) && p.table.end > p.table.start && earliestInserted < p.table.start {
+		start := earliestInserted
+		if start >= len(p.meta.newline) && bytes.Equal(p.raw[start-len(p.meta.newline):start], []byte(p.meta.newline)) {
+			start -= len(p.meta.newline)
+		}
+		var replacement []byte
+		if p.table.end < len(p.raw) {
+			replacement = []byte(p.meta.newline)
+		}
+		return applyEdits(p.raw, []byteEdit{{span{start, p.table.end}, replacement}}), nil
+	}
 	for _, key := range []string{keyModel, keyModelProvider, keyCatalog} {
 		orig, managed := original[key]
 		if !managed {

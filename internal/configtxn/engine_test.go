@@ -152,6 +152,22 @@ func TestApplyCASAndRollbackOwnedConflict(t *testing.T) {
 	if !bytes.Equal(after, b) {
 		t.Fatal("rollback overwrote owned user edit")
 	}
+	o, loadErr := f.store.LoadOwnership()
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	for _, record := range o.Records {
+		if record.RollbackStatus != state.RollbackConflict {
+			t.Fatal("conflict status not persisted")
+		}
+	}
+	if err = f.engine.Rollback(f.plan()); !errors.Is(err, ErrRollbackConflict) {
+		t.Fatalf("repeat conflict=%v", err)
+	}
+	repeated, _ := os.ReadFile(f.target)
+	if !bytes.Equal(repeated, b) {
+		t.Fatal("repeat rollback changed conflicted target")
+	}
 }
 
 func TestApplyRecoveryPreAndPost(t *testing.T) {
@@ -238,6 +254,39 @@ func TestAlreadyOwnedDifferentPlanRejected(t *testing.T) {
 	different.Catalog = AuthorizedCatalogFallback("fixture-catalog.json")
 	if err := f.engine.Apply(different); !errors.Is(err, ErrReconfigureUnsupported) {
 		t.Fatalf("different plan=%v", err)
+	}
+}
+
+func TestApplyRollbackNoTableNoTerminalNewline(t *testing.T) {
+	f := newFixture(t)
+	f.original = []byte("# fixture without table\ntitle = \"unchanged\"")
+	if err := os.WriteFile(f.target, f.original, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.engine.Apply(f.plan()); err != nil {
+		t.Fatal(err)
+	}
+	applied, err := os.ReadFile(f.target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = parseDocument(applied); err != nil {
+		t.Fatal(err)
+	}
+	applied = append(applied, []byte("\n[unrelated_after]\nvalue = false\n")...)
+	if err = os.WriteFile(f.target, applied, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = f.engine.Rollback(f.plan()); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(f.target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := append(append([]byte(nil), f.original...), []byte("\n[unrelated_after]\nvalue = false\n")...)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("edge rollback=%q want=%q", got, want)
 	}
 }
 
