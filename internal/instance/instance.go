@@ -5,21 +5,32 @@
 package instance
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
+	"unsafe"
 
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
 	"github.com/trungqwe/dual-pool/internal/dataroot"
+	"github.com/trungqwe/dual-pool/internal/keymaterial"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
+	"github.com/trungqwe/dual-pool/internal/processidentity"
+	"github.com/trungqwe/dual-pool/internal/secretstore"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 	"golang.org/x/sys/windows"
@@ -31,15 +42,21 @@ var (
 	ErrIdentityMismatch      = errors.New("managed process identity mismatch")
 	ErrNotRunning            = errors.New("managed instance is not running")
 	ErrPersistence           = errors.New("instance lifecycle persistence failed")
+	ErrPortOccupied          = errors.New("instance port is occupied")
+	ErrUnverifiable          = errors.New("managed process is unverifiable")
 )
 
 const manifestName = "install-manifest.json"
+const markerName = ".install-marker.json"
 
 type ACL interface {
 	Create(string) error
 	Inspect(string) error
 	CreateFile(string) (*os.File, error)
 	InspectFile(string) error
+}
+type SecretReader interface {
+	Get(secretstore.Purpose) ([]byte, error)
 }
 
 type InstallManifest struct {
@@ -54,6 +71,14 @@ type InstallManifest struct {
 	ConfigAdapterVersion string `json:"config_adapter_version"`
 	ExecutableBasename   string `json:"executable_basename"`
 }
+type installMarker struct {
+	SchemaVersion     int    `json:"schema_version"`
+	TransactionID     string `json:"transaction_id"`
+	Version           string `json:"version"`
+	CandidateBasename string `json:"candidate_basename"`
+	LockSHA256        string `json:"lock_sha256"`
+	AdapterVersion    string `json:"adapter_version"`
+}
 
 type ProcessRecord struct {
 	SchemaVersion    int    `json:"schema_version"`
@@ -61,7 +86,6 @@ type ProcessRecord struct {
 	PID              uint32 `json:"pid"`
 	StartTime        uint64 `json:"start_time"`
 	ExecutableSHA256 string `json:"executable_sha256"`
-	ExecutableImage  string `json:"executable_image"`
 	ConfigSHA256     string `json:"config_sha256"`
 	Port             int    `json:"port"`
 }
@@ -78,6 +102,7 @@ type Manager struct {
 	lock      upstreamlock.Lock
 	locks     *lockfile.Manager
 	inspector lockfile.ProcessInspector
+	reader    SecretReader
 }
 
 func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option) (*Manager, error) {
@@ -88,11 +113,11 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 	if err != nil {
 		return nil, ErrUnsafeInstance
 	}
-	m := &Manager{layout: layout, acl: acl, lock: lock, locks: locks, inspector: lockfile.WindowsProcessInspector{}}
+	m := &Manager{layout: layout, acl: acl, lock: lock, locks: locks, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New()}
 	for _, opt := range opts {
 		opt(m)
 	}
-	if m.inspector == nil {
+	if m.inspector == nil || m.reader == nil {
 		return nil, ErrUnsafeInstance
 	}
 	return m, nil
@@ -101,6 +126,7 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 type Option func(*Manager)
 
 func WithInspector(v lockfile.ProcessInspector) Option { return func(m *Manager) { m.inspector = v } }
+func WithSecretReader(v SecretReader) Option           { return func(m *Manager) { m.reader = v } }
 
 func (m *Manager) executableDir() string {
 	return filepath.Join(m.layout.Bin, "cliproxyapi", m.lock.Version)
@@ -121,6 +147,12 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if err = m.validateStage(ctx, stage); err != nil {
 		return "", false, err
 	}
+	if err = m.acl.Create(filepath.Join(m.layout.Bin, "cliproxyapi")); err != nil {
+		return "", false, ErrPersistence
+	}
+	if err = m.recoverInstallMarker(ctx); err != nil {
+		return "", false, err
+	}
 	final := m.executableDir()
 	if _, e := os.Lstat(final); e == nil {
 		if m.validateInstall(ctx, final) == nil {
@@ -130,11 +162,15 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	} else if !os.IsNotExist(e) {
 		return "", false, ErrPersistence
 	}
-	if err = m.acl.Create(filepath.Join(m.layout.Bin, "cliproxyapi")); err != nil {
+	txn, err := randomTransaction()
+	if err != nil {
 		return "", false, ErrPersistence
 	}
-	txn := strings.ReplaceAll(time.Now().UTC().Format("20060102150405.000000000"), ".", "")
 	attempt := filepath.Join(filepath.Dir(final), "."+m.lock.Version+".install-"+txn)
+	if err = writeProtectedJSON(m.acl, filepath.Join(filepath.Dir(final), markerName), m.marker(txn, filepath.Base(attempt))); err != nil {
+		return "", false, err
+	}
+	defer func() { _ = os.Remove(filepath.Join(filepath.Dir(final), markerName)) }()
 	if err = m.acl.Create(attempt); err != nil {
 		return "", false, ErrPersistence
 	}
@@ -164,6 +200,52 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	}
 	return m.executablePath(), false, nil
 }
+func (m *Manager) marker(txn, candidate string) installMarker {
+	return installMarker{1, txn, m.lock.Version, candidate, m.lock.Digest(), m.lock.ConfigAdapterVersion}
+}
+func randomTransaction() (string, error) {
+	b := make([]byte, 16)
+	if _, e := io.ReadFull(rand.Reader, b); e != nil {
+		return "", e
+	}
+	return hex.EncodeToString(b), nil
+}
+func (m *Manager) recoverInstallMarker(ctx context.Context) error {
+	dir := filepath.Dir(m.executableDir())
+	path := filepath.Join(dir, markerName)
+	if _, e := os.Lstat(path); os.IsNotExist(e) {
+		return nil
+	}
+	if m.acl.InspectFile(path) != nil {
+		return ErrBinaryInstallConflict
+	}
+	var mark installMarker
+	if e := readJSON(path, &mark); e != nil || !validMarker(mark, m) {
+		return ErrBinaryInstallConflict
+	}
+	final := m.executableDir()
+	candidate := filepath.Join(dir, mark.CandidateBasename)
+	if _, e := os.Lstat(final); e == nil {
+		if e = m.validateInstall(ctx, final); e != nil {
+			return e
+		}
+	}
+	if _, e := os.Lstat(candidate); e == nil {
+		if !strings.HasPrefix(mark.CandidateBasename, "."+m.lock.Version+".install-") || m.acl.Inspect(candidate) != nil {
+			return ErrBinaryInstallConflict
+		}
+		if e = os.RemoveAll(candidate); e != nil {
+			return ErrPersistence
+		}
+	}
+	if e := os.Remove(path); e != nil {
+		return ErrPersistence
+	}
+	return nil
+}
+func validMarker(v installMarker, m *Manager) bool {
+	return v.SchemaVersion == 1 && digestPattern.MatchString(v.TransactionID) && v.Version == m.lock.Version && v.LockSHA256 == m.lock.Digest() && v.AdapterVersion == m.lock.ConfigAdapterVersion && filepath.Base(v.CandidateBasename) == v.CandidateBasename && strings.HasPrefix(v.CandidateBasename, "."+m.lock.Version+".install-")
+}
 
 func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, error) {
 	guard, err := m.locks.AcquireGlobal()
@@ -171,6 +253,10 @@ func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, erro
 		return Status{}, ErrPersistence
 	}
 	defer guard.Release()
+	return m.startLocked(ctx, id)
+}
+func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status, error) {
+	var err error
 	if err = m.preflightRoots(); err != nil {
 		return Status{}, err
 	}
@@ -190,13 +276,24 @@ func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, erro
 		// A protected, schema-valid record whose PID no longer exists is stale
 		// state from a natural child exit. It contains no authority to affect a
 		// process, so remove only that record before creating a new one.
+		if m.portOccupied(port) {
+			return Status{}, ErrPortOccupied
+		}
 		if removeErr := os.Remove(filepath.Join(root, "process.json")); removeErr != nil && !os.IsNotExist(removeErr) {
 			return Status{}, ErrPersistence
 		}
 	} else if e != nil && !errors.Is(e, ErrNotRunning) {
 		return Status{}, e
 	}
-	cmd := exec.CommandContext(ctx, m.executablePath(), "-config", filepath.Join(root, "config.yaml"), "-local-model")
+	if validator, validateErr := cliproxyconfig.NewCurrent(m.lock); validateErr != nil {
+		return Status{}, ErrUnsafeInstance
+	} else if state, validateErr := validator.InspectPair(); validateErr != nil || !state.Ready {
+		return Status{}, ErrUnsafeInstance
+	}
+	if m.portOccupied(port) {
+		return Status{}, ErrPortOccupied
+	}
+	cmd := exec.Command(m.executablePath(), "-config", filepath.Join(root, "config.yaml"), "-local-model")
 	cmd.Dir = root
 	cmd.Env = minimalEnv()
 	cmd.Stdin = nil
@@ -209,7 +306,7 @@ func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, erro
 		_ = cmd.Wait()
 		return Status{}, ErrIdentityMismatch
 	}
-	record := ProcessRecord{1, string(id), identity.PID, identity.StartTime, digest(m.executablePath()), identity.Image, digest(filepath.Join(root, "config.yaml")), port}
+	record := ProcessRecord{1, string(id), identity.PID, identity.StartTime, digest(m.executablePath()), digest(filepath.Join(root, "config.yaml")), port}
 	if !validRecord(record) {
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
@@ -218,6 +315,11 @@ func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, erro
 	if err = writeProtectedJSON(m.acl, filepath.Join(root, "process.json"), record); err != nil {
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
+		return Status{}, err
+	}
+	if err = m.awaitReady(ctx, id, record); err != nil {
+		_ = m.stopRecord(record)
+		_ = os.Remove(filepath.Join(root, "process.json"))
 		return Status{}, err
 	}
 	return Status{ID: id, Running: true, Record: record}, nil
@@ -229,6 +331,9 @@ func (m *Manager) Stop(id cliproxyconfig.ID) error {
 		return ErrPersistence
 	}
 	defer guard.Release()
+	return m.stopLocked(id)
+}
+func (m *Manager) stopLocked(id cliproxyconfig.ID) error {
 	status, err := m.statusLocked(id)
 	if errors.Is(err, ErrNotRunning) {
 		return nil
@@ -236,15 +341,10 @@ func (m *Manager) Stop(id cliproxyconfig.ID) error {
 	if err != nil {
 		return err
 	}
-	h, err := windows.OpenProcess(windows.PROCESS_TERMINATE|windows.SYNCHRONIZE, false, status.Record.PID)
-	if err != nil {
-		return ErrIdentityMismatch
+	if err = m.stopRecord(status.Record); err != nil {
+		return err
 	}
-	defer windows.CloseHandle(h)
-	if err = windows.TerminateProcess(h, 1); err != nil {
-		return ErrPersistence
-	}
-	if result, err := windows.WaitForSingleObject(h, 5_000); err != nil || result != windows.WAIT_OBJECT_0 {
+	if m.portOccupied(status.Record.Port) {
 		return ErrPersistence
 	}
 	if err = os.Remove(filepath.Join(m.instancePath(id), "process.json")); err != nil && !os.IsNotExist(err) {
@@ -252,12 +352,35 @@ func (m *Manager) Stop(id cliproxyconfig.ID) error {
 	}
 	return nil
 }
+func (m *Manager) stopRecord(record ProcessRecord) error {
+	h, err := processidentity.OpenForTermination(record.PID)
+	if err != nil {
+		return ErrIdentityMismatch
+	}
+	defer h.Close()
+	live, err := h.Inspect()
+	if err != nil || !m.matchesLive(record, live) {
+		return ErrIdentityMismatch
+	}
+	if err = h.Terminate(); err != nil {
+		return ErrPersistence
+	}
+	if err = h.Wait(5000); err != nil {
+		return ErrPersistence
+	}
+	return nil
+}
 
 func (m *Manager) Restart(ctx context.Context, id cliproxyconfig.ID) (Status, error) {
-	if err := m.Stop(id); err != nil {
+	guard, err := m.locks.AcquireGlobal()
+	if err != nil {
+		return Status{}, ErrPersistence
+	}
+	defer guard.Release()
+	if err := m.stopLocked(id); err != nil {
 		return Status{}, err
 	}
-	return m.Start(ctx, id)
+	return m.startLocked(ctx, id)
 }
 func (m *Manager) Status(id cliproxyconfig.ID) (Status, error) { return m.statusLocked(id) }
 func (m *Manager) instancePath(id cliproxyconfig.ID) string {
@@ -289,13 +412,19 @@ func (m *Manager) statusLocked(id cliproxyconfig.ID) (Status, error) {
 		return Status{}, ErrUnsafeInstance
 	}
 	live, e := m.inspector.Inspect(r.PID)
-	if e != nil {
+	if errors.Is(e, lockfile.ErrProcessNotFound) {
 		return Status{ID: id, Record: r}, ErrNotRunning
 	}
-	if live.PID != r.PID || live.StartTime != r.StartTime || !samePath(live.Image, r.ExecutableImage) || r.ExecutableSHA256 != digest(m.executablePath()) {
+	if e != nil {
+		return Status{ID: id, Record: r}, ErrUnverifiable
+	}
+	if !m.matchesLive(r, processidentity.Identity{PID: live.PID, StartTime: live.StartTime, Image: live.Image}) || r.ConfigSHA256 != digest(filepath.Join(root, "config.yaml")) {
 		return Status{}, ErrIdentityMismatch
 	}
 	return Status{ID: id, Running: true, Record: r}, nil
+}
+func (m *Manager) matchesLive(r ProcessRecord, live processidentity.Identity) bool {
+	return live.PID == r.PID && live.StartTime == r.StartTime && samePath(live.Image, m.executablePath()) && r.ExecutableSHA256 == digest(m.executablePath())
 }
 func (m *Manager) manifest() InstallManifest {
 	p := m.lock.Platforms.WindowsAMD64
@@ -401,10 +530,10 @@ func writeProtectedJSON(a ACL, path string, v any) error {
 }
 func readJSON(path string, v any) error {
 	b, e := os.ReadFile(path)
-	if e != nil || len(b) == 0 || len(b) > 8192 {
+	if e != nil || len(b) == 0 || len(b) > 8192 || !utf8.Valid(b) || duplicateJSONKeys(b) {
 		return ErrUnsafeInstance
 	}
-	d := json.NewDecoder(strings.NewReader(string(b)))
+	d := json.NewDecoder(bytes.NewReader(b))
 	d.DisallowUnknownFields()
 	if d.Decode(v) != nil {
 		return ErrUnsafeInstance
@@ -414,6 +543,51 @@ func readJSON(path string, v any) error {
 		return ErrUnsafeInstance
 	}
 	return nil
+}
+func duplicateJSONKeys(data []byte) bool {
+	d := json.NewDecoder(bytes.NewReader(data))
+	stack := []map[string]bool{}
+	expects := []bool{}
+	for {
+		t, e := d.Token()
+		if errors.Is(e, io.EOF) {
+			return false
+		}
+		if e != nil {
+			return true
+		}
+		switch x := t.(type) {
+		case json.Delim:
+			switch x {
+			case '{':
+				stack = append(stack, map[string]bool{})
+				expects = append(expects, true)
+			case '[':
+				stack = append(stack, nil)
+				expects = append(expects, false)
+			case '}', ']':
+				stack = stack[:len(stack)-1]
+				expects = expects[:len(expects)-1]
+				if len(stack) > 0 && stack[len(stack)-1] != nil {
+					expects[len(expects)-1] = true
+				}
+			}
+		case string:
+			if len(stack) > 0 && stack[len(stack)-1] != nil && expects[len(expects)-1] {
+				if stack[len(stack)-1][x] {
+					return true
+				}
+				stack[len(stack)-1][x] = true
+				expects[len(expects)-1] = false
+			} else if len(stack) > 0 && stack[len(stack)-1] != nil {
+				expects[len(expects)-1] = true
+			}
+		default:
+			if len(stack) > 0 && stack[len(stack)-1] != nil {
+				expects[len(expects)-1] = true
+			}
+		}
+	}
 }
 func digest(path string) string {
 	f, e := os.Open(path)
@@ -427,8 +601,11 @@ func digest(path string) string {
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
+
+var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
+
 func validRecord(r ProcessRecord) bool {
-	return r.SchemaVersion == 1 && (r.InstanceID == "codex" || r.InstanceID == "google") && r.PID != 0 && r.StartTime != 0 && len(r.ExecutableSHA256) == 64 && len(r.ConfigSHA256) == 64 && r.ExecutableImage != "" && (r.Port == cliproxyconfig.CodexPort || r.Port == cliproxyconfig.GooglePort)
+	return r.SchemaVersion == 1 && r.PID > 0 && r.StartTime > 0 && digestPattern.MatchString(r.ExecutableSHA256) && digestPattern.MatchString(r.ConfigSHA256) && ((r.InstanceID == "codex" && r.Port == cliproxyconfig.CodexPort) || (r.InstanceID == "google" && r.Port == cliproxyconfig.GooglePort))
 }
 func samePath(a, b string) bool {
 	x, e := filepath.Abs(a)
@@ -446,4 +623,173 @@ func minimalEnv() []string {
 		}
 	}
 	return r
+}
+
+type listener struct {
+	address string
+	port    int
+	pid     uint32
+	ipv6    bool
+}
+
+var iphlpapi = windows.NewLazySystemDLL("iphlpapi.dll")
+var getExtendedTCPTable = iphlpapi.NewProc("GetExtendedTcpTable")
+
+const tcpTableOwnerPIDListener = 3
+
+func (m *Manager) portOccupied(port int) bool {
+	for _, l := range tcpListeners() {
+		if l.port == port {
+			return true
+		}
+	}
+	return false
+}
+func tcpListeners() []listener {
+	var out []listener
+	out = append(out, tcpTable(2, false)...)
+	out = append(out, tcpTable(23, true)...)
+	return out
+}
+func tcpTable(af uint32, ipv6 bool) []listener {
+	var size uint32
+	r, _, _ := getExtendedTCPTable.Call(0, uintptr(unsafe.Pointer(&size)), 1, uintptr(af), tcpTableOwnerPIDListener, 0)
+	if r != 122 || size < 4 || size > 1<<20 {
+		return nil
+	}
+	b := make([]byte, size)
+	r, _, _ = getExtendedTCPTable.Call(uintptr(unsafe.Pointer(&b[0])), uintptr(unsafe.Pointer(&size)), 1, uintptr(af), tcpTableOwnerPIDListener, 0)
+	if r != 0 {
+		return nil
+	}
+	n := binary.LittleEndian.Uint32(b[:4])
+	rowSize := 24
+	if ipv6 {
+		rowSize = 56
+	}
+	if uint64(n)*uint64(rowSize)+4 > uint64(len(b)) {
+		return nil
+	}
+	out := make([]listener, 0, n)
+	for i := uint32(0); i < n; i++ {
+		row := b[4+int(i)*rowSize:]
+		if binary.LittleEndian.Uint32(row[:4]) != 2 {
+			continue
+		}
+		var addr string
+		var po int
+		if ipv6 {
+			addr = "ipv6"
+			po = int(binary.BigEndian.Uint16(row[24:26]))
+		} else {
+			addr = fmtIPv4(row[4:8])
+			po = int(binary.BigEndian.Uint16(row[8:10]))
+		}
+		out = append(out, listener{addr, po, binary.LittleEndian.Uint32(row[rowSize-4:]), ipv6})
+	}
+	return out
+}
+func fmtIPv4(b []byte) string { return fmt.Sprintf("%d.%d.%d.%d", b[0], b[1], b[2], b[3]) }
+
+func (m *Manager) awaitReady(parent context.Context, id cliproxyconfig.ID, record ProcessRecord) error {
+	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
+	defer cancel()
+	for delay := 25 * time.Millisecond; ; {
+		if m.checkL0(id, record) == nil && m.checkL1(ctx, record) == nil && m.checkL2(ctx, id) == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ErrPersistence
+		case <-time.After(delay):
+			if delay < 250*time.Millisecond {
+				delay *= 2
+			}
+		}
+	}
+}
+func (m *Manager) checkL0(id cliproxyconfig.ID, r ProcessRecord) error {
+	s, e := m.statusLocked(id)
+	if e != nil || !s.Running || s.Record != r {
+		return ErrIdentityMismatch
+	}
+	return nil
+}
+func (m *Manager) checkL1(ctx context.Context, r ProcessRecord) error {
+	count := 0
+	for _, l := range tcpListeners() {
+		if l.pid != r.PID {
+			continue
+		}
+		if l.ipv6 || l.address != "127.0.0.1" || l.port != r.Port {
+			return ErrPersistence
+		}
+		count++
+	}
+	if count != 1 {
+		return ErrPersistence
+	}
+	return m.request(ctx, r.Port, "/healthz", "", "", 200)
+}
+func (m *Manager) checkL2(ctx context.Context, id cliproxyconfig.ID) error {
+	ownClient, ownMgmt, otherClient, otherMgmt := purposes(id)
+	for _, c := range []struct {
+		p            secretstore.Purpose
+		path, header string
+		status       int
+	}{{ownClient, "/v1/models", "Authorization", 200}, {otherClient, "/v1/models", "Authorization", 401}, {ownMgmt, "/v0/management/debug", "X-Management-Key", 200}, {otherMgmt, "/v0/management/debug", "X-Management-Key", 401}} {
+		if e := m.requestWithKey(ctx, id, c.p, c.path, c.header, c.status); e != nil {
+			return e
+		}
+	}
+	_, port, _ := m.instanceRoot(id)
+	if e := m.request(ctx, port, "/v1/models", "", "", 401); e != nil {
+		return e
+	}
+	return m.request(ctx, port, "/v0/management/debug", "", "", 401)
+}
+func purposes(id cliproxyconfig.ID) (secretstore.Purpose, secretstore.Purpose, secretstore.Purpose, secretstore.Purpose) {
+	if id == cliproxyconfig.Codex {
+		return secretstore.CodexClientKey, secretstore.CodexManagementKey, secretstore.GoogleClientKey, secretstore.GoogleManagementKey
+	}
+	return secretstore.GoogleClientKey, secretstore.GoogleManagementKey, secretstore.CodexClientKey, secretstore.CodexManagementKey
+}
+func (m *Manager) requestWithKey(ctx context.Context, id cliproxyconfig.ID, p secretstore.Purpose, path, header string, status int) error {
+	raw, e := m.reader.Get(p)
+	if e != nil {
+		return ErrPersistence
+	}
+	wire, e := keymaterial.Encode(raw)
+	secretstore.Zero(raw)
+	if e != nil {
+		return ErrPersistence
+	}
+	defer secretstore.Zero(wire)
+	_, port, _ := m.instanceRoot(id)
+	value := string(wire)
+	if header == "Authorization" {
+		value = "Bearer " + value
+	}
+	return m.request(ctx, port, path, header, value, status)
+}
+func (m *Manager) request(ctx context.Context, port int, path, header, value string, want int) error {
+	tr := &http.Transport{Proxy: nil}
+	defer tr.CloseIdleConnections()
+	client := &http.Client{Transport: tr, Timeout: 2 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	req, e := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d%s", port, path), nil)
+	if e != nil {
+		return ErrPersistence
+	}
+	if header != "" {
+		req.Header.Set(header, value)
+	}
+	resp, e := client.Do(req)
+	if e != nil {
+		return ErrPersistence
+	}
+	defer resp.Body.Close()
+	if _, e = io.Copy(io.Discard, io.LimitReader(resp.Body, 4097)); e != nil || resp.StatusCode != want {
+		return ErrPersistence
+	}
+	return nil
 }

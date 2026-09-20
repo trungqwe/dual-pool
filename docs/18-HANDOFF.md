@@ -1,5 +1,9 @@
 # Current Handoff
 
+## Phase 2 lifecycle safety correction — pending Source CI (2026-09-20)
+
+Correction work based at `5a7e149` introduces a shared Windows process-identity primitive, handle-backed Stop verification, strict process-record decoding, expected-image validation, semantic config preflight, TCP owner-table port preflight, readiness probes, minimal child environment, and binary-install recovery marker. Local Go, Node and upstream-lock checks passed; race and Source CI remain pending. `DUALPOOL_RUN_REAL_LIFECYCLE=1` is prohibited until the correction CI passes. No real process, listener, OAuth flow, provider request, IDE configuration mutation, or evidence capture occurred.
+
 ## Phase 2 lifecycle slice — implementation pending gates (2026-09-20)
 
 Worktree `phase2-empty-lifecycle` starts at `6d6cfd28600c26a3188455df9ef3b7c258bdaab6`; it does not alter the dirty Phase 0 checkout. The uncommitted slice adds `internal/instance` for protected installation of the verified v7.3.7 binary and PID-safe lifecycle records, and extends `cliproxyconfig` to admit only a protected optional `process.json` artifact.

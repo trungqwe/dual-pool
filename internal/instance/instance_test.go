@@ -9,7 +9,7 @@ import (
 )
 
 func TestProcessRecordRejectsPIDReuseAndUnsafeValues(t *testing.T) {
-	valid := ProcessRecord{SchemaVersion: 1, InstanceID: "codex", PID: 42, StartTime: 99, ExecutableSHA256: string(make([]byte, 64)), ExecutableImage: `c:\dualpool\cliproxyapi.exe`, ConfigSHA256: string(make([]byte, 64)), Port: cliproxyconfig.CodexPort}
+	valid := ProcessRecord{SchemaVersion: 1, InstanceID: "codex", PID: 42, StartTime: 99, ExecutableSHA256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ConfigSHA256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Port: cliproxyconfig.CodexPort}
 	// Hash shape alone is insufficient to identify a new process: Status also
 	// compares creation FILETIME and canonical executable image.
 	for _, mutate := range []func(*ProcessRecord){
@@ -35,6 +35,29 @@ func TestReadJSONRejectsUnknownFields(t *testing.T) {
 	var record ProcessRecord
 	if err := readJSON(path, &record); err == nil {
 		t.Fatal("unknown record field accepted")
+	}
+}
+
+func TestReadJSONRejectsDuplicateKeysAndMultipleDocuments(t *testing.T) {
+	for _, payload := range []string{
+		`{"schema_version":1,"schema_version":2}`,
+		`{"schema_version":1} {}`,
+	} {
+		path := filepath.Join(t.TempDir(), "record.json")
+		if err := os.WriteFile(path, []byte(payload), 0600); err != nil {
+			t.Fatal(err)
+		}
+		var record ProcessRecord
+		if err := readJSON(path, &record); err == nil {
+			t.Fatalf("unsafe JSON accepted: %s", payload)
+		}
+	}
+}
+
+func TestProcessRecordRequiresLowercaseHexDigests(t *testing.T) {
+	record := ProcessRecord{SchemaVersion: 1, InstanceID: "google", PID: 1, StartTime: 1, ExecutableSHA256: "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ConfigSHA256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Port: cliproxyconfig.GooglePort}
+	if validRecord(record) {
+		t.Fatal("uppercase digest accepted")
 	}
 }
 
