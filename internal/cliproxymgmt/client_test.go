@@ -128,3 +128,69 @@ func TestStrictEOF(t *testing.T) {
 		}
 	}
 }
+
+func TestInventoryStrictEOF(t *testing.T) {
+	valid := `{"observed_at":"2026-09-20T00:00:00Z","files":[]}`
+	for _, body := range []string{valid, valid + " \n\t"} {
+		if err := parseEmptyInventory([]byte(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, body := range []string{valid + " {}", valid + " garbage", valid + " {", valid + string([]byte{0xff})} {
+		if !errors.Is(parseEmptyInventory([]byte(body)), ErrContract) {
+			t.Fatal("trailing inventory data accepted")
+		}
+	}
+}
+
+func TestManagementSecretNondisclosure(t *testing.T) {
+	sentinel := []byte("P2-MGMT-SENTINEL-KEY-00000000000")
+	if len(sentinel) != 32 {
+		t.Fatal("bad fixture")
+	}
+	for name, transport := range map[string]roundTrip{
+		"success": func(req *http.Request) (*http.Response, error) {
+			if req.Header.Get("X-Management-Key") == "" {
+				t.Fatal("header absent")
+			}
+			return response(`{"debug":false}`, 200, pinnedVersion, pinnedCommit), nil
+		},
+		"transport": func(*http.Request) (*http.Response, error) { return nil, errors.New("transport failed") },
+		"non200": func(*http.Request) (*http.Response, error) {
+			return response(`{}`, 401, pinnedVersion, pinnedCommit), nil
+		},
+		"wrong header": func(*http.Request) (*http.Response, error) { return response(`{}`, 200, "wrong", pinnedCommit), nil },
+		"malformed": func(*http.Request) (*http.Response, error) {
+			return response(`{`, 200, pinnedVersion, pinnedCommit), nil
+		},
+		"oversize": func(*http.Request) (*http.Response, error) {
+			return response(strings.Repeat("x", debugLimit+1), 200, pinnedVersion, pinnedCommit), nil
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			r := &testReader{value: append([]byte(nil), sentinel...)}
+			c := &Client{id: cliproxyconfig.Codex, port: cliproxyconfig.CodexPort, purpose: secretstore.CodexManagementKey, reader: r, lock: testLock(), http: &http.Client{Transport: transport}}
+			err := c.Debug(context.Background())
+			if strings.Contains(errString(err), string(sentinel)) {
+				t.Fatal("sentinel disclosed")
+			}
+			for _, b := range r.value {
+				if b != 0 {
+					t.Fatal("raw not wiped")
+				}
+			}
+		})
+	}
+}
+func response(body string, status int, version, commit string) *http.Response {
+	h := http.Header{}
+	h.Set("X-CPA-VERSION", version)
+	h.Set("X-CPA-COMMIT", commit)
+	return &http.Response{StatusCode: status, Header: h, Body: io.NopCloser(strings.NewReader(body))}
+}
+func errString(e error) string {
+	if e == nil {
+		return ""
+	}
+	return e.Error()
+}

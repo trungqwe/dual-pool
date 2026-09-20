@@ -652,3 +652,7 @@ The first live shadow run exposed an observability defect: after terminal checkp
 ## Pre-live proof closure pending CI
 
 - Added commit-prefix/strict EOF fixtures and full real-gate integrity baseline; real L3 NOT RUN.
+
+## Management pre-live safety finalization pending CI
+
+- Baseline key-buffer cleanup now registers before first read; inventory EOF and management-key nondisclosure fixtures added. Real L3 NOT RUN.

@@ -60,13 +60,6 @@ func TestRealEmptyManagementInventory(t *testing.T) {
 	before := map[cliproxyconfig.ID][]byte{}
 	identities := map[cliproxyconfig.ID]realFileIdentity{}
 	beforeKeys := map[secretstore.Purpose][]byte{}
-	for _, p := range []secretstore.Purpose{secretstore.CodexClientKey, secretstore.CodexManagementKey, secretstore.GoogleClientKey, secretstore.GoogleManagementKey} {
-		v, e := store.Get(p)
-		if e != nil || len(v) != 32 {
-			t.Fatal("invalid product key")
-		}
-		beforeKeys[p] = v
-	}
 	defer func() {
 		for _, b := range before {
 			secretstore.Zero(b)
@@ -75,6 +68,13 @@ func TestRealEmptyManagementInventory(t *testing.T) {
 			secretstore.Zero(b)
 		}
 	}()
+	for _, p := range []secretstore.Purpose{secretstore.CodexClientKey, secretstore.CodexManagementKey, secretstore.GoogleClientKey, secretstore.GoogleManagementKey} {
+		v, e := store.Get(p)
+		if e != nil || len(v) != 32 {
+			t.Fatal("invalid product key")
+		}
+		beforeKeys[p] = v
+	}
 	for _, id := range []cliproxyconfig.ID{cliproxyconfig.Codex, cliproxyconfig.Google} {
 		if _, e := os.Lstat(filepath.Join(layout.Instances, string(id), "process.json")); !os.IsNotExist(e) {
 			t.Fatal("unexpected process record")
