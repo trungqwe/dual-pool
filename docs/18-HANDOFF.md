@@ -632,3 +632,11 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Real lifecycle: **NOT RUN**. `DUALPOOL_RUN_REAL_LIFECYCLE` chưa arm; không có CLIProxyAPI process/listener mới, OAuth hay provider traffic trong run này.
 - Report: `docs/reports/2026-09-20T0932Z-phase-2-real-harness-hardening.md`.
 - Exact next action: commit/push, đợi Source CI PASS; chỉ sau đó chạy one-shot real lifecycle gate. Dừng nếu bất kỳ cleanup/integrity criterion nào fail.
+
+## Delivery receipt — real empty lifecycle gate
+
+- Commit `9082104650fc214d2d6a108d297a1278d3190cba`; Source CI [35502801663](https://github.com/trungqwe/dual-pool/actions/runs/35502801663) **PASS**, gồm full Go race, pinned upstream integration, Windows build, Node 55/55 và lock validator.
+- One-shot real gate **PASS**: `DUALPOOL_RUN_REAL_LIFECYCLE=1 go test ./internal/instance -run '^TestRealLifecycle$' -count=1 -v` (8.09s).
+- Sau real gate: process record vắng; 8317/8318 không listener; auth/log của cả hai instance rỗng; config bytes và file identity không đổi; bốn product key không đổi (constant-time), buffer đã zero; pinned binary được validate lại.
+- Không provider traffic, OAuth, provider credential read hoặc secret/config content bị ghi. Evidence sanitized: `evidence/phase-2-empty-lifecycle/real-lifecycle.json`.
+- Phase 2 vẫn OPEN. Kết quả này chứng minh empty lifecycle, không đóng U-001..U-004/U-006 hay U-008.

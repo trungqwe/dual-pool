@@ -64,3 +64,12 @@ Không chạy `DUALPOOL_RUN_REAL_LIFECYCLE=1`, không gửi provider request, OA
 1. Commit và push scoped thay đổi này.
 2. Chỉ khi Source CI của chính commit PASS, chạy một lần `DUALPOOL_RUN_REAL_LIFECYCLE=1 go test ./internal/instance -run '^TestRealLifecycle$' -count=1 -v`.
 3. Stop ngay nếu cleanup, auth/log integrity, process record, listener, key immutability hoặc binary validation fail.
+
+## Delivery receipt
+
+- Implementation commit: `9082104650fc214d2d6a108d297a1278d3190cba`.
+- Source CI: **PASS**, [run 35502801663](https://github.com/trungqwe/dual-pool/actions/runs/35502801663). Format, module verification, vet, full Go tests, full race, pinned upstream integration, Windows build, Phase 0 Node regression and lock validator all passed.
+- Real gate: **PASS**, one invocation of `DUALPOOL_RUN_REAL_LIFECYCLE=1 go test ./internal/instance -run '^TestRealLifecycle$' -count=1 -v` in 8.09 seconds.
+- Real postconditions PASS: both process records absent; 8317/8318 unoccupied; both auth/log directories empty; config bytes and Windows file identities unchanged; four product keys unchanged by constant-time comparison and buffers zeroed; pinned binary revalidated.
+- The real test did not send provider traffic, perform OAuth, read provider credentials, or record config/key values. Sanitized evidence: `evidence/phase-2-empty-lifecycle/real-lifecycle.json`.
+- Phase 2 remains OPEN: this proves empty protected lifecycle and local isolation gates, not provider authentication or user-traffic compatibility. U-001..U-004/U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN.

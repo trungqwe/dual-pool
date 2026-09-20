@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "phase_2_empty_lifecycle_real_gate",
+  "source_ci": {
+    "commit": "9082104650fc214d2d6a108d297a1278d3190cba",
+    "run": "35502801663",
+    "status": "PASS"
+  },
+  "real_gate": {
+    "command": "DUALPOOL_RUN_REAL_LIFECYCLE=1 go test ./internal/instance -run ^TestRealLifecycle$ -count=1 -v",
+    "status": "PASS",
+    "provider_traffic": false,
+    "oauth": false,
+    "provider_credentials_read": false,
+    "config_content_recorded": false,
+    "key_content_recorded": false
+  },
+  "postconditions": {
+    "managed_process_records_absent": true,
+    "ports_8317_8318_unoccupied": true,
+    "auth_and_logs_empty": true,
+    "config_bytes_unchanged": true,
+    "config_file_identity_unchanged": true,
+    "four_product_keys_unchanged": true,
+    "pinned_binary_revalidated": true
+  }
+}
