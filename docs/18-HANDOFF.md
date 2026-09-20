@@ -1,5 +1,9 @@
 # Current Handoff
 
+## Phase 2 listener and cleanup correction — pending Source CI (2026-09-20)
+
+This uncommitted correction replaces raw TCP-table offsets with typed IPv4/IPv6 ABI rows, turns listener inspection failures into fail-closed results, retains process records on unresolved startup cleanup, separates Stop ownership from config drift, checks existing-process readiness, validates config using the Manager's injected layout, and tightens install-marker recovery. Local Go/Node/upstream-lock checks pass; do not run real lifecycle until a new correction commit and its Source CI pass.
+
 ## Phase 2 lifecycle safety correction — pending Source CI (2026-09-20)
 
 Correction work based at `5a7e149` introduces a shared Windows process-identity primitive, handle-backed Stop verification, strict process-record decoding, expected-image validation, semantic config preflight, TCP owner-table port preflight, readiness probes, minimal child environment, and binary-install recovery marker. Local Go, Node and upstream-lock checks passed; race and Source CI remain pending. `DUALPOOL_RUN_REAL_LIFECYCLE=1` is prohibited until the correction CI passes. No real process, listener, OAuth flow, provider request, IDE configuration mutation, or evidence capture occurred.

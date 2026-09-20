@@ -170,16 +170,9 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if err = writeProtectedJSON(m.acl, filepath.Join(filepath.Dir(final), markerName), m.marker(txn, filepath.Base(attempt))); err != nil {
 		return "", false, err
 	}
-	defer func() { _ = os.Remove(filepath.Join(filepath.Dir(final), markerName)) }()
 	if err = m.acl.Create(attempt); err != nil {
 		return "", false, ErrPersistence
 	}
-	owned := true
-	defer func() {
-		if owned {
-			_ = os.RemoveAll(attempt)
-		}
-	}()
 	if err = copyProtected(m.acl, stage.Executable, filepath.Join(attempt, "cliproxyapi.exe")); err != nil {
 		return "", false, err
 	}
@@ -194,9 +187,11 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if windows.MoveFileEx(from, to, windows.MOVEFILE_WRITE_THROUGH) != nil {
 		return "", false, ErrBinaryInstallConflict
 	}
-	owned = false
 	if err = m.validateInstall(ctx, final); err != nil {
 		return "", false, err
+	}
+	if err = os.Remove(filepath.Join(filepath.Dir(final), markerName)); err != nil {
+		return "", false, ErrPersistence
 	}
 	return m.executablePath(), false, nil
 }
@@ -231,7 +226,10 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 		}
 	}
 	if _, e := os.Lstat(candidate); e == nil {
-		if !strings.HasPrefix(mark.CandidateBasename, "."+m.lock.Version+".install-") || m.acl.Inspect(candidate) != nil {
+		if mark.CandidateBasename != "."+m.lock.Version+".install-"+mark.TransactionID || m.acl.Inspect(candidate) != nil {
+			return ErrBinaryInstallConflict
+		}
+		if m.validateInstall(ctx, candidate) != nil {
 			return ErrBinaryInstallConflict
 		}
 		if e = os.RemoveAll(candidate); e != nil {
@@ -244,7 +242,7 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 	return nil
 }
 func validMarker(v installMarker, m *Manager) bool {
-	return v.SchemaVersion == 1 && digestPattern.MatchString(v.TransactionID) && v.Version == m.lock.Version && v.LockSHA256 == m.lock.Digest() && v.AdapterVersion == m.lock.ConfigAdapterVersion && filepath.Base(v.CandidateBasename) == v.CandidateBasename && strings.HasPrefix(v.CandidateBasename, "."+m.lock.Version+".install-")
+	return v.SchemaVersion == 1 && digestPattern.MatchString(v.TransactionID) && v.Version == m.lock.Version && v.LockSHA256 == m.lock.Digest() && v.AdapterVersion == m.lock.ConfigAdapterVersion && v.CandidateBasename == "."+v.Version+".install-"+v.TransactionID
 }
 
 func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, error) {
@@ -271,12 +269,17 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 		return Status{}, err
 	}
 	if status, e := m.statusLocked(id); e == nil && status.Running {
+		if e = m.awaitReady(ctx, id, status.Record); e != nil {
+			return Status{}, e
+		}
 		return status, nil
 	} else if errors.Is(e, ErrNotRunning) {
 		// A protected, schema-valid record whose PID no longer exists is stale
 		// state from a natural child exit. It contains no authority to affect a
 		// process, so remove only that record before creating a new one.
-		if m.portOccupied(port) {
+		if occupied, inspectErr := m.portOccupied(port); inspectErr != nil {
+			return Status{}, ErrUnverifiable
+		} else if occupied {
 			return Status{}, ErrPortOccupied
 		}
 		if removeErr := os.Remove(filepath.Join(root, "process.json")); removeErr != nil && !os.IsNotExist(removeErr) {
@@ -285,12 +288,14 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 	} else if e != nil && !errors.Is(e, ErrNotRunning) {
 		return Status{}, e
 	}
-	if validator, validateErr := cliproxyconfig.NewCurrent(m.lock); validateErr != nil {
+	if validator, validateErr := cliproxyconfig.New(m.layout, m.acl, m.reader, m.lock); validateErr != nil {
 		return Status{}, ErrUnsafeInstance
 	} else if state, validateErr := validator.InspectPair(); validateErr != nil || !state.Ready {
 		return Status{}, ErrUnsafeInstance
 	}
-	if m.portOccupied(port) {
+	if occupied, inspectErr := m.portOccupied(port); inspectErr != nil {
+		return Status{}, ErrUnverifiable
+	} else if occupied {
 		return Status{}, ErrPortOccupied
 	}
 	cmd := exec.Command(m.executablePath(), "-config", filepath.Join(root, "config.yaml"), "-local-model")
@@ -318,8 +323,9 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 		return Status{}, err
 	}
 	if err = m.awaitReady(ctx, id, record); err != nil {
-		_ = m.stopRecord(record)
-		_ = os.Remove(filepath.Join(root, "process.json"))
+		if cleanupErr := m.cleanupOwned(id, record); cleanupErr != nil {
+			return Status{}, cleanupErr
+		}
 		return Status{}, err
 	}
 	return Status{ID: id, Running: true, Record: record}, nil
@@ -341,13 +347,28 @@ func (m *Manager) stopLocked(id cliproxyconfig.ID) error {
 	if err != nil {
 		return err
 	}
-	if err = m.stopRecord(status.Record); err != nil {
+	return m.cleanupOwned(id, status.Record)
+}
+func (m *Manager) cleanupOwned(id cliproxyconfig.ID, record ProcessRecord) error {
+	if err := m.stopRecord(record); err != nil {
 		return err
 	}
-	if m.portOccupied(status.Record.Port) {
+	occupied, e := m.portOccupied(record.Port)
+	if e != nil {
+		return ErrUnverifiable
+	}
+	if occupied {
 		return ErrPersistence
 	}
-	if err = os.Remove(filepath.Join(m.instancePath(id), "process.json")); err != nil && !os.IsNotExist(err) {
+	path := filepath.Join(m.instancePath(id), "process.json")
+	if m.acl.InspectFile(path) != nil {
+		return ErrUnsafeInstance
+	}
+	var current ProcessRecord
+	if e = readJSON(path, &current); e != nil || current != record {
+		return ErrIdentityMismatch
+	}
+	if e = os.Remove(path); e != nil {
 		return ErrPersistence
 	}
 	return nil
@@ -418,7 +439,7 @@ func (m *Manager) statusLocked(id cliproxyconfig.ID) (Status, error) {
 	if e != nil {
 		return Status{ID: id, Record: r}, ErrUnverifiable
 	}
-	if !m.matchesLive(r, processidentity.Identity{PID: live.PID, StartTime: live.StartTime, Image: live.Image}) || r.ConfigSHA256 != digest(filepath.Join(root, "config.yaml")) {
+	if !m.matchesLive(r, processidentity.Identity{PID: live.PID, StartTime: live.StartTime, Image: live.Image}) {
 		return Status{}, ErrIdentityMismatch
 	}
 	return Status{ID: id, Running: true, Record: r}, nil
@@ -631,63 +652,111 @@ type listener struct {
 	pid     uint32
 	ipv6    bool
 }
+type tcp4row struct {
+	state      uint32
+	localAddr  uint32
+	localPort  uint32
+	remoteAddr uint32
+	remotePort uint32
+	pid        uint32
+}
+type tcp6row struct {
+	localAddr     [16]byte
+	localScopeID  uint32
+	localPort     uint32
+	remoteAddr    [16]byte
+	remoteScopeID uint32
+	remotePort    uint32
+	state         uint32
+	pid           uint32
+}
 
 var iphlpapi = windows.NewLazySystemDLL("iphlpapi.dll")
 var getExtendedTCPTable = iphlpapi.NewProc("GetExtendedTcpTable")
 
 const tcpTableOwnerPIDListener = 3
 
-func (m *Manager) portOccupied(port int) bool {
-	for _, l := range tcpListeners() {
+func (m *Manager) portOccupied(port int) (bool, error) {
+	all, err := tcpListeners()
+	if err != nil {
+		return false, err
+	}
+	for _, l := range all {
 		if l.port == port {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
-func tcpListeners() []listener {
+func tcpListeners() ([]listener, error) {
 	var out []listener
-	out = append(out, tcpTable(2, false)...)
-	out = append(out, tcpTable(23, true)...)
-	return out
+	v4, e := tcpTable4()
+	if e != nil {
+		return nil, e
+	}
+	v6, e := tcpTable6()
+	if e != nil {
+		return nil, e
+	}
+	out = append(out, v4...)
+	out = append(out, v6...)
+	return out, nil
 }
-func tcpTable(af uint32, ipv6 bool) []listener {
+func tcpBuffer(af uint32) ([]byte, error) {
 	var size uint32
 	r, _, _ := getExtendedTCPTable.Call(0, uintptr(unsafe.Pointer(&size)), 1, uintptr(af), tcpTableOwnerPIDListener, 0)
 	if r != 122 || size < 4 || size > 1<<20 {
-		return nil
+		return nil, ErrUnverifiable
 	}
 	b := make([]byte, size)
 	r, _, _ = getExtendedTCPTable.Call(uintptr(unsafe.Pointer(&b[0])), uintptr(unsafe.Pointer(&size)), 1, uintptr(af), tcpTableOwnerPIDListener, 0)
-	if r != 0 {
-		return nil
+	if r != 0 || size > uint32(len(b)) {
+		return nil, ErrUnverifiable
+	}
+	return b[:size], nil
+}
+func tcpTable4() ([]listener, error) {
+	b, e := tcpBuffer(2)
+	if e != nil {
+		return nil, e
 	}
 	n := binary.LittleEndian.Uint32(b[:4])
-	rowSize := 24
-	if ipv6 {
-		rowSize = 56
-	}
-	if uint64(n)*uint64(rowSize)+4 > uint64(len(b)) {
-		return nil
+	if uint64(n)*uint64(unsafe.Sizeof(tcp4row{}))+4 > uint64(len(b)) {
+		return nil, ErrUnverifiable
 	}
 	out := make([]listener, 0, n)
 	for i := uint32(0); i < n; i++ {
-		row := b[4+int(i)*rowSize:]
-		if binary.LittleEndian.Uint32(row[:4]) != 2 {
+		offset := 4 + uintptr(i)*unsafe.Sizeof(tcp4row{})
+		row := (*tcp4row)(unsafe.Pointer(&b[offset]))
+		if row.state != 2 {
 			continue
 		}
-		var addr string
-		var po int
-		if ipv6 {
-			addr = "ipv6"
-			po = int(binary.BigEndian.Uint16(row[24:26]))
-		} else {
-			addr = fmtIPv4(row[4:8])
-			po = int(binary.BigEndian.Uint16(row[8:10]))
-		}
-		out = append(out, listener{addr, po, binary.LittleEndian.Uint32(row[rowSize-4:]), ipv6})
+		addr := (*[4]byte)(unsafe.Pointer(&row.localAddr))
+		port := (*[4]byte)(unsafe.Pointer(&row.localPort))
+		out = append(out, listener{fmtIPv4(addr[:]), int(binary.BigEndian.Uint16(port[:2])), row.pid, false})
 	}
-	return out
+	return out, nil
+}
+func tcpTable6() ([]listener, error) {
+	b, e := tcpBuffer(23)
+	if e != nil {
+		return nil, e
+	}
+	n := binary.LittleEndian.Uint32(b[:4])
+	if uint64(n)*uint64(unsafe.Sizeof(tcp6row{}))+4 > uint64(len(b)) {
+		return nil, ErrUnverifiable
+	}
+	out := make([]listener, 0, n)
+	for i := uint32(0); i < n; i++ {
+		offset := 4 + uintptr(i)*unsafe.Sizeof(tcp6row{})
+		row := (*tcp6row)(unsafe.Pointer(&b[offset]))
+		if row.state != 2 {
+			continue
+		}
+		port := (*[4]byte)(unsafe.Pointer(&row.localPort))
+		out = append(out, listener{"ipv6", int(binary.BigEndian.Uint16(port[:2])), row.pid, true})
+	}
+	return out, nil
 }
 func fmtIPv4(b []byte) string { return fmt.Sprintf("%d.%d.%d.%d", b[0], b[1], b[2], b[3]) }
 
@@ -717,7 +786,11 @@ func (m *Manager) checkL0(id cliproxyconfig.ID, r ProcessRecord) error {
 }
 func (m *Manager) checkL1(ctx context.Context, r ProcessRecord) error {
 	count := 0
-	for _, l := range tcpListeners() {
+	all, err := tcpListeners()
+	if err != nil {
+		return ErrUnverifiable
+	}
+	for _, l := range all {
 		if l.pid != r.PID {
 			continue
 		}
@@ -788,7 +861,11 @@ func (m *Manager) request(ctx context.Context, port int, path, header, value str
 		return ErrPersistence
 	}
 	defer resp.Body.Close()
-	if _, e = io.Copy(io.Discard, io.LimitReader(resp.Body, 4097)); e != nil || resp.StatusCode != want {
+	body, e := io.ReadAll(io.LimitReader(resp.Body, 4097))
+	if e != nil || len(body) > 4096 || resp.StatusCode != want {
+		return ErrPersistence
+	}
+	if path == "/healthz" && !bytes.Equal(body, []byte(`{"status":"ok"}`)) {
 		return ErrPersistence
 	}
 	return nil
