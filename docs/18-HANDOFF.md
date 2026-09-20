@@ -522,3 +522,15 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Push: normal new-branch push; remote implementation HEAD verified. PR: not requested and not created.
 - Delivery receipt commit: this commit; its SHA, CI and final remote HEAD are verified after commit because a commit cannot contain its own SHA.
 - Exact next task: **Phase 2 — product-root ACL gate + four-key initialization**.
+
+## Phase 2 product-root ACL + four-key initializer — implementation pending CI
+
+- Starting HEAD: `20934d794f03770f4f779a9309367a3da56ca1ae` on `phase-2/upstream-lifecycle`.
+- Implemented creation-time protected Windows DACLs and semantic reinspection for the exact `%LOCALAPPDATA%\DualPool` layout, plus an idempotent four-key initializer backed by the closed Windows Credential Manager registry.
+- Recovery covers 0–4 existing keys, partial writes, invalid/duplicate keys, bounded RNG collisions, unexpected root entries, ACL failures and concurrent initializers under the existing global lock.
+- Redirect policy now rejects explicit ports. Source CI now runs `go test -race -count=1 ./...`.
+- Local gates PASS: full Go suite, full race (including 209-second lock stress), vet, build, module verify, 54/54 Phase 0 Node tests and `UPSTREAM_LOCK_VALID`.
+- Real product initializer gate remains closed pending implementation Source CI PASS. Product root and production credential targets have not been touched by this commit.
+- Report: `docs/reports/20260920T034857Z-phase-2-product-init.md`.
+- Implementation commit/CI: PENDING.
+- Exact next action after CI PASS: run the explicitly gated real initializer twice, capture sanitized evidence, then close `P2-ENTRY-ACL-001` and `P2-ENTRY-KEYS-001`.

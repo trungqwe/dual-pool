@@ -363,6 +363,10 @@ func TestRedirectPolicyStripsSecrets(t *testing.T) {
 	if !errors.Is(redirect(down, nil), ErrDownloadOrigin) {
 		t.Fatal("downgrade accepted")
 	}
+	ported, _ := http.NewRequest(http.MethodGet, "https://github.com:443/a", nil)
+	if !errors.Is(redirect(ported, nil), ErrDownloadOrigin) {
+		t.Fatal("explicit port accepted")
+	}
 }
 
 func TestStageRejectsReparseRootsAndFinalStages(t *testing.T) {

@@ -475,7 +475,7 @@ func NewHTTPDownloaderWithTransport(v http.RoundTripper) *HTTPDownloader {
 	return &HTTPDownloader{transport: v, timeout: 2 * time.Minute, maxBytes: MaxArchiveBytes}
 }
 func redirect(req *http.Request, via []*http.Request) error {
-	if len(via) >= 3 || req.URL.Scheme != "https" || !allowedHost(req.URL.Hostname()) || req.URL.User != nil {
+	if len(via) >= 3 || req.URL.Scheme != "https" || !allowedAuthority(req.URL.Host) || req.URL.User != nil {
 		return ErrDownloadOrigin
 	}
 	for _, h := range []string{"Authorization", "Cookie", "Proxy-Authorization"} {
@@ -485,6 +485,9 @@ func redirect(req *http.Request, via []*http.Request) error {
 }
 func allowedHost(h string) bool {
 	return h == "github.com" || h == "release-assets.githubusercontent.com"
+}
+func allowedAuthority(authority string) bool {
+	return authority == "github.com" || authority == "release-assets.githubusercontent.com"
 }
 func (d *HTTPDownloader) Download(ctx context.Context, p upstreamlock.Platform, dest string) (DownloadResult, error) {
 	u := p.DownloadURL
