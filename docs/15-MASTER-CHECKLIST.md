@@ -53,10 +53,10 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Pinned binary version/commit mismatch fails closed after both artifact hashes pass.
 - [x] Config adapter version mismatch fails closed; pinned `config_adapter_version` is `dualpool-cpa-v7.3.7-config-v1`. Evidence: [security gate](../evidence/phase-2-instance-config/security-gate.json).
 - [x] Codex and Google configs have disjoint paths/keys/ports. Evidence: [isolation gate](../evidence/phase-2-instance-config/isolation-gate.json).
-- [ ] Both instances bind only `127.0.0.1`.
-- [ ] Management requires key and disallows remote.
-- [ ] Process identity prevents foreign PID termination.
-- [ ] Start/stop/restart/status idempotent.
+- [x] Both instances bind only `127.0.0.1`. Evidence: `9082104`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json`, `docs/reports/2026-09-20T0932Z-phase-2-real-harness-hardening.md`.
+- [x] Management requires key and disallows remote. Evidence: `9082104`, `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json`.
+- [x] Process identity prevents foreign PID termination. Evidence: `internal/instance/instance_test.go` (`TestStopRecordUsesOneVerifiedHandle`), `9082104`.
+- [x] Start/stop/restart/status idempotent. Evidence: `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json`.
 - [ ] Staged update and automatic rollback tested.
 
 ## Accounts
@@ -104,7 +104,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ## Security and privacy
 
-- [ ] No wildcard/LAN listeners.
+- [ ] No wildcard/LAN listeners. CPA instances PASS; future bridge/service coverage remains open.
 - [x] Four distinct strong secrets. `P2-ENTRY-KEYS-001` PASS: four independent 32-byte product keys in Windows Credential Manager, pairwise distinct and unchanged on the second run. Evidence: `evidence/phase-2-product-init/key-gate.json`, `docs/reports/20260920T034857Z-phase-2-product-init.md` and `docs/reports/20260920T0420Z-phase-2-product-init-live.md`.
 - [x] Restricted ACLs verified. `P2-ENTRY-ACL-001` PASS: creation-time protected DACL, current user and LocalSystem only, seven children verified. Evidence: `evidence/phase-2-product-init/acl-gate.json` and `docs/reports/20260920T0420Z-phase-2-product-init-live.md`.
 - [ ] No open proxy/SSRF route.

@@ -175,3 +175,14 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | ACL, atomic install, partial pair, fault/crash recovery | `internal/cliproxyconfig/recovery_test.go`, [recovery matrix](../evidence/phase-2-instance-config/recovery-matrix.json) | PASS |
 | Real generation và byte idempotence | `internal/cliproxyconfig/real_windows_test.go`, [real generation](../evidence/phase-2-instance-config/real-generation.json) | PASS |
 | Listener và runtime authentication | Slice lifecycle kế tiếp | OPEN |
+
+## Phase 2 lifecycle and Management API
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P2-L0-001 / P2-L1-001 | `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json` | PASS; pinned child identity and loopback listener lifecycle |
+| P2-L2-AUTH-001 | `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json` | PASS; missing/opposite management keys rejected and own key accepted |
+| P2-PROC-PID-REUSE-001 | `internal/instance/instance_test.go` (`TestStopRecordUsesOneVerifiedHandle`) | PASS; reused PID/image mismatch never reaches termination |
+| P2-LIFECYCLE-IDEMPOTENCE-001 | `internal/instance/real_windows_test.go` | PASS; start, restart, stop and repeated stop |
+| P2-REAL-CLEANUP-001 | `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json` | PASS; records/listeners/auth/logs/config/key integrity checked |
+| P2-L2-MGMT-DEBUG-001 / P2-L3-EMPTY-INVENTORY-001 | `internal/cliproxymgmt/client_test.go`, `internal/instance/real_management_windows_test.go` | Fixture PASS; real gate pending implementation CI and user audit |

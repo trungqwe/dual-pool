@@ -640,3 +640,7 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Sau real gate: process record vắng; 8317/8318 không listener; auth/log của cả hai instance rỗng; config bytes và file identity không đổi; bốn product key không đổi (constant-time), buffer đã zero; pinned binary được validate lại.
 - Không provider traffic, OAuth, provider credential read hoặc secret/config content bị ghi. Evidence sanitized: `evidence/phase-2-empty-lifecycle/real-lifecycle.json`.
 - Phase 2 vẫn OPEN. Kết quả này chứng minh empty lifecycle, không đóng U-001..U-004/U-006 hay U-008.
+
+## Phase 2 Management L2/L3 implementation pending CI
+
+- Closed Management client and fixtures added; real L3 remains NOT RUN pending user audit.
