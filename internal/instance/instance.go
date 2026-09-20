@@ -256,6 +256,9 @@ func (m *Manager) validatePartialCandidate(ctx context.Context, dir string) erro
 		}
 		seen[entry.Name()] = true
 	}
+	if seen[manifestName] && !seen["cliproxyapi.exe"] {
+		return ErrUnsafeInstance
+	}
 	if seen["cliproxyapi.exe"] && seen[manifestName] {
 		// A complete candidate is additionally validated. A failed validation is
 		// still a safe crash artifact when the marker, topology and filenames
@@ -858,14 +861,18 @@ func (m *Manager) checkL1(ctx context.Context, r ProcessRecord) error {
 	if err != nil {
 		return ErrUnverifiable
 	}
-	expectedPortCount:=0
-	managedCount:=0
+	expectedPortCount := 0
+	managedCount := 0
 	for _, l := range all {
-		if l.port==r.Port {
+		if l.port == r.Port {
 			expectedPortCount++
-			if l.ipv6||l.address!="127.0.0.1"||l.pid!=r.PID{return ErrPersistence}
+			if l.ipv6 || l.address != "127.0.0.1" || l.pid != r.PID {
+				return ErrPersistence
+			}
 		}
-		if l.pid!=r.PID {continue}
+		if l.pid != r.PID {
+			continue
+		}
 		managedCount++
 		if l.ipv6 || l.address != "127.0.0.1" || l.port != r.Port {
 			return ErrPersistence

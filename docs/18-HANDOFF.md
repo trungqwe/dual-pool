@@ -1,5 +1,9 @@
 # Current Handoff
 
+## Phase 2 format and recovery correction — pending Source CI (2026-09-20)
+
+Historical CI `35500189251` failed only at the Go format gate in `internal/instance/instance.go`; it is not a passing gate. The next correction formats the lifecycle package and rejects manifest-only recovery candidates. Real lifecycle remains NOT RUN and must await the correction CI.
+
 ## Phase 2 pre-live closure — pending Source CI (2026-09-20)
 
 Starting at `8710e5f`, the correction fixes the 32-hex transaction ID contract, permits deletion of strictly marker-owned partial install candidates without promotion, validates `GetExtendedTcpTable` parsing against live IPv4/IPv6 loopback sockets, and requires one global expected-port owner in L1. Local Go/Node/upstream-lock checks passed. The existing real-gate test remains intentionally fail-closed and no real lifecycle action has occurred. New CI is required before any further gate decision.
