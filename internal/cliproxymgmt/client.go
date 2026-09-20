@@ -11,12 +11,15 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
 	"github.com/trungqwe/dual-pool/internal/keymaterial"
 	"github.com/trungqwe/dual-pool/internal/secretstore"
+	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
 
 var (
@@ -26,13 +29,12 @@ var (
 )
 
 const (
-	pinnedVersion  = "7.3.7"
-	pinnedCommit   = "b773607e3e7756dc6020a291825e4eb08899595a"
 	debugLimit     = 1024
 	inventoryLimit = 64 * 1024
 )
 
 type SecretReader interface {
+	// Get returns a caller-owned mutable copy. Callers may zero it after use.
 	Get(secretstore.Purpose) ([]byte, error)
 }
 
@@ -41,11 +43,12 @@ type Client struct {
 	port    int
 	purpose secretstore.Purpose
 	reader  SecretReader
+	lock    upstreamlock.Lock
 	http    *http.Client
 }
 
-func New(id cliproxyconfig.ID, reader SecretReader) (*Client, error) {
-	if reader == nil {
+func New(id cliproxyconfig.ID, reader SecretReader, lock upstreamlock.Lock) (*Client, error) {
+	if reader == nil || lock.Validate() != nil {
 		return nil, ErrManagementUnavailable
 	}
 	var port int
@@ -66,7 +69,7 @@ func New(id cliproxyconfig.ID, reader SecretReader) (*Client, error) {
 		}
 		return dialer.DialContext(ctx, network, address)
 	}, DisableKeepAlives: true, ResponseHeaderTimeout: 3 * time.Second}
-	return &Client{id: id, port: port, purpose: purpose, reader: reader, http: &http.Client{Transport: tr, Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
+	return &Client{id: id, port: port, purpose: purpose, reader: reader, lock: lock, http: &http.Client{Transport: tr, Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
 }
 
 func itoa(v int) string {
@@ -81,6 +84,7 @@ func (c *Client) Debug(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer secretstore.Zero(b)
 	return parseDebug(b)
 }
 func (c *Client) EmptyInventory(ctx context.Context) error {
@@ -88,6 +92,7 @@ func (c *Client) EmptyInventory(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer secretstore.Zero(b)
 	return parseEmptyInventory(b)
 }
 
@@ -112,11 +117,12 @@ func (c *Client) request(ctx context.Context, path string, limit int64) ([]byte,
 	}
 	req.Header.Set("X-Management-Key", string(wire)) // Header storage requires an immutable Go string; buffers above are still wiped.
 	resp, err := c.http.Do(req)
+	req.Header.Del("X-Management-Key")
 	if err != nil {
 		return nil, ErrManagementUnavailable
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK || resp.Header.Get("X-CPA-VERSION") != pinnedVersion || resp.Header.Get("X-CPA-COMMIT") != pinnedCommit {
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("X-CPA-VERSION") != c.lock.Version || !validRuntimeCommit(c.lock.Commit, resp.Header.Get("X-CPA-COMMIT")) {
 		return nil, ErrContract
 	}
 	b, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
@@ -125,4 +131,10 @@ func (c *Client) request(ctx context.Context, path string, limit int64) ([]byte,
 		return nil, ErrContract
 	}
 	return b, nil
+}
+
+var shortCommit = regexp.MustCompile(`^[a-f0-9]+$`)
+
+func validRuntimeCommit(full, observed string) bool {
+	return len(observed) >= 7 && len(observed) <= len(full) && shortCommit.MatchString(observed) && strings.HasPrefix(full, observed)
 }

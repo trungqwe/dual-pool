@@ -5,6 +5,8 @@ package cliproxymgmt
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
 	"time"
 )
 
@@ -21,7 +23,7 @@ func parseDebug(b []byte) error {
 		return ErrContract
 	}
 	var extra any
-	if d.Decode(&extra) == nil {
+	if !errors.Is(d.Decode(&extra), io.EOF) {
 		return ErrContract
 	}
 	return nil
@@ -45,7 +47,7 @@ func parseEmptyInventory(b []byte) error {
 		return ErrContract
 	}
 	var extra any
-	if d.Decode(&extra) == nil {
+	if !errors.Is(d.Decode(&extra), io.EOF) {
 		return ErrContract
 	}
 	if len(files) != 0 {

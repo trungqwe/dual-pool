@@ -104,7 +104,7 @@ func TestRealEmptyManagementInventory(t *testing.T) {
 			t.Fatal("start failed")
 		}
 		owned[id] = true
-		c, e := cliproxymgmt.New(id, store)
+		c, e := cliproxymgmt.New(id, store, lock)
 		if e != nil || c.Debug(ctx) != nil || c.EmptyInventory(ctx) != nil || c.EmptyInventory(ctx) != nil {
 			t.Fatal("L2/L3 management contract failed")
 		}

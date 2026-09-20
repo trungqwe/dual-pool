@@ -7,14 +7,32 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
 	"github.com/trungqwe/dual-pool/internal/secretstore"
+	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
 
 type testReader struct{ value []byte }
+
+var pinnedVersion = testLock().Version
+var pinnedCommit = testLock().Commit
+
+func testLock() upstreamlock.Lock {
+	b, err := os.ReadFile(filepath.Join("..", "..", "upstream.lock"))
+	if err != nil {
+		panic(err)
+	}
+	v, err := upstreamlock.Decode(b)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
 
 func (r *testReader) Get(secretstore.Purpose) ([]byte, error) { return r.value, nil }
 
@@ -23,7 +41,7 @@ type roundTrip func(*http.Request) (*http.Response, error)
 func (f roundTrip) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func testClient(body string, status int, version, commit string, r *testReader) *Client {
-	return &Client{id: cliproxyconfig.Codex, port: cliproxyconfig.CodexPort, purpose: secretstore.CodexManagementKey, reader: r, http: &http.Client{Transport: roundTrip(func(req *http.Request) (*http.Response, error) {
+	return &Client{id: cliproxyconfig.Codex, port: cliproxyconfig.CodexPort, purpose: secretstore.CodexManagementKey, reader: r, lock: testLock(), http: &http.Client{Transport: roundTrip(func(req *http.Request) (*http.Response, error) {
 		h := make(http.Header)
 		h.Set("X-CPA-VERSION", version)
 		h.Set("X-CPA-COMMIT", commit)
@@ -76,7 +94,7 @@ func TestEmptyInventoryStrictSchema(t *testing.T) {
 }
 
 func TestClientAllowlistIsClosed(t *testing.T) {
-	c, err := New(cliproxyconfig.Codex, &testReader{value: make([]byte, 32)})
+	c, err := New(cliproxyconfig.Codex, &testReader{value: make([]byte, 32)}, testLock())
 	if err != nil {
 		t.Fatal(err)
 	}

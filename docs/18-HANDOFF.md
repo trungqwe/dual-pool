@@ -644,3 +644,7 @@ The first live shadow run exposed an observability defect: after terminal checkp
 ## Phase 2 Management L2/L3 implementation pending CI
 
 - Closed Management client and fixtures added; real L3 remains NOT RUN pending user audit.
+
+## Runtime identity correction pending CI
+
+- Historical CI 35505989265 FAIL ở existing lockfile stale-reclaim stress; không được dùng authorize. Correction dùng lock version và pinned short-commit prefix, strict EOF parser; real L3 NOT RUN.
