@@ -484,3 +484,16 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Real product root/configs/provider credentials touched: false.
 - Exit reconciliation commit/CI and final receipt: PENDING.
 - Exact next task after receipt: **Phase 2 — pinned upstream downloader/stager and exact upstream.lock consumption foundation**, credential-free. Do not start automatically.
+
+### Delivery receipt — Phase 1 exit reconciliation
+
+- Repair implementation: `8385b1f01ff19b96dca5556b8602da13a6c8cd81`; Source CI **PASS**, run `35484538540`.
+- Exit reconciliation: `edc97d093c19d1083d321801c9162de5293404fd`; Source CI **PASS**, run `35484775719`.
+- Remote branch HEAD observed before this receipt: `edc97d093c19d1083d321801c9162de5293404fd`, equal to local HEAD.
+- Verification baseline: 95 Go test functions; Phase 0 Node suite 53/53; sentinel scan seven secret classes across nine surface families with zero forbidden matches.
+- Phase 1 status: **PASS**. Open Phase 1 blockers: none.
+- Deferred Phase 2 entry gates: `P2-ENTRY-ACL-001` before the first real product-root or secret-bearing config; `P2-ENTRY-KEYS-001` before two real CLIProxyAPI configs or processes.
+- Existing live/provider blockers remain unchanged: U-001..004 and U-006 `BLOCKED`; U-008 `PARTIAL_UNKNOWN`.
+- Push used normal fast-forward semantics. PR: not requested and not created.
+- This receipt commit SHA and its own Source CI are verified after commit because a commit cannot contain its own SHA.
+- Exact next task: **Phase 2 — pinned upstream downloader/stager and exact `upstream.lock` consumption foundation**, credential-free. It has not started.
