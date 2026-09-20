@@ -1,5 +1,17 @@
 # Negative Test Matrix
 
+## Phase 2 pinned upstream downloader/stager
+
+| ID | Failure | Expected result |
+|---|---|---|
+| P2-LOCK-CONSUME-001 | Unknown/duplicate key, invalid UTF-8/type, extra JSON, missing field or oversized `upstream.lock` | Reject before network access |
+| P2-DOWNLOAD-ORIGIN-001 | Wrong origin, HTTP downgrade, unexpected/looping redirect or credential header propagation | Reject without staging |
+| P2-DOWNLOAD-HASH-001 | Declared/streamed oversize, truncated body or archive digest mismatch | Delete attempt archive; ZIP and binary verifier remain unopened |
+| P2-ARCHIVE-SAFETY-001 | Traversal, absolute/drive/backslash path, symlink, device name, entry/expanded-size overflow | Reject and clean only the current attempt |
+| P2-EXEC-HASH-001 | Zero or multiple executable digest matches | Reject before binary execution |
+| P2-BINARY-IDENTITY-001 | Invalid/non-AMD64 PE, probe timeout/output overflow/nonzero exit, version or commit mismatch | Reject completed stage |
+| P2-STAGE-IDEMPOTENCE-001 | Existing incomplete, modified, extra-entry or reparse-backed final stage | Return conflict; never overwrite or delete it |
+
 | ID | Fault/attack | Expected behavior | Required evidence |
 |---|---|---|---|
 | NET-001 | Config requests `0.0.0.0`/`::` | Validation refuses startup | Listener/config test |

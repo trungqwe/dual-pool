@@ -1,5 +1,12 @@
 # Test Strategy
 
+## Phase 2 pinned upstream slice
+
+- Unit tests use injected transports, downloaders and binary verifiers; they never relax production URL validation.
+- Synthetic ZIPs cover traversal, absolute and drive paths, backslash tricks, symlinks, device names, entry/expanded-size bounds, zero/one/multiple executable hash matches and pre-execution hash gates.
+- Windows TEMP tests cover staging idempotence, conflicts, reparse roots/final stages, strict manifests and executable mutation.
+- `TestPinnedUpstreamIntegration` is opt-in locally and mandatory in Source CI through `DUALPOOL_RUN_PINNED_UPSTREAM_INTEGRATION=1`. It consumes the repository lock and real external bytes, verifies both hashes, PE AMD64, version/commit identity, manifest and cleanup without config, secrets or a listener.
+
 ## Layers
 
 ### Unit

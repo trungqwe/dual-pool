@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'phase-1/**'
+      - 'phase-2/**'
       - main
   pull_request:
 
@@ -29,6 +30,10 @@ jobs:
         run: go vet ./...
       - name: Go tests
         run: go test ./...
+      - name: Pinned upstream integration
+        env:
+          DUALPOOL_RUN_PINNED_UPSTREAM_INTEGRATION: '1'
+        run: go test -count=1 -run '^TestPinnedUpstreamIntegration$' ./internal/upstreamstage
       - name: Windows executable build
         run: go build -o "$env:RUNNER_TEMP\poolbridge.exe" ./cmd/poolbridge
       - name: Phase 0 regression tests

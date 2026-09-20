@@ -1,5 +1,15 @@
 # CLIProxyAPI Integration Contract
 
+## Pinned downloader/stager boundary
+
+The Phase 2 staging component consumes the exact validated bytes of `upstream.lock`. It derives the GitHub release URL, artifact name, archive digest and executable digest exclusively from that document. V1 supports only `windows_amd64`; it does not resolve a latest release or accept a caller URL override.
+
+The download client permits HTTPS redirects only between the exact hosts observed for the pinned asset: `github.com` and `release-assets.githubusercontent.com`. It sends no authentication metadata, applies a two-minute request deadline, limits redirects to three and caps the archive at 64 MiB. Archive SHA-256 is verified before ZIP inspection.
+
+The stager rejects unsafe ZIP paths, symlinks, device names and resource-limit violations. It selects the unique regular entry matching the locked executable SHA-256, rehashes the extracted bytes, verifies PE AMD64 and then runs the source-proven `-h` identity probe with bounded output, time and environment. No listener is started.
+
+Completed stages are immutable identities under an injected existing root and bind to the SHA-256 of the exact lock bytes through `stage-manifest.json`. Existing matching stages are reused; incomplete or mismatched stages fail with a conflict and are not overwritten. This slice uses disposable TEMP roots only.
+
 ## Boundary
 
 Poolbridge integrates only through:

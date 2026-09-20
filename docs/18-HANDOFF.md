@@ -497,3 +497,13 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Push used normal fast-forward semantics. PR: not requested and not created.
 - This receipt commit SHA and its own Source CI are verified after commit because a commit cannot contain its own SHA.
 - Exact next task: **Phase 2 — pinned upstream downloader/stager and exact `upstream.lock` consumption foundation**, credential-free. It has not started.
+
+## Phase 2 pinned upstream downloader/stager — implementation pending delivery
+
+- Branch: `phase-2/upstream-lifecycle`, created from exact Phase 1 HEAD `64a4d86947af96a5ee71baeb4671fa6932614511`.
+- Strict Go lock consumer and credential-free Windows amd64 downloader/stager are implemented. The exact lock bytes bind the stage manifest; no release discovery or caller URL override exists.
+- The observed pinned flow is HTTPS `github.com` to `release-assets.githubusercontent.com`. The 22,671,469-byte archive and executable match the committed SHA-256 values; the executable is PE AMD64 and the source-proven `-h` probe matches version `7.3.7` and commit prefix `b773607e`.
+- Staging is TEMP-only, manifest-last, globally coordinated, idempotent and fail-closed on unsafe/mismatched existing state. No CLIProxyAPI listener, config, auth root, product key or provider credential is involved.
+- `P2-ENTRY-ACL-001` and `P2-ENTRY-KEYS-001` remain OPEN and untriggered. U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN.
+- Implementation commit/CI and delivery receipt: PENDING.
+- Exact next task after successful delivery: **Phase 2 — product-root ACL gate + four-key initialization**. Do not start it in this run.

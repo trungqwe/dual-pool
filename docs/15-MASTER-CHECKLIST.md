@@ -49,8 +49,9 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 ## CLIProxyAPI lifecycle
 
 - [x] Candidate `upstream.lock` populated with independently verified Windows artifact metadata; provider support remains unverified. Evidence: `evidence/phase-0-closure.json`.
-- [ ] Download checksum mismatch fails closed.
-- [ ] Version/config adapter mismatch fails closed.
+- [x] Download checksum mismatch fails closed. Evidence: `internal/upstreamstage/stage_test.go` and `evidence/phase-2-upstream-stager/pinned-integration.json`.
+- [x] Pinned binary version/commit mismatch fails closed after both artifact hashes pass.
+- [ ] Config adapter version mismatch fails closed; `config_adapter_version` remains `UNIMPLEMENTED` until the config-generator slice.
 - [ ] Codex and Google configs have disjoint paths/keys/ports.
 - [ ] Both instances bind only `127.0.0.1`.
 - [ ] Management requires key and disallows remote.

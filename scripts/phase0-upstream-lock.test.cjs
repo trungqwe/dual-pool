@@ -43,3 +43,12 @@ test('non-string verified capability is rejected', () => {
   lock.verified_capabilities.push({ name: 'loopback_ipv4_bind' });
   assert.throws(() => validate(lock), /LOCK_VERIFIED_CAPABILITY_UNKNOWN/);
 });
+
+test('download URL must exactly bind tag and artifact without URL metadata', () => {
+  const base = loadAndValidate(lockPath);
+  for (const suffix of ['?download=1', '#fragment', '.extra']) {
+    const lock = structuredClone(base);
+    lock.platforms.windows_amd64.download_url += suffix;
+    assert.throws(() => validate(lock), /LOCK_URL_INVALID/);
+  }
+});

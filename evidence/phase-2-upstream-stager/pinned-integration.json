@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "product": "CLIProxyAPI",
+  "version": "7.3.7",
+  "tag": "v7.3.7",
+  "platform": "windows_amd64",
+  "lock_sha256": "ae88ec7b0ca92aef29fdbbf0d1dbe31e3218d9861a556fca1e4b04a49b232b51",
+  "downloaded_bytes": 22671469,
+  "archive_hash_match": true,
+  "executable_hash_match": true,
+  "pe_architecture": "AMD64",
+  "version_command": "-h",
+  "version_match": true,
+  "commit_match": true,
+  "redirect_policy_pass": true,
+  "redirect_hosts": [
+    "github.com",
+    "release-assets.githubusercontent.com"
+  ],
+  "stage_manifest_pass": true,
+  "idempotence_pass": true,
+  "cleanup_pass": true,
+  "listener_started": false
+}

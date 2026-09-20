@@ -37,6 +37,8 @@ Exit: atomicity, concurrent-edit protection, idempotence, redaction and recovery
 
 ## Phase 2 — Pinned upstream lifecycle and isolation
 
+Status: IN PROGRESS. The credential-free downloader/stager slice has component and local real-artifact proof; product-root initialization, secrets, config adapter, process/listener lifecycle, isolation and update rollback remain open.
+
 Deliver:
 
 - verified downloader/stager using `upstream.lock`;

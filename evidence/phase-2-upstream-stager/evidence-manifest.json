@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "artifacts": {
+    "test-result.json": "c23352886c6910ee2dfc9ba2c855514151ffb3c96212e21ef7390da324300538",
+    "pinned-integration.json": "da6c8647828d8c52c0a98914a85e849721272bf712c08e479af5fcd7b4be769e",
+    "security-gate.json": "5cc070ef052c346a4910a511d84568d6d2c75b167895f6a1d775feb22bf5e033"
+  }
+}

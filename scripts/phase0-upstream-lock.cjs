@@ -29,8 +29,8 @@ function validate(lock) {
 
   const platform = lock.platforms?.windows_amd64;
   if (!platform || !SHA256.test(platform.archive_sha256) || !SHA256.test(platform.executable_sha256)) fail('LOCK_HASH_INVALID');
-  const expectedPrefix = `https://github.com/router-for-me/CLIProxyAPI/releases/download/${lock.tag}/`;
-  if (!platform.download_url.startsWith(expectedPrefix) || /\/latest(?:\/|$)/i.test(platform.download_url)) fail('LOCK_URL_INVALID');
+  const expectedDownloadURL = `https://github.com/router-for-me/CLIProxyAPI/releases/download/${lock.tag}/${platform.artifact}`;
+  if (platform.download_url !== expectedDownloadURL || /\/latest(?:\/|$)/i.test(platform.download_url)) fail('LOCK_URL_INVALID');
   if (lock.release_metadata_url !== `https://github.com/router-for-me/CLIProxyAPI/releases/tag/${lock.tag}`) fail('LOCK_METADATA_URL_INVALID');
 
   if (!Array.isArray(lock.verified_capabilities) || !Array.isArray(lock.unverified_capabilities)) fail('LOCK_CAPABILITIES_INVALID');
