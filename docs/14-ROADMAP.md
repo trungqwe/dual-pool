@@ -22,6 +22,8 @@ Exit: all Phase 0 gates in `06-COMPATIBILITY-PROBE.md` pass or explicit blockers
 
 ## Phase 1 — Foundation and state safety
 
+Status: PASS after the bounded exit reconciliation. Atomicity, concurrent-edit protection, idempotence, redaction and recovery gates pass on Windows source/TEMP fixtures. Phase 2 entry gates and live/provider blockers remain separately open.
+
 Deliver:
 
 - Go module/CLI skeleton and version output;

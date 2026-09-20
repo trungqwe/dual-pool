@@ -472,3 +472,15 @@ The first live shadow run exposed an observability defect: after terminal checkp
 - Delivery receipt commit: `bea5e26`; delivery Source CI PASS, run `35464468373`.
 - Remote HEAD after the receipt: `bea5e26`, verified equal to local before this append-only receipt closure.
 - Phase 1 remains open. Exact next task: **Phase 1 — exit reconciliation and remaining-foundation gate audit**.
+## Phase 1 exit reconciliation — PASS pending delivery receipt
+
+- Starting HEAD: `b437ff888ae0432c716627312992bb584067f7b1` on `phase-1/state-foundation`.
+- Repair implementation: `8385b1f01ff19b96dca5556b8602da13a6c8cd81`; Source CI PASS, run `35484538540`.
+- Closed `CFG-PATH-001`, `CFG-RECOVERY-ARTIFACT-001`, `CFG-ROLLBACK-STATUS-001` and TOML no-table/no-terminal-newline edge debt.
+- Phase 1 E3 sentinel non-disclosure: PASS; seven runtime-only classes, nine surface families, zero forbidden matches.
+- Phase 1 exit criteria: atomicity PASS, concurrent-edit protection PASS, idempotence PASS, redaction PASS, recovery PASS. Open Phase 1 blockers: none.
+- `P2-ENTRY-ACL-001` and `P2-ENTRY-KEYS-001` are explicit Phase 2 entry gates before real secret-containing product resources.
+- U-001..004 and U-006 remain BLOCKED; U-008 remains PARTIAL_UNKNOWN. They block later live/provider functionality and were not changed to close Phase 1.
+- Real product root/configs/provider credentials touched: false.
+- Exit reconciliation commit/CI and final receipt: PENDING.
+- Exact next task after receipt: **Phase 2 — pinned upstream downloader/stager and exact upstream.lock consumption foundation**, credential-free. Do not start automatically.

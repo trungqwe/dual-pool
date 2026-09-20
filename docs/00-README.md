@@ -65,4 +65,4 @@ Version 1 is Windows 11 x64, local-only, single-user, and limited to two pools. 
 
 Target remote: `https://github.com/trungqwe/dual-pool`
 
-An agent must verify the actual remote with `git remote -v` before any push. This documentation package was prepared without authenticated read access to that remote; therefore no statement about its current branch, files, or history is authoritative until Phase 0 repository preflight records them.
+An agent must verify the actual remote with `git remote -v` before any push. Repository access and remote identity were established during Phase 0. Current committed handoff, reports and evidence on the named authoritative branches are the source of truth; the unauthenticated package-bootstrap state is historical only.

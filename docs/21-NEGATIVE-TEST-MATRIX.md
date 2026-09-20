@@ -46,3 +46,5 @@ All rows are mandatory when their component enters scope. `BLOCKED` or `SKIPPED`
 ## Phase 1 config transaction component proof
 
 CFG-001 through CFG-004 pass against disposable Windows TOML fixtures in `internal/configtxn`. CFG-001 injects external drift immediately before CAS and proves those bytes survive. CFG-002 covers pre-commit fault boundaries and replacement failure with the original target intact. CFG-003 uses both deterministic fault points and abrupt subprocess exits before and after `ReplaceFileW`, followed by a fresh engine recovery. CFG-004 changes an owned value and proves rollback returns `ErrRollbackConflict` without replacing the target. These are E3 component results; installed Codex acceptance remains open.
+
+Phase 1 exit repair adds `CFG-PATH-001` ancestor reparse rejection, `CFG-RECOVERY-ARTIFACT-001` marker/backup/candidate substitution and cleanup retry, and `CFG-ROLLBACK-STATUS-001` persistent/idempotent conflict classification. All pass on disposable Windows fixtures; no real config is used.

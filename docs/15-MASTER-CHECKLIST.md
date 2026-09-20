@@ -8,7 +8,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Existing user changes inventoried and preserved. Evidence: initial empty-remote inventory in `docs/reports/2026-09-18T1919Z-phase-0-github-bootstrap.md`.
 - [x] All agents have read required documents. Evidence: `docs/reports/2026-09-18T1919Z-phase-0-github-bootstrap.md`.
 - [x] Current phase and scope recorded in handoff. Evidence: `docs/18-HANDOFF.md`.
-- [ ] Requirements/ADRs/tests updated for any design change.
+- [x] Requirements/ADRs/tests updated for Phase 1 design changes. Evidence: `docs/reports/2026-09-20T0000Z-phase-1-exit-reconciliation.md`, `evidence/phase-1-exit-reconciliation/`.
 
 ## Phase 0
 
@@ -43,7 +43,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Global/per-file locks with PID identity and handle-safe stale reclamation. Evidence: `internal/lockfile/`, `internal/state/store_test.go`, `evidence/phase-1-locks/`, `evidence/phase-1-lock-handle-correction/`, `docs/reports/2026-09-19T1733Z-phase-1-lock-handle-race-correction.md`.
 - [x] Windows secret-store implementation reviewed. Evidence: `internal/secretstore/`, `evidence/phase-1-secret-store/`, `docs/reports/2026-09-19T1821Z-phase-1-windows-secret-store.md`, Source CI `35462429013`.
 - [x] Config backup/patch/rollback engine. Evidence: `internal/configtxn/`, `evidence/phase-1-config-transaction/`, `docs/reports/2026-09-19T1900Z-phase-1-config-transaction-engine.md`; synthetic TEMP fixtures only, product-root/backup ACL acceptance remains open.
-- [ ] Redaction and sentinel-secret tests.
+- [x] Redaction and sentinel-secret tests. Phase 1 E3 component/end-to-end foundation PASS; future doctor bundle, release packaging and live provider gates remain open. Evidence: `internal/securitygate/sentinel_test.go`, `evidence/phase-1-exit-reconciliation/sentinel-scan.json`.
 - [x] Phase 1 reusable logger redaction and sentinel unit layer. Full end-to-end `LOG-001` remains open. Evidence: `internal/safelog/safelog_test.go`, `evidence/phase-1-dataroot-logging/security-gate.json`.
 
 ## CLIProxyAPI lifecycle
@@ -104,8 +104,8 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 ## Security and privacy
 
 - [ ] No wildcard/LAN listeners.
-- [ ] Four distinct strong secrets.
-- [ ] Restricted ACLs verified.
+- [ ] Four distinct strong secrets. Deferred entry gate `P2-ENTRY-KEYS-001` must pass before two real CLIProxyAPI configs/processes are created.
+- [ ] Restricted ACLs verified. Deferred entry gate `P2-ENTRY-ACL-001` must pass before any real product-root/config generation.
 - [ ] No open proxy/SSRF route.
 - [ ] No prompt/output/tool/source persistence.
 - [ ] No raw session/account identity in logs.

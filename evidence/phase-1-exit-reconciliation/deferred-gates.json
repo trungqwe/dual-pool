@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "phase1_blockers": [],
+  "phase2_entry_gates": {
+    "P2-ENTRY-ACL-001": "Before first real product-root/config generation, prove current-user-restricted ACLs and no Users/Everyone broadening.",
+    "P2-ENTRY-KEYS-001": "Before two real CLIProxyAPI configs/processes, generate and isolate four distinct crypto/rand product keys through the secret store."
+  },
+  "phase0_live_blockers_unchanged": ["U-001", "U-002", "U-003", "U-004", "U-006"],
+  "phase0_partial_unknown_unchanged": ["U-008"]
+}

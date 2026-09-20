@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "cfg_path_001": "PASS",
+  "ancestor_junction_rejection": "PASS",
+  "case_alias_acceptance": "PASS",
+  "short_alias": "PASS_IF_SUPPORTED_OTHERWISE_NOT_APPLICABLE",
+  "reserved_names": "PASS",
+  "cfg_recovery_artifact_001": "PASS",
+  "marker_reparse_rejection": "PASS",
+  "backup_reparse_rejection": "PASS",
+  "candidate_reparse_rejection": "PASS",
+  "zero_partial_unsafe_cleanup": "PASS",
+  "cleanup_failure_retry": "PASS",
+  "cfg_rollback_status_001": "PASS",
+  "toml_edge": "PASS",
+  "real_product_root_touched": false,
+  "real_codex_config_touched": false,
+  "real_antigravity_config_touched": false,
+  "provider_credentials_touched": false
+}

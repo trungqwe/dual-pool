@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "files": ["phase1-exit.json", "security-gate.json", "sentinel-scan.json", "deferred-gates.json"],
+  "contains_absolute_paths": false,
+  "contains_config_bodies": false,
+  "contains_secrets_or_sentinel_values": false
+}

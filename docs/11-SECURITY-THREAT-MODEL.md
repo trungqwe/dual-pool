@@ -81,3 +81,10 @@ The project manages credentials the user legitimately authorizes. It must not cr
 Concurrent stale reclaimers cannot remove a successor's canonical lock by pathname. Each owner or reclaimer must hold an exclusive handle to the exact canonical file object; stale and normal-release deletion use handle disposition only after record and process-identity checks.
 
 Release is blocked if any listener is non-loopback, management works without a key, a secret sentinel appears in logs/evidence/ZIP, opposite-pool credentials are visible to an instance, updater accepts a checksum mismatch, or rollback can overwrite concurrent user edits.
+# Phase 2 entry gates from Phase 1 reconciliation
+
+`P2-ENTRY-ACL-001`: before the first real product-root or secret-containing CLIProxyAPI config is created, prove current-user-restricted ACLs and prove that Users/Everyone permissions are not broadened.
+
+`P2-ENTRY-KEYS-001`: before two real CLIProxyAPI configs/processes are created, generate four independent `crypto/rand` product keys, persist them only through the four-purpose secret store, prove all four differ, and prove none enters config evidence or logs.
+
+These are Phase 2 entry gates. Phase 1 used disposable fixtures and did not create the real product root or product keys.

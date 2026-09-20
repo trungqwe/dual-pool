@@ -121,3 +121,10 @@ Each test result contains:
 ```
 
 Skipped mandatory tests fail the release gate unless the owner explicitly accepts and records a waiver.
+# Phase 1 exit additions
+
+- `P1-CONFIG-PATH-ANCESTOR-001` covers ordinary/case/available short-name paths, target/parent/ancestor reparses, device namespaces and reserved components.
+- `P1-CONFIG-RECOVERY-ARTIFACT-001` substitutes marker, backup and candidate reparses, proves zero partial unsafe cleanup, and proves cleanup failure/retry.
+- `P1-CONFIG-ROLLBACK-STATUS-001` proves target preservation, persisted conflict status and repeated conflict behavior.
+- `P1-CONFIG-TOML-EDGE-001` proves deterministic no-table insertion and exact no-terminal-newline rollback with an unrelated later edit.
+- `P1-SENTINEL-NONDISCLOSURE-001` generates runtime-only sentinels and scans Phase 1 error, log, state, lock, secret-store, config, CLI, docs and evidence surfaces for zero forbidden matches.

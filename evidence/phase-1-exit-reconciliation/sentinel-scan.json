@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "test_id": "P1-SENTINEL-NONDISCLOSURE-001",
+  "result": "PASS",
+  "sentinel_classes": 7,
+  "surface_families": 9,
+  "forbidden_match_count": 0,
+  "runtime_generated": true,
+  "sentinel_value_persisted": false,
+  "scope": "phase_1_foundation_e3",
+  "later_doctor_release_live_gates": "OPEN"
+}

@@ -81,7 +81,7 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | Requirement | Test and evidence | Status |
 |---|---|---|
 | P1-STATE-SCHEMA-001: typed state v1, account metadata and isolated ports | [state tests](../internal/state/state_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS; Source CI `35455036621` |
-| P1-OWNERSHIP-SCHEMA-001: complete ownership records and closed typed values | [ownership tests](../internal/state/ownership_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally; persistence/rollback execution remains open |
+| P1-OWNERSHIP-SCHEMA-001: complete ownership records and closed typed values | [ownership tests](../internal/state/ownership_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS; persistence and rollback execution closed by config transaction evidence |
 | P1-STATE-CODEC-001: strict fields, duplicate keys, UTF-8, limits and deterministic round trip | [codec implementation](../internal/state/codec.go), [state tests](../internal/state/state_test.go) | PASS; Source CI `35455036621` |
 | P1-MIGRATION-001: explicit sequential validated migration chain | [migration tests](../internal/state/migration_test.go), [result](../evidence/phase-1-state-schema/test-result.json) | PASS locally with synthetic 7→8→9 fixtures; product supports v1 only |
 | P1-STATE-SECRET-BOUNDARY-001: closed schema and opaque secret references | [schema tests](../internal/state/state_test.go), [security gate](../evidence/phase-1-state-schema/security-gate.json) | PASS at schema/unit boundary; end-to-end secret scan remains open |
@@ -92,7 +92,7 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 |---|---|---|
 | P1-OWNERSHIP-PATH-DEVICE-001: reserved Windows device components rejected | [ownership regression](../internal/state/ownership_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS; Source CI `35456545843` |
 | P1-STORE-ATOMIC-001: synced candidate, immutable marker and post-commit target sync | [store tests](../internal/state/store_test.go), [result](../evidence/phase-1-atomic-store/test-result.json) | Component PASS locally; cross-document atomicity excluded |
-| P1-STORE-CAS-001: concurrent target drift is not overwritten | [CAS test](../internal/state/store_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS locally; process locks remain open |
+| P1-STORE-CAS-001: concurrent target drift is not overwritten | [CAS test](../internal/state/store_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS; process-lock dependency closed by mutation lock evidence |
 | P1-STORE-RECOVERY-001: hash-based NEW/OLD/ABSENT/backup reconciliation | [recovery tests](../internal/state/store_test.go), [crash matrix](../evidence/phase-1-atomic-store/crash-matrix.json) | PASS; Source CI `35456545843` |
 | P1-STORE-CORRUPTION-001: corrupt target, marker, candidate and backup fail closed | [corruption tests](../internal/state/store_test.go), [security gate](../evidence/phase-1-atomic-store/security-gate.json) | PASS locally |
 | P1-STORE-CRASH-INJECTION-001: deterministic fault matrix and abrupt subprocess exits | [crash tests](../internal/state/store_test.go), [crash matrix](../evidence/phase-1-atomic-store/crash-matrix.json) | 22 in-process scenarios and 2 subprocess boundaries PASS locally |
@@ -145,3 +145,15 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P1-CONFIG-IDEMPOTENCE-001: repeated Apply/Rollback/Recover | [engine and recovery tests](../internal/configtxn/), [result](../evidence/phase-1-config-transaction/test-result.json) | PASS |
 | P1-CONFIG-GLOBAL-LOCK-001: process contention before transaction preparation; target lock spans CAS/replace | [subprocess test](../internal/configtxn/recovery_test.go), [security gate](../evidence/phase-1-config-transaction/security-gate.json) | PASS |
 | CFG-002: pre-replace persistence/replacement failure | [fault tests](../internal/configtxn/recovery_test.go), [fault matrix](../evidence/phase-1-config-transaction/fault-matrix.json) | PASS; original intact |
+
+## Phase 1 exit reconciliation
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P1-CONFIG-PATH-ANCESTOR-001 / CFG-PATH-001 | [path tests](../internal/configtxn/path_test.go), [exit security gate](../evidence/phase-1-exit-reconciliation/security-gate.json) | PASS; every ancestor inspected, aliases retained, reparses/devices rejected |
+| P1-CONFIG-RECOVERY-ARTIFACT-001 | [recovery tests](../internal/configtxn/recovery_test.go), [exit security gate](../evidence/phase-1-exit-reconciliation/security-gate.json) | PASS; handle-backed reads, complete prevalidation, retryable cleanup |
+| P1-CONFIG-ROLLBACK-STATUS-001 | [engine tests](../internal/configtxn/engine_test.go), [exit security gate](../evidence/phase-1-exit-reconciliation/security-gate.json) | PASS; conflict persisted and repeated rollback remains non-mutating |
+| P1-CONFIG-TOML-EDGE-001 | [TOML/engine tests](../internal/configtxn/), [exit security gate](../evidence/phase-1-exit-reconciliation/security-gate.json) | PASS; deterministic no-table insertion and exact no-newline rollback |
+| P1-SENTINEL-NONDISCLOSURE-001 / Phase 1 NFR-001 foundation | [sentinel test](../internal/securitygate/sentinel_test.go), [sentinel result](../evidence/phase-1-exit-reconciliation/sentinel-scan.json) | E3 PASS with zero forbidden matches; doctor/release/live surfaces remain open |
+| Phase 1 roadmap exit: atomicity, concurrent edits, idempotence, redaction, recovery | [exit result](../evidence/phase-1-exit-reconciliation/phase1-exit.json), [run report](reports/2026-09-20T0000Z-phase-1-exit-reconciliation.md) | PASS; no Phase 1 blockers |
+| P2-ENTRY-ACL-001 / P2-ENTRY-KEYS-001 | [deferred gates](../evidence/phase-1-exit-reconciliation/deferred-gates.json) | Deferred Phase 2 entry gates before real product resources |

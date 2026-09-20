@@ -9,4 +9,4 @@ The project does not implement OAuth, model protocols, or credential rotation it
 
 Start with [`docs/00-README.md`](docs/00-README.md). Coding agents must read [`AGENTS.md`](AGENTS.md) and [`docs/16-AGENT-OPERATING-PROTOCOL.md`](docs/16-AGENT-OPERATING-PROTOCOL.md) before changing the repository.
 
-Current status: specification package only. No runtime compatibility claim is valid until Phase 0 evidence has been captured on the target machine.
+Current status: Phase 0 compatibility audit is closed with documented live/provider blockers. Phase 1 foundation code is implemented and tested on synthetic Windows fixtures. Live provider/IDE integration is not enabled, and the project is not release-ready.
