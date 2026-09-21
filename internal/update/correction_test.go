@@ -584,6 +584,61 @@ func TestP2UPDMarkerOpenBoundsPermanentSharingConflict(t *testing.T) {
 	}
 }
 
+func TestP2UPDMarkerDispositionDeletesExactHandleObject(t *testing.T) {
+	store, err := newMarkerStore(t.TempDir(), func() (string, error) { return "00112233445566778899aabbccddeeff", nil }, testMarkerSecurity{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := transactionMarker{SchemaVersion: 1, PreviousVersion: "7.3.7", CandidateVersion: "7.3.8", BaseStateSHA256: strings.Repeat("a", 64)}
+	if _, err = store.publish(m); err != nil {
+		t.Fatal(err)
+	}
+	file, err := openMarker(store.path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	replacement := filepath.Join(store.dir, "unrelated")
+	if err = os.WriteFile(replacement, []byte("unrelated"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Rename(replacement, store.path()); err == nil {
+		t.Fatal("replacement redirected exact-object deletion")
+	}
+	if err = deleteMarkerByHandle(file); err != nil {
+		t.Fatal(err)
+	}
+	if err = file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = os.Stat(store.path()); !os.IsNotExist(err) {
+		t.Fatalf("disposed marker still resolves: %v", err)
+	}
+	if got, err := os.ReadFile(replacement); err != nil || string(got) != "unrelated" {
+		t.Fatalf("unrelated object changed: %v", err)
+	}
+}
+
+func TestP2UPDMarkerDeleteFailurePreservesRecoveryContract(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "marker")
+	if err := os.WriteFile(path, []byte("marker"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, err := windows.CreateFile(p, windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := os.NewFile(uintptr(h), path)
+	defer file.Close()
+	err = markerFailure("marker_delete", deleteMarkerByHandle(file))
+	if !errors.Is(err, ErrRecoveryUnresolved) || !strings.Contains(err.Error(), "marker_delete") {
+		t.Fatalf("delete diagnostic lost recovery contract: %v", err)
+	}
+}
+
 func TestUpdateFaultMatrixRetainsUnresolvedMarker(t *testing.T) {
 	forward := []FaultPoint{AfterMarkerPublish, AfterProductionStop, AfterCandidateStart, AfterCandidateSmoke, BeforeMarkerCleanup}
 	for _, point := range forward {

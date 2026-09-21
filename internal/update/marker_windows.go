@@ -128,7 +128,7 @@ func (s *markerStore) remove(want transactionMarker) error {
 	}
 	defer file.Close()
 	if err = deleteMarkerByHandle(file); err != nil {
-		return ErrRecoveryUnresolved
+		return markerFailure("marker_delete", err)
 	}
 	return nil
 }
@@ -206,8 +206,11 @@ func readMarkerHandle(file *os.File) ([]byte, error) {
 }
 
 func deleteMarkerByHandle(file *os.File) error {
-	deleteFile := uint32(1)
-	return windows.SetFileInformationByHandle(windows.Handle(file.Fd()), windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&deleteFile)), uint32(unsafe.Sizeof(deleteFile)))
+	type fileDispositionInformation struct {
+		DeleteFile byte
+	}
+	info := fileDispositionInformation{DeleteFile: 1}
+	return windows.SetFileInformationByHandle(windows.Handle(file.Fd()), windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)))
 }
 
 type fileRenameInformation struct {
