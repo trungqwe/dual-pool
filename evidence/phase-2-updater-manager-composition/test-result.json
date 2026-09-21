@@ -1,0 +1,21 @@
+{
+  "schema_version": "1",
+  "status": "PASS",
+  "commands": {
+    "go_test_instance_count_50": "PASS",
+    "go_test_runtimeupdate_count_50": "PASS",
+    "go_test_update_count_50": "PASS",
+    "go_test_race_instance_count_10": "PASS",
+    "go_test_race_runtimeupdate_count_10": "PASS",
+    "go_test_race_update_count_10": "PASS",
+    "go_test_all_count_1": "PASS",
+    "go_test_race_all_count_1": "PASS",
+    "go_mod_verify": "PASS",
+    "go_vet_all": "PASS",
+    "go_build_poolbridge": "PASS",
+    "node_tests": "PASS_55_OF_55",
+    "upstream_lock_validation": "PASS"
+  },
+  "fixture_mutation": "TEMP-only protected files and synthetic process records",
+  "real_mutation": false
+}

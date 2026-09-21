@@ -1,5 +1,11 @@
 # Current Handoff
 
+## Phase 2 updater/Manager composition — local acceptance PASS
+
+Branch `phase-2/updater-manager-composition` starts at `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`. The slice adds a single production runtime graph for Updater, Manager, State Store, Registry and GLOBAL locks, plus a locked lifecycle adapter. TEMP-only shared vA/vB tests cover promotion, rollback, partial Stop/Start, marker recovery, exact running-set classification and process-record authority. Production checks remain limited to the existing one-pin registry.
+
+All required package stress/race and full repository gates passed locally. See [report](reports/2026-09-21T1817Z-phase-2-updater-manager-composition.md) and [evidence](../evidence/phase-2-updater-manager-composition/composition.json). The delivery receipt and exact-SHA Source CI belong to the final branch head. `phase-2/upstream-lifecycle` remains fixed at the start SHA. No production product/provider/user mutation occurred.
+
 ## Ưu tiên hiện tại — audit installed-slot registry
 
 Báo cáo audit đã push tại `3bf8216` trên `codex/installed-slot-audit-stage1`. Bản sửa giai đoạn 1 ở nhánh riêng `phase-2/installed-slot-audit-repair`: A/B/B2/C đã sửa với regression red/green; xem [report](reports/2026-09-21T1700Z-installed-slot-stage1-repair.md) và [evidence](../evidence/phase-2-installed-slot-stage1/verification.json). Exact-SHA Source CI chờ receipt sau commit. Mục tiêu kế tiếp: audit độc lập bản sửa. Không cập nhật upstream/nhánh review cũ.

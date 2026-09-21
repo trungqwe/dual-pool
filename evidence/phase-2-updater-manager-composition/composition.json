@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "status": "PASS_COMPONENT",
+  "tests": {
+    "TestRuntimeCompositionSharesExactObjects": "PASS",
+    "TestProductionCompositionResolvesPinnedSlot": "PASS",
+    "TestProductionRegistryRejectsCandidateBeforeLifecycleMutation": "PASS",
+    "TestRuntimeCompositionConstructorFailureMatrixAndNoSideEffects": "PASS",
+    "TestNewRejectsNilAndTypedNilSmoke": "PASS",
+    "TestNewRejectsTypedNilACL": "PASS"
+  },
+  "claims": [
+    "Updater, Manager and State Store share one lock Manager",
+    "Updater and Manager share one State Store",
+    "Updater and Manager share one installed-slot Registry",
+    "production registry proof is limited to the pinned slot"
+  ]
+}

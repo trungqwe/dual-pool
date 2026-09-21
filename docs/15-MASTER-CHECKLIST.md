@@ -159,3 +159,12 @@ Hiệu chỉnh: PASS component ở head e9b68f8 không cho phép integration vì
 - [x] Required focused/stress/race/full local gates. Evidence: `evidence/phase-2-installed-slot-registry/test-result.json`.
 - [ ] Production multi-version updater acceptance and automatic rollback. Intentionally remains open.
 - [ ] Full updater-to-Manager lifecycle composition under one GLOBAL lock. Intentionally remains open.
+
+## Phase 2 updater/Manager composition — 2026-09-21
+
+- [x] One production Lock Manager, State Store and installed-slot Registry are shared by Updater and Manager. Evidence: [composition](../evidence/phase-2-updater-manager-composition/composition.json).
+- [x] Locked lifecycle adapter avoids nested GLOBAL acquisition and validates canonical pool sets before mutation. Evidence: [lock topology](../evidence/phase-2-updater-manager-composition/lock-topology.json).
+- [x] TEMP-only shared vA/vB promotion, rollback and partial Stop/Start paths converge or fail closed. Evidence: [promotion/rollback](../evidence/phase-2-updater-manager-composition/promotion-rollback.json).
+- [x] Marker-publish, active-save and partial-running recovery paths are covered. Evidence: [recovery](../evidence/phase-2-updater-manager-composition/recovery.json).
+- [x] Package stress/race, full repository, build, Node and lock gates pass. Evidence: [test result](../evidence/phase-2-updater-manager-composition/test-result.json).
+- [ ] Real second production release, production multi-version rollback, production Smoke, updater CLI, retained launch handle and OS crash/power-loss durability remain open.

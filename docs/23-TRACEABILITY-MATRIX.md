@@ -207,3 +207,16 @@ Các nhãn dưới đây mô tả evidence lịch sử; audit e9b68f8 là FAIL_R
 | P2-LIVE-NO-MUTATION-001: no production/provider mutation in component slice | [security gate](../evidence/phase-2-installed-slot-registry/security-gate.json) | PASS |
 
 Production multi-version update acceptance, real second-release adapter proof and full updater-to-Manager lifecycle composition remain OPEN.
+
+## Phase 2 updater/Manager composition addendum — 2026-09-21
+
+| Requirement | Implementation/evidence | Status |
+|---|---|---|
+| P2-UPD-COMPOSE-001: one lock/store/registry graph | `runtimeupdate.New`, [composition](../evidence/phase-2-updater-manager-composition/composition.json) | PASS_COMPONENT |
+| P2-UPD-LIFECYCLE-001: no nested GLOBAL acquisition | `instance.UpdaterLifecycle`, [lock topology](../evidence/phase-2-updater-manager-composition/lock-topology.json) | PASS_COMPONENT |
+| P2-UPD-TXN-001: promotion and safe rollback | transaction tests, [promotion/rollback](../evidence/phase-2-updater-manager-composition/promotion-rollback.json) | PASS_COMPONENT |
+| P2-UPD-RECOVERY-001: process-crash recovery | recovery tests, [recovery](../evidence/phase-2-updater-manager-composition/recovery.json) | PASS_COMPONENT |
+| P2-UPD-PROD-PREFLIGHT-001: one-pin production registry controls Manager and Updater | production composition tests | PASS_COMPONENT |
+| P2-UPD-NO-LIVE-MUTATION-001 | [security gate](../evidence/phase-2-updater-manager-composition/security-gate.json) | PASS |
+
+Real second-release and production multi-version acceptance remain OPEN.

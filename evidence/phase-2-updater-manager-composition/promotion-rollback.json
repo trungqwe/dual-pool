@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "status": "PASS_COMPONENT",
+  "fixture": "TEMP-only shared synthetic vA/vB installed-slot source",
+  "tests": {
+    "TestComposedPromotionSelectsCandidateThroughManager": "PASS",
+    "TestComposedPromotionSmokeFailureRollsBackPreviousSlot": "PASS",
+    "TestComposedPromotionPartialStopFailsClosed": "PASS",
+    "TestComposedCandidatePartialStartRollback": "PASS",
+    "TestComposedStateChangeDoesNotRelabelRunningProcess": "PASS"
+  },
+  "identity_result": "candidate records bind vB; rollback records bind vA; state changes do not relabel an existing vA record"
+}

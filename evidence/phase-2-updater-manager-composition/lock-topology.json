@@ -1,0 +1,10 @@
+{
+  "schema_version": "1",
+  "status": "PASS_COMPONENT",
+  "order": ["GLOBAL", "state FILE lock"],
+  "tests": {
+    "TestUpdaterLifecycleDoesNotReacquireGlobal": "PASS",
+    "TestRuntimeCompositionGlobalThenStateFileLock": "PASS",
+    "TestUpdaterLifecycleCanonicalizesPoolOrderBeforeMutation": "PASS"
+  }
+}
