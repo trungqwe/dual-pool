@@ -115,6 +115,17 @@ func testUpdater(t *testing.T, fs *fakeState, life *fakeLife, smoke *fakeSmoke, 
 	}
 	return u
 }
+
+func requireMarkerExists(t *testing.T, store *markerStore, want bool) {
+	t.Helper()
+	_, exists, err := store.load()
+	if err != nil {
+		t.Fatalf("marker load failed: %v", err)
+	}
+	if exists != want {
+		t.Fatalf("marker existence: got %v, want %v", exists, want)
+	}
+}
 func TestPromotionPreSmokeLeavesStateUntouched(t *testing.T) {
 	fs := &fakeState{v: testState("7.3.7")}
 	life := &fakeLife{pools: []state.Pool{state.PoolCodex}}
@@ -123,9 +134,7 @@ func TestPromotionPreSmokeLeavesStateUntouched(t *testing.T) {
 	if err := u.Promote(context.Background(), "7.3.8"); err == nil || fs.v.ActiveUpstreamVersion != "7.3.7" || life.stops != 0 {
 		t.Fatal("pre-smoke promoted")
 	}
-	if _, ok, err := u.markers.load(); err != nil || ok {
-		t.Fatal("marker published")
-	}
+	requireMarkerExists(t, u.markers, false)
 }
 func TestPromotionFailureRollsBack(t *testing.T) {
 	fs := &fakeState{v: testState("7.3.7")}
@@ -136,9 +145,7 @@ func TestPromotionFailureRollsBack(t *testing.T) {
 	if !errors.Is(err, ErrPromotionRolledBack) || fs.v.ActiveUpstreamVersion != "7.3.7" || life.stops < 2 || life.starts < 2 {
 		t.Fatalf("rollback failed: %v", err)
 	}
-	if _, ok, _ := u.markers.load(); ok {
-		t.Fatal("marker retained after healthy rollback")
-	}
+	requireMarkerExists(t, u.markers, false)
 }
 func TestRecoveryCandidateRollsBack(t *testing.T) {
 	fs := &fakeState{v: testState("7.3.8")}
@@ -197,9 +204,7 @@ func TestFaultBoundariesLeaveRecoverableMarker(t *testing.T) {
 			if !errors.Is(u.Promote(context.Background(), "7.3.8"), ErrInjectedCrash) {
 				t.Fatal("fault did not stop")
 			}
-			if _, ok, _ := u.markers.load(); !ok {
-				t.Fatal("marker lost")
-			}
+			requireMarkerExists(t, u.markers, true)
 			u.fault = nil
 			err := u.Recover(context.Background())
 			if point == AfterMarkerPublish {
@@ -212,9 +217,7 @@ func TestFaultBoundariesLeaveRecoverableMarker(t *testing.T) {
 			if fs.v.ActiveUpstreamVersion != "7.3.7" {
 				t.Fatal("prior selection not restored")
 			}
-			if _, ok, _ := u.markers.load(); ok {
-				t.Fatal("marker remains after recovery")
-			}
+			requireMarkerExists(t, u.markers, false)
 		})
 	}
 }
@@ -226,9 +229,7 @@ func TestRollbackUnresolvedRetainsMarker(t *testing.T) {
 	if !errors.Is(u.Promote(context.Background(), "7.3.8"), ErrRollbackUnresolved) {
 		t.Fatal("false success")
 	}
-	if _, ok, _ := u.markers.load(); !ok {
-		t.Fatal("marker removed")
-	}
+	requireMarkerExists(t, u.markers, true)
 }
 func TestPromotionPreservesUnrelatedState(t *testing.T) {
 	fs := &fakeState{v: testState("7.3.7")}
@@ -349,9 +350,7 @@ func TestSubprocessCrashRecovery(t *testing.T) {
 			if err != nil || got.ActiveUpstreamVersion != "7.3.7" {
 				t.Fatalf("state after crash: %v", err)
 			}
-			if _, ok, _ := u.markers.load(); ok {
-				t.Fatal("marker retained")
-			}
+			requireMarkerExists(t, u.markers, false)
 		})
 	}
 }

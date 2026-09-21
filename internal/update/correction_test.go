@@ -54,9 +54,7 @@ func TestP2UPDRollbackStop001(t *testing.T) {
 	if fs.v.ActiveUpstreamVersion != "7.3.8" || life.starts != 1 {
 		t.Fatal("published split-brain rollback")
 	}
-	if _, ok, _ := u.markers.load(); !ok {
-		t.Fatal("marker removed")
-	}
+	requireMarkerExists(t, u.markers, true)
 }
 
 type convergingLife struct {
@@ -208,9 +206,7 @@ func TestP2UPDRunningSet001(t *testing.T) {
 		if err := u.Promote(context.Background(), "7.3.8"); !errors.Is(err, ErrCandidateInvalid) {
 			t.Fatalf("accepted %#v: %v", pools, err)
 		}
-		if _, ok, _ := u.markers.load(); ok {
-			t.Fatal("marker published")
-		}
+		requireMarkerExists(t, u.markers, false)
 	}
 }
 
@@ -396,7 +392,10 @@ func TestUpdateFaultMatrixRetainsUnresolvedMarker(t *testing.T) {
 			if err == nil {
 				t.Fatal("false success")
 			}
-			_, ok, _ := u.markers.load()
+			_, ok, err := u.markers.load()
+			if err != nil {
+				t.Fatalf("marker load failed: %v", err)
+			}
 			if point == AfterMarkerPublish {
 				if !ok {
 					t.Fatal("crash boundary marker removed")
@@ -420,9 +419,7 @@ func TestUpdateFaultMatrixRetainsUnresolvedMarker(t *testing.T) {
 			if err := u.Promote(context.Background(), "7.3.8"); err == nil {
 				t.Fatal("false success")
 			}
-			if _, ok, _ := u.markers.load(); !ok {
-				t.Fatal("marker removed")
-			}
+			requireMarkerExists(t, u.markers, true)
 		})
 	}
 }
@@ -446,9 +443,7 @@ func TestPreviousStartAndSmokeFailuresRetainMarker(t *testing.T) {
 		if !errors.Is(u.Promote(context.Background(), "7.3.8"), ErrRollbackUnresolved) {
 			t.Fatal("wrong result")
 		}
-		if _, ok, _ := u.markers.load(); !ok {
-			t.Fatal("marker removed")
-		}
+		requireMarkerExists(t, u.markers, true)
 	})
 	t.Run("smoke", func(t *testing.T) {
 		fs := &fakeState{v: testState("7.3.7")}
@@ -457,8 +452,6 @@ func TestPreviousStartAndSmokeFailuresRetainMarker(t *testing.T) {
 		if !errors.Is(u.Promote(context.Background(), "7.3.8"), ErrRollbackUnresolved) {
 			t.Fatal("wrong result")
 		}
-		if _, ok, _ := u.markers.load(); !ok {
-			t.Fatal("marker removed")
-		}
+		requireMarkerExists(t, u.markers, true)
 	})
 }
