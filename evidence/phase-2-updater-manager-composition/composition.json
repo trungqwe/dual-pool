@@ -9,16 +9,21 @@
     "TestNewRejectsNilAndTypedNilSmoke": "PASS",
     "TestNewRejectsTypedNilACL": "PASS",
     "TestRuntimePublicAPIHasNoStateOrLifecycleAuthority": "PASS",
-    "TestInjectedDependenciesSkipDefaultConstruction": "PASS",
+    "TestRuntimeCannotExposeLockedUpdaterLifecycle": "PASS",
+    "TestRuntimePrivateLifecycleUsesExactManager": "PASS",
+    "TestInjectedDependenciesSuppressDefaultConstruction": "PASS",
+    "TestInjectedDependenciesDoNotBypassLayoutValidation": "PASS",
+    "TestDefaultDependenciesStillConstruct": "PASS",
     "TestExplicitNilInjectedDependenciesFailClosed": "PASS"
   },
   "claims": [
-    "Updater, Manager and State Store share one lock Manager",
+    "Updater, Manager, State Store and installed-slot Registry share one lock Manager",
     "Updater and Manager share one State Store",
     "Updater and Manager share one installed-slot Registry",
     "production registry proof is limited to the pinned slot",
     "public Runtime exposes only Updater and Manager",
-    "injected instance dependencies are construction-time authority and suppress default construction",
+    "the raw locked lifecycle adapter is private to instance and is sealed by ComposeUpdater",
+    "injected instance dependencies are construction-time authority, do not suppress layout validation and suppress default construction only when supplied",
     "MarkerSecurity is not part of public runtime Config"
   ]
 }

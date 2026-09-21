@@ -58,6 +58,7 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [x] Process identity prevents foreign PID termination. Evidence: `internal/instance/instance_test.go` (`TestStopRecordUsesOneVerifiedHandle`), `9082104`.
 - [x] Start/stop/restart/status idempotent. Evidence: `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json`.
 - [ ] Staged update and automatic rollback tested.
+- [x] Phase 2 updater lifecycle authority is sealed: no public raw locked lifecycle factory, injected dependencies cannot bypass layout validation, and all runtime participants share one lock manager. Evidence: `docs/reports/2026-09-21T2003Z-phase-2-updater-manager-lifecycle-authority-repair.md`, `evidence/phase-2-updater-manager-composition/composition.json`.
 
 ## Accounts
 

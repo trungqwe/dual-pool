@@ -34,6 +34,14 @@ This initial matrix defines minimum test identities. Implementation must add exa
 ## Update rule
 
 No requirement may be marked DONE until every mapped mandatory test passes for the pinned release/target environment. Add new rows when behavior is discovered; never remove a mapping solely because implementation is difficult.
+
+## Phase 2 updater/Manager lifecycle authority repair
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P2-UPDATER-AUTHORITY-001: raw locked lifecycle is unavailable to external callers | [runtime API regression](../internal/runtimeupdate/runtime_api_test.go), [composition evidence](../evidence/phase-2-updater-manager-composition/composition.json) | PASS_COMPONENT |
+| P2-UPDATER-COMPOSITION-001: sealed updater lifecycle uses the exact composed Manager | [runtime composition test](../internal/runtimeupdate/runtime_test.go), [lock topology](../evidence/phase-2-updater-manager-composition/lock-topology.json) | PASS_COMPONENT |
+| P2-INJECTED-DEPENDENCY-001: injected objects preserve validation, identity and default-construction rules | [instance lifecycle tests](../internal/instance/updater_lifecycle_test.go), [composition evidence](../evidence/phase-2-updater-manager-composition/composition.json) | PASS_COMPONENT |
 ## Phase 0B evidence-repair addendum
 
 | Requirement | Evidence | Status |

@@ -1,10 +1,10 @@
 # Current Handoff
 
-## Ưu tiên hiện tại — sửa authority của updater/Manager composition
+## Ưu tiên hiện tại — sửa authority lifecycle của updater/Manager composition
 
-Branch `phase-2/updater-manager-composition` đã sửa các authority escape được phát hiện tại reviewed head `948ff55`. Public `Runtime` chỉ còn `Updater` và `Manager`; mutable State Store, Registry, lock manager và locked lifecycle adapter là dependency private. `instance.New` phân biệt option vắng với explicit nil và không còn dựng default throwaway khi dependency đã được inject. `MarkerSecurity` đã rời khỏi public `Config`.
+Branch `phase-2/updater-manager-composition` đã đóng authority escape được phát hiện tại reviewed head `473a71c`. Public `Runtime` chỉ còn `Updater` và `Manager`; raw locked lifecycle adapter không còn là exported type hoặc method của `instance.Manager`, và chỉ `instance.ComposeUpdater` mới niêm phong adapter private vào một `update.Updater` hoàn chỉnh. `instance.New` luôn xác thực layout trước khi xét dependency inject, phân biệt option vắng với explicit nil, không dựng default throwaway khi dependency hợp lệ đã được inject, và chỉ dựng default khi dependency vắng. Runtime, Manager, Store và Registry dùng cùng một lock manager; `MarkerSecurity` vẫn không thuộc public `Config`.
 
-TEMP-only shared vA/vB tests dùng synthetic process records và deterministic lifecycle hooks; chúng chứng minh fault-injection recovery tại marker/state boundaries, không chứng minh subprocess crash hay process-handle composition. Xem [report](reports/2026-09-21T1817Z-phase-2-updater-manager-composition.md) và [evidence](../evidence/phase-2-updater-manager-composition/composition.json). `phase-2/upstream-lifecycle` vẫn cố định tại `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`; production multi-version và live mutation vẫn OPEN.
+TEMP-only shared vA/vB tests dùng synthetic process records và deterministic lifecycle hooks; chúng chứng minh fault-injection recovery tại marker/state boundaries, không chứng minh subprocess crash hay process-handle composition. Xem [repair report](reports/2026-09-21T2003Z-phase-2-updater-manager-lifecycle-authority-repair.md) và [evidence](../evidence/phase-2-updater-manager-composition/composition.json). `phase-2/upstream-lifecycle` vẫn cố định tại `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`; production multi-version và live mutation vẫn OPEN.
 
 ## Lịch sử — audit installed-slot registry
 

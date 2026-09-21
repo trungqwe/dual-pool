@@ -5,6 +5,7 @@
   "tests": {
     "TestUpdaterLifecycleDoesNotReacquireGlobal": "PASS",
     "TestRuntimeCompositionGlobalThenStateFileLock": "PASS",
-    "TestUpdaterLifecycleCanonicalizesPoolOrderBeforeMutation": "PASS"
+    "TestUpdaterLifecycleCanonicalizesPoolOrderBeforeMutation": "PASS",
+    "TestRuntimePrivateLifecycleUsesExactManager": "PASS"
   }
 }
