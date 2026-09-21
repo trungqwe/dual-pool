@@ -67,3 +67,5 @@ Phase 1 exit repair adds `CFG-PATH-001` ancestor reparse rejection, `CFG-RECOVER
 ## Phase 2 update foundation
 
 UPD-002 is proven at E3 component level: disposable candidate smoke failure occurs before marker publication, stop, or state save. UPD-003 is proven at E3 component level with injected candidate production smoke failure and prior logical selection restoration. Real binary pointer/runtime promotion remains open.
+
+Correction evidence supersedes the historical foundation evidence for rollback Stop fail-closed, exact marker/schema/version validation, protected marker ACL, and real state Store composition. `P2-UPD-PREVIOUS-VERIFY-001`, `P2-UPD-ROLLBACK-STOP-001`, `P2-UPD-STATE-RECOVERY-COMPOSE-001`, `P2-UPD-PENDING-MARKER-001`, `P2-UPD-LOGICAL-VERSION-001`, `P2-UPD-MARKER-EXACT-SCHEMA-001`, `P2-UPD-RUNNING-SET-001`, and `P2-UPD-MARKER-ACL-001` are E3 component PASS. Production multi-version update remains OPEN.

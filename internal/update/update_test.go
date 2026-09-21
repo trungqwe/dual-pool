@@ -15,10 +15,25 @@ import (
 type fakeState struct {
 	v          state.State
 	recoverErr error
+	saves      int
+}
+
+type testMarkerSecurity struct{}
+
+func (testMarkerSecurity) InspectDir(string) error { return nil }
+func (testMarkerSecurity) CreateFile(path string) (*os.File, error) {
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+}
+func (testMarkerSecurity) InspectFile(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || reparse(path) {
+		return ErrRecoveryUnresolved
+	}
+	return nil
 }
 
 func (f *fakeState) LoadState() (state.State, error) { return f.v, nil }
-func (f *fakeState) SaveState(v state.State) error   { f.v = v; return nil }
+func (f *fakeState) SaveState(v state.State) error   { f.saves++; f.v = v; return nil }
 func (f *fakeState) Recover() error                  { return f.recoverErr }
 
 type fakeVerifier struct{ err error }
@@ -29,11 +44,29 @@ type fakeLife struct {
 	pools             []state.Pool
 	stopErr, startErr error
 	stops, starts     int
+	captures          int
+	failStopCall      int
+	failStartCall     int
 }
 
-func (f *fakeLife) CaptureRunning(context.Context) ([]state.Pool, error) { return f.pools, nil }
-func (f *fakeLife) Stop(context.Context, []state.Pool) error             { f.stops++; return f.stopErr }
-func (f *fakeLife) Start(context.Context, []state.Pool) error            { f.starts++; return f.startErr }
+func (f *fakeLife) CaptureRunning(context.Context) ([]state.Pool, error) {
+	f.captures++
+	return f.pools, nil
+}
+func (f *fakeLife) Stop(context.Context, []state.Pool) error {
+	f.stops++
+	if f.failStopCall == f.stops {
+		return errors.New("stop failed")
+	}
+	return f.stopErr
+}
+func (f *fakeLife) Start(context.Context, []state.Pool) error {
+	f.starts++
+	if f.failStartCall == f.starts {
+		return errors.New("start failed")
+	}
+	return f.startErr
+}
 
 type fakeSmoke struct {
 	disposable, production error
@@ -66,7 +99,7 @@ func testUpdater(t *testing.T, fs *fakeState, life *fakeLife, smoke *fakeSmoke, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := New(Config{Locks: locks, State: fs, Verifier: fakeVerifier{}, Lifecycle: life, Smoke: smoke, MarkerDir: root, TransactionID: func() (string, error) { return "00112233445566778899aabbccddeeff", nil }, Fault: fault})
+	u, err := New(Config{Locks: locks, State: fs, Verifier: fakeVerifier{}, Lifecycle: life, Smoke: smoke, MarkerDir: root, MarkerSecurity: testMarkerSecurity{}, TransactionID: func() (string, error) { return "00112233445566778899aabbccddeeff", nil }, Fault: fault})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,15 +259,28 @@ func TestGlobalBlocksConcurrentPromotion(t *testing.T) {
 }
 func TestMarkerArtifactSafety(t *testing.T) {
 	root := t.TempDir()
-	s, err := newMarkerStore(root, nil)
+	s, err := newMarkerStore(root, nil, testMarkerSecurity{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = os.Symlink(filepath.Join(root, "outside"), s.path()); err != nil {
-		t.Skip(err)
+	target := filepath.Join(root, "outside")
+	if err = os.Mkdir(target, 0700); err != nil {
+		t.Fatal(err)
 	}
+	if output, linkErr := exec.Command("cmd", "/c", "mklink", "/J", s.path(), target).CombinedOutput(); linkErr != nil {
+		t.Fatalf("mandatory reparse fixture unavailable: %v: %s", linkErr, output)
+	}
+	defer os.Remove(s.path())
 	if _, _, err = s.load(); !errors.Is(err, ErrRecoveryUnresolved) {
 		t.Fatal("reparse accepted")
+	}
+	dirLink := filepath.Join(root, "marker-link")
+	if output, linkErr := exec.Command("cmd", "/c", "mklink", "/J", dirLink, target).CombinedOutput(); linkErr != nil {
+		t.Fatalf("directory reparse unavailable: %v: %s", linkErr, output)
+	}
+	defer os.Remove(dirLink)
+	if _, err = newMarkerStore(dirLink, nil, testMarkerSecurity{}); !errors.Is(err, ErrRecoveryUnresolved) {
+		t.Fatal("reparse directory accepted")
 	}
 }
 
@@ -246,7 +292,7 @@ func TestSubprocessCrashRecovery(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		u, err := New(Config{Locks: locks, State: diskState{filepath.Join(root, "state.json")}, Verifier: fakeVerifier{}, Lifecycle: &fakeLife{pools: []state.Pool{state.PoolCodex}}, Smoke: &fakeSmoke{}, MarkerDir: root, Fault: func(p FaultPoint) error {
+		u, err := New(Config{Locks: locks, State: diskState{filepath.Join(root, "state.json")}, Verifier: fakeVerifier{}, Lifecycle: &fakeLife{pools: []state.Pool{state.PoolCodex}}, Smoke: &fakeSmoke{}, MarkerDir: root, MarkerSecurity: testMarkerSecurity{}, Fault: func(p FaultPoint) error {
 			if string(p) == point {
 				os.Exit(42)
 			}
@@ -277,7 +323,7 @@ func TestSubprocessCrashRecovery(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			u, err := New(Config{Locks: locks, State: d, Verifier: fakeVerifier{}, Lifecycle: &fakeLife{}, Smoke: &fakeSmoke{}, MarkerDir: root})
+			u, err := New(Config{Locks: locks, State: d, Verifier: fakeVerifier{}, Lifecycle: &fakeLife{}, Smoke: &fakeSmoke{}, MarkerDir: root, MarkerSecurity: testMarkerSecurity{}})
 			if err != nil {
 				t.Fatal(err)
 			}

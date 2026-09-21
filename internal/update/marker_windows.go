@@ -28,11 +28,18 @@ type transactionMarker struct {
 	RestartPools     []state.Pool `json:"restart_pools"`
 }
 type markerStore struct {
-	dir string
-	id  func() (string, error)
+	dir      string
+	id       func() (string, error)
+	security MarkerSecurity
 }
 
-func newMarkerStore(dir string, id func() (string, error)) (*markerStore, error) {
+type MarkerSecurity interface {
+	InspectDir(string) error
+	CreateFile(string) (*os.File, error)
+	InspectFile(string) error
+}
+
+func newMarkerStore(dir string, id func() (string, error), security MarkerSecurity) (*markerStore, error) {
 	abs, err := filepath.Abs(dir)
 	if dir == "" || err != nil || filepath.Clean(abs) != abs {
 		return nil, ErrRecoveryUnresolved
@@ -41,10 +48,13 @@ func newMarkerStore(dir string, id func() (string, error)) (*markerStore, error)
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || reparse(abs) {
 		return nil, ErrRecoveryUnresolved
 	}
+	if security == nil || security.InspectDir(abs) != nil {
+		return nil, ErrRecoveryUnresolved
+	}
 	if id == nil {
 		id = randomID
 	}
-	return &markerStore{dir: abs, id: id}, nil
+	return &markerStore{dir: abs, id: id, security: security}, nil
 }
 func (s *markerStore) path() string { return filepath.Join(s.dir, markerName) }
 func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
@@ -58,7 +68,7 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 		return transactionMarker{}, err
 	}
 	candidate := filepath.Join(s.dir, "."+markerName+".candidate-"+id)
-	f, err := os.OpenFile(candidate, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	f, err := s.security.CreateFile(candidate)
 	if err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
@@ -85,6 +95,9 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	if _, err = decodeMarker(check); err != nil {
 		return transactionMarker{}, err
 	}
+	if err = s.security.InspectFile(candidate); err != nil {
+		return transactionMarker{}, ErrRecoveryUnresolved
+	}
 	from, e := windows.UTF16PtrFromString(candidate)
 	if e != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
@@ -94,6 +107,9 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
 	if e = windows.MoveFileEx(from, to, windows.MOVEFILE_WRITE_THROUGH); e != nil {
+		return transactionMarker{}, ErrRecoveryUnresolved
+	}
+	if e = s.security.InspectFile(s.path()); e != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
 	ok = true
@@ -108,6 +124,12 @@ func (s *markerStore) load() (transactionMarker, bool, error) {
 	if err != nil || info.IsDir() || info.Mode()&os.ModeSymlink != 0 || reparse(p) || info.Size() < 1 || info.Size() > maxMarkerBytes {
 		return transactionMarker{}, false, ErrRecoveryUnresolved
 	}
+	if err = s.security.InspectDir(s.dir); err != nil {
+		return transactionMarker{}, false, ErrRecoveryUnresolved
+	}
+	if err = s.security.InspectFile(p); err != nil {
+		return transactionMarker{}, false, ErrRecoveryUnresolved
+	}
 	b, err := os.ReadFile(p)
 	if err != nil {
 		return transactionMarker{}, false, ErrRecoveryUnresolved
@@ -118,6 +140,9 @@ func (s *markerStore) load() (transactionMarker, bool, error) {
 func (s *markerStore) remove(want transactionMarker) error {
 	got, exists, err := s.load()
 	if err != nil || !exists || !reflect.DeepEqual(got, want) {
+		return ErrRecoveryUnresolved
+	}
+	if err = s.security.InspectFile(s.path()); err != nil {
 		return ErrRecoveryUnresolved
 	}
 	if err = os.Remove(s.path()); err != nil {
@@ -141,13 +166,14 @@ func decodeMarker(b []byte) (transactionMarker, error) {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
 	seen := map[string]bool{}
+	required := map[string]bool{"schema_version": true, "transaction_id": true, "previous_version": true, "candidate_version": true, "base_state_sha256": true, "restart_pools": true}
 	for d.More() {
 		name, err := d.Token()
 		if err != nil {
 			return transactionMarker{}, ErrRecoveryUnresolved
 		}
 		key, ok := name.(string)
-		if !ok || seen[key] {
+		if !ok || !required[key] || seen[key] {
 			return transactionMarker{}, ErrRecoveryUnresolved
 		}
 		seen[key] = true
@@ -162,7 +188,7 @@ func decodeMarker(b []byte) (transactionMarker, error) {
 	if err = ensureEOF(d); err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
-	if len(seen) != 6 {
+	if len(seen) != len(required) {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
 	var m transactionMarker
@@ -180,7 +206,7 @@ func ensureEOF(d *json.Decoder) error {
 	return nil
 }
 func validMarker(m transactionMarker) bool {
-	if m.SchemaVersion != 1 || !validID(m.TransactionID) || m.PreviousVersion == "" || m.CandidateVersion == "" || m.PreviousVersion == m.CandidateVersion || len(m.BaseStateSHA256) != 64 {
+	if m.SchemaVersion != 1 || !validID(m.TransactionID) || !validLogicalVersion(m.PreviousVersion) || !validLogicalVersion(m.CandidateVersion) || m.PreviousVersion == m.CandidateVersion || len(m.BaseStateSHA256) != 64 {
 		return false
 	}
 	for _, r := range m.BaseStateSHA256 {

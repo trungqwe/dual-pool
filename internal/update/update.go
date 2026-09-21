@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
@@ -18,6 +19,7 @@ var (
 	ErrRecoveryUnresolved     = errors.New("update recovery is unresolved")
 	ErrPromotionRolledBack    = errors.New("update promotion failed and rollback completed")
 	ErrInjectedCrash          = errors.New("injected update crash")
+	ErrUpdatePending          = errors.New("update transaction recovery is required")
 )
 
 type StateRepository interface {
@@ -54,14 +56,15 @@ const (
 )
 
 type Config struct {
-	Locks         *lockfile.Manager
-	State         StateRepository
-	Verifier      SlotVerifier
-	Lifecycle     Lifecycle
-	Smoke         Smoke
-	MarkerDir     string
-	Fault         func(FaultPoint) error
-	TransactionID func() (string, error)
+	Locks          *lockfile.Manager
+	State          StateRepository
+	Verifier       SlotVerifier
+	Lifecycle      Lifecycle
+	Smoke          Smoke
+	MarkerDir      string
+	Fault          func(FaultPoint) error
+	TransactionID  func() (string, error)
+	MarkerSecurity MarkerSecurity
 }
 type Updater struct {
 	locks     *lockfile.Manager
@@ -77,7 +80,7 @@ func New(c Config) (*Updater, error) {
 	if c.Locks == nil || c.State == nil || c.Verifier == nil || c.Lifecycle == nil || c.Smoke == nil {
 		return nil, ErrCandidateInvalid
 	}
-	markers, err := newMarkerStore(c.MarkerDir, c.TransactionID)
+	markers, err := newMarkerStore(c.MarkerDir, c.TransactionID, c.MarkerSecurity)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +95,11 @@ func (u *Updater) Promote(ctx context.Context, candidate string) error {
 	if err = u.state.Recover(); err != nil {
 		return err
 	}
+	if _, pending, markerErr := u.markers.load(); markerErr != nil {
+		return markerErr
+	} else if pending {
+		return ErrUpdatePending
+	}
 	before, err := u.state.LoadState()
 	if err != nil {
 		return err
@@ -100,8 +108,11 @@ func (u *Updater) Promote(ctx context.Context, candidate string) error {
 	if previous == "" {
 		return ErrActiveSelectionMissing
 	}
-	if candidate == "" || candidate == previous {
+	if !validLogicalVersion(previous) || !validLogicalVersion(candidate) || candidate == previous {
 		return ErrCandidateInvalid
+	}
+	if err = u.verifier.VerifyInstalled(ctx, previous); err != nil {
+		return err
 	}
 	if err = u.verifier.VerifyInstalled(ctx, candidate); err != nil {
 		return err
@@ -116,7 +127,11 @@ func (u *Updater) Promote(ctx context.Context, candidate string) error {
 	if err != nil {
 		return err
 	}
-	marker := transactionMarker{SchemaVersion: 1, PreviousVersion: previous, CandidateVersion: candidate, BaseStateSHA256: stateFingerprint(before), RestartPools: normalizePools(running)}
+	running, err = validateRunningSet(running)
+	if err != nil {
+		return err
+	}
+	marker := transactionMarker{SchemaVersion: 1, PreviousVersion: previous, CandidateVersion: candidate, BaseStateSHA256: stateFingerprint(before), RestartPools: copyPools(running)}
 	marker, err = u.markers.publish(marker)
 	if err != nil {
 		return err
@@ -124,7 +139,7 @@ func (u *Updater) Promote(ctx context.Context, candidate string) error {
 	if err = u.inject(AfterMarkerPublish); err != nil {
 		return err
 	}
-	if err = u.lifecycle.Stop(ctx, running); err != nil {
+	if err = u.lifecycle.Stop(ctx, copyPools(running)); err != nil {
 		return u.rollback(ctx, marker, err)
 	}
 	if err = u.inject(AfterProductionStop); err != nil {
@@ -138,7 +153,7 @@ func (u *Updater) Promote(ctx context.Context, candidate string) error {
 	if err = u.inject(AfterActiveSave); err != nil {
 		return u.rollback(ctx, marker, err)
 	}
-	if err = u.lifecycle.Start(ctx, running); err != nil {
+	if err = u.lifecycle.Start(ctx, copyPools(running)); err != nil {
 		return u.rollback(ctx, marker, err)
 	}
 	if err = u.inject(AfterCandidateStart); err != nil {
@@ -183,7 +198,7 @@ func (u *Updater) Recover(ctx context.Context) error {
 	}
 	switch current.ActiveUpstreamVersion {
 	case marker.PreviousVersion:
-		if err = u.lifecycle.Start(ctx, marker.RestartPools); err != nil {
+		if err = u.lifecycle.Start(ctx, copyPools(marker.RestartPools)); err != nil {
 			return ErrRecoveryUnresolved
 		}
 		if err = u.smoke.Production(ctx, marker.PreviousVersion); err != nil {
@@ -203,15 +218,14 @@ func (u *Updater) rollback(ctx context.Context, marker transactionMarker, cause 
 	if errors.Is(cause, ErrInjectedCrash) {
 		return cause
 	}
+	if err := u.lifecycle.Stop(ctx, copyPools(marker.RestartPools)); err != nil {
+		return ErrRollbackUnresolved
+	}
+	if err := u.state.Recover(); err != nil {
+		return ErrRollbackUnresolved
+	}
 	current, err := u.state.LoadState()
-	if err != nil {
-		return ErrRollbackUnresolved
-	}
-	if stateFingerprint(current) != marker.BaseStateSHA256 {
-		return ErrRollbackUnresolved
-	}
-	_ = u.lifecycle.Stop(ctx, marker.RestartPools)
-	if err = u.state.Recover(); err != nil {
+	if err != nil || stateFingerprint(current) != marker.BaseStateSHA256 {
 		return ErrRollbackUnresolved
 	}
 	if err = u.inject(BeforeRollbackRestore); err != nil {
@@ -224,7 +238,7 @@ func (u *Updater) rollback(ctx context.Context, marker transactionMarker, cause 
 	if err = u.inject(AfterRollbackRestore); err != nil {
 		return err
 	}
-	if err = u.lifecycle.Start(ctx, marker.RestartPools); err != nil {
+	if err = u.lifecycle.Start(ctx, copyPools(marker.RestartPools)); err != nil {
 		return ErrRollbackUnresolved
 	}
 	if err = u.smoke.Production(ctx, marker.PreviousVersion); err != nil {
@@ -267,3 +281,21 @@ func normalizePools(in []state.Pool) []state.Pool {
 	}
 	return out
 }
+
+var logicalVersionPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$`)
+
+func validLogicalVersion(value string) bool { return logicalVersionPattern.MatchString(value) }
+
+func validateRunningSet(in []state.Pool) ([]state.Pool, error) {
+	seen := map[state.Pool]bool{}
+	out := append([]state.Pool(nil), in...)
+	for _, pool := range out {
+		if (pool != state.PoolCodex && pool != state.PoolGoogle) || seen[pool] {
+			return nil, ErrCandidateInvalid
+		}
+		seen[pool] = true
+	}
+	return out, nil
+}
+
+func copyPools(in []state.Pool) []state.Pool { return append([]state.Pool(nil), in...) }

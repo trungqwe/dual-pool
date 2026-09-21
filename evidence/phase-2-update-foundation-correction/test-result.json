@@ -1,0 +1,12 @@
+{
+  "test_id": "P2-UPD-CORRECTION-001",
+  "status": "pass",
+  "started_at": "2026-09-21T05:59:28Z",
+  "duration_ms": 470,
+  "environment_id": "windows-10.0.19045-amd64",
+  "versions": {"go": "1.26.0", "baseline_commit": "53613e4d69eeeafa22e71699a6fddea6859a385a"},
+  "inputs_fixture": "TEMP logical slots 7.3.7 and 7.3.8; synthetic lifecycle and smoke",
+  "assertions": ["P2-UPD-PREVIOUS-VERIFY-001", "P2-UPD-ROLLBACK-STOP-001", "P2-UPD-STATE-RECOVERY-COMPOSE-001", "P2-UPD-PENDING-MARKER-001", "P2-UPD-LOGICAL-VERSION-001", "P2-UPD-MARKER-EXACT-SCHEMA-001", "P2-UPD-RUNNING-SET-001", "P2-UPD-MARKER-ACL-001"],
+  "artifacts": ["internal/update/correction_test.go"],
+  "error_code": null
+}

@@ -1,0 +1,12 @@
+{
+  "test_id": "P2-UPD-FAULT-CRASH-CORRECTION-001",
+  "status": "pass",
+  "started_at": "2026-09-21T05:59:28Z",
+  "duration_ms": 5034,
+  "environment_id": "windows-10.0.19045-amd64",
+  "versions": {"go": "1.26.0", "baseline_commit": "53613e4d69eeeafa22e71699a6fddea6859a385a"},
+  "inputs_fixture": "TEMP marker/state roots; count=10 updater suite; subprocess crash helper",
+  "assertions": ["durable marker and candidate-selection crash recovery", "state Store pre-CAS and post-ReplaceFileW composition", "rollback Stop fail-closed", "previous start/smoke failure retains marker", "GLOBAL excludes concurrent recovery"],
+  "artifacts": ["internal/update/update_test.go", "internal/update/correction_test.go"],
+  "error_code": null
+}

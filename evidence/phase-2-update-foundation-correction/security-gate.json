@@ -1,0 +1,12 @@
+{
+  "test_id": "P2-UPD-MARKER-SECURITY-CORRECTION-001",
+  "status": "pass",
+  "started_at": "2026-09-21T05:59:28Z",
+  "duration_ms": 262,
+  "environment_id": "windows-10.0.19045-amd64",
+  "versions": {"go": "1.26.0", "baseline_commit": "53613e4d69eeeafa22e71699a6fddea6859a385a"},
+  "inputs_fixture": "protected Windows TEMP directory; deterministic junction fixtures",
+  "assertions": ["protected DACL at marker creation", "candidate and committed marker ACL inspection", "load/remove guard inspection", "marker and directory reparse rejection without skipped tests", "exact bounded UTF-8 JSON schema", "closed logical-version grammar"],
+  "artifacts": ["internal/update/security_windows.go", "internal/update/marker_windows.go"],
+  "error_code": null
+}
