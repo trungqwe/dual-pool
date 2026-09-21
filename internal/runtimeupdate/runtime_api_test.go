@@ -7,6 +7,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/instance"
 	"github.com/trungqwe/dual-pool/internal/runtimeupdate"
 	"github.com/trungqwe/dual-pool/internal/state"
+	"github.com/trungqwe/dual-pool/internal/update"
 )
 
 func TestRuntimePublicAPIHasNoStateOrLifecycleAuthority(t *testing.T) {
@@ -36,5 +37,13 @@ func TestRuntimeCannotExposeLockedUpdaterLifecycle(t *testing.T) {
 		if method.Name == "UpdaterLifecycle" {
 			t.Fatalf("Manager still exposes raw locked lifecycle through %s", method.Name)
 		}
+	}
+}
+
+func TestComposeUpdaterDoesNotAcceptCallerSelectedAuthority(t *testing.T) {
+	composition := reflect.TypeOf(instance.ComposeUpdater)
+	smokeType := reflect.TypeOf((*update.Smoke)(nil)).Elem()
+	if composition.NumIn() != 2 || composition.In(0) != reflect.TypeOf((*instance.Manager)(nil)) || composition.In(1) != smokeType {
+		t.Fatalf("unexpected ComposeUpdater public signature: %v", composition)
 	}
 }

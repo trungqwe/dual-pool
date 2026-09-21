@@ -9,8 +9,47 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
+
+func TestRegistryInjectedLockManagerMustMatchLayoutLocks(t *testing.T) {
+	fixture, _ := fixtureRegistry(t)
+	raw, err := os.ReadFile(filepath.Join("..", "..", "upstream.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin, err := upstreamlock.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherLocks := filepath.Join(filepath.Dir(fixture.layout.Locks), "other-locks")
+	if err = os.MkdirAll(otherLocks, 0700); err != nil {
+		t.Fatal(err)
+	}
+	other, err := lockfile.NewManager(otherLocks)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if registry, err := New(fixture.layout, fixture.acl, pin, WithLockManager(other)); err == nil || registry != nil {
+		t.Fatalf("mismatched lock root accepted: %#v %v", registry, err)
+	}
+}
+
+func TestRegistryExplicitNilLockManagerFailsClosed(t *testing.T) {
+	fixture, _ := fixtureRegistry(t)
+	raw, err := os.ReadFile(filepath.Join("..", "..", "upstream.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin, err := upstreamlock.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if registry, err := New(fixture.layout, fixture.acl, pin, WithLockManager(nil)); err == nil || registry != nil {
+		t.Fatalf("nil lock manager accepted: %#v %v", registry, err)
+	}
+}
 
 func productionPolicyFixture(t *testing.T, body []byte, calls *int) (*Registry, upstreamlock.Lock) {
 	t.Helper()

@@ -50,6 +50,21 @@ func fixtureManager(t *testing.T, inspector *fakeInspector, ids ...string) *Mana
 	return m
 }
 
+func TestManagerMatchesRoot(t *testing.T) {
+	root := t.TempDir()
+	other := t.TempDir()
+	m, err := NewManager(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !m.MatchesRoot(root) {
+		t.Fatal("manager does not match its canonical root")
+	}
+	if m.MatchesRoot(other) {
+		t.Fatal("manager matches a distinct valid root")
+	}
+}
+
 func seedGlobalRecord(t *testing.T, m *Manager, identity ProcessIdentity, operation string) []byte {
 	t.Helper()
 	created := m.now().UTC()

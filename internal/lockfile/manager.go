@@ -62,6 +62,28 @@ func NewManager(lockDir string, options ...Option) (*Manager, error) {
 	return m, nil
 }
 
+// MatchesRoot reports whether path resolves to this manager's canonical lock
+// root under the same validation rules used by NewManager. It never creates or
+// modifies a lock artifact.
+func (m *Manager) MatchesRoot(path string) bool {
+	if m == nil || path == "" {
+		return false
+	}
+	absolute, err := filepath.Abs(path)
+	if err != nil || filepath.Clean(absolute) != absolute {
+		return false
+	}
+	info, err := os.Lstat(absolute)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	if ok, entryErr := safeEntry(absolute); entryErr != nil || !ok {
+		return false
+	}
+	resolved, err := filepath.EvalSymlinks(absolute)
+	return err == nil && filepath.Clean(resolved) == m.root
+}
+
 func (m *Manager) AcquireGlobal() (*Guard, error) {
 	return m.acquire(kindGlobal, "global", "global.lock")
 }

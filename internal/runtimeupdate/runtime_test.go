@@ -18,10 +18,8 @@ import (
 	"github.com/trungqwe/dual-pool/internal/installedslot"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
-	"github.com/trungqwe/dual-pool/internal/update"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/winacl"
-	"golang.org/x/sys/windows"
 )
 
 func TestMain(m *testing.M) {
@@ -41,34 +39,6 @@ func (s *recordingSmoke) Disposable(_ context.Context, version string) error {
 func (s *recordingSmoke) Production(_ context.Context, version string) error {
 	s.calls = append(s.calls, "production:"+version)
 	return nil
-}
-
-type testMarkerSecurity struct{}
-
-func (testMarkerSecurity) InspectDir(string) error { return nil }
-func (testMarkerSecurity) CreateFile(path string) (*os.File, error) {
-	p, err := windows.UTF16PtrFromString(path)
-	if err != nil {
-		return nil, err
-	}
-	h, err := windows.CreateFile(p, windows.GENERIC_READ|windows.GENERIC_WRITE|windows.READ_CONTROL|windows.DELETE, 0, nil, windows.CREATE_NEW, windows.FILE_ATTRIBUTE_NORMAL, 0)
-	if err != nil {
-		return nil, err
-	}
-	return os.NewFile(uintptr(h), path), nil
-}
-func (testMarkerSecurity) InspectHandle(file *os.File) error {
-	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() < 1 {
-		return update.ErrRecoveryUnresolved
-	}
-	return nil
-}
-
-type rejectingMarkerSecurity struct{ testMarkerSecurity }
-
-func (rejectingMarkerSecurity) InspectDir(string) error {
-	return errors.New("rejected marker directory")
 }
 
 type nilSmoke struct{}
@@ -262,37 +232,33 @@ func TestProductionRegistryRejectsCandidateBeforeLifecycleMutation(t *testing.T)
 func TestRuntimeCompositionConstructorFailureMatrixAndNoSideEffects(t *testing.T) {
 	_, config := productionFixture(t)
 	marker := filepath.Join(config.Layout.State, ".update-transaction.json")
-	if _, err := newRuntime(Config{Layout: config.Layout, Lock: upstreamlock.Lock{}, ACL: config.ACL, Smoke: config.Smoke}, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(Config{Layout: config.Layout, Lock: upstreamlock.Lock{}, ACL: config.ACL, Smoke: config.Smoke}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("invalid lock: %v", err)
 	}
 	bad := config
 	bad.Layout.Locks = filepath.Join(config.Layout.Root, "missing-locks")
-	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("missing locks: %v", err)
 	}
 	bad = config
 	bad.Layout.State = filepath.Join(config.Layout.Root, "missing-state")
-	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("missing state: %v", err)
 	}
 	bad = config
 	bad.Layout.Bin = filepath.Join(config.Layout.Root, "missing-bin")
-	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("registry construction path: %v", err)
 	}
 	bad = config
 	bad.Layout.Instances = filepath.Join(config.Layout.Root, "missing-instances")
-	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("Manager construction path: %v", err)
 	}
 	bad = config
 	bad.Layout.Root = "relative"
-	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("unsafe layout: %v", err)
-	}
-	bad = config
-	if _, err := newRuntime(bad, rejectingMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
-		t.Fatalf("marker security: %v", err)
 	}
 	if _, err := os.Stat(marker); !os.IsNotExist(err) {
 		t.Fatalf("constructor published marker: %v", err)

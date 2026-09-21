@@ -290,6 +290,9 @@ func newManager(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, factori
 		}
 		m.locks = locks
 	}
+	if !m.locks.MatchesRoot(layout.Locks) {
+		return nil, ErrUnsafeInstance
+	}
 	if !m.registrySet {
 		if factories.newRegistry == nil {
 			return nil, ErrUnsafeInstance
@@ -349,14 +352,26 @@ func validateManagerLayout(layout dataroot.Layout, acl ACL) error {
 	return nil
 }
 
-// ComposeUpdater seals the already-locked lifecycle adapter inside this
-// package. Callers receive only a complete updater transaction authority.
-func ComposeUpdater(manager *Manager, config update.Config) (*update.Updater, error) {
-	if manager == nil || config.Lifecycle != nil {
+// ComposeUpdater derives every transaction authority from manager. Callers
+// provide only the required smoke dependency and never choose a lock, state,
+// registry, marker directory or marker security implementation.
+func ComposeUpdater(manager *Manager, smoke update.Smoke) (*update.Updater, error) {
+	security, err := update.NewWindowsMarkerSecurity()
+	if err != nil {
 		return nil, ErrUnsafeInstance
 	}
-	config.Lifecycle = manager.updaterLifecycle()
-	return update.New(config)
+	return composeUpdaterForTest(manager, smoke, security, nil, nil)
+}
+
+func composeUpdaterForTest(manager *Manager, smoke update.Smoke, security update.MarkerSecurity, fault func(update.FaultPoint) error, transactionID func() (string, error)) (*update.Updater, error) {
+	if manager == nil || smoke == nil || security == nil || manager.locks == nil || manager.registry == nil || manager.state == nil {
+		return nil, ErrUnsafeInstance
+	}
+	repository, ok := manager.state.(update.StateRepository)
+	if !ok || repository == nil {
+		return nil, ErrUnsafeInstance
+	}
+	return update.New(update.Config{Locks: manager.locks, State: repository, Verifier: manager.registry, Lifecycle: manager.updaterLifecycle(), Smoke: smoke, MarkerDir: manager.layout.State, MarkerSecurity: security, Fault: fault, TransactionID: transactionID})
 }
 
 func openForTermination(pid uint32) (terminationHandle, error) {

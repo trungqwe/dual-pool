@@ -174,6 +174,9 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, options ...Opt
 	if r.binaryVerifier == nil || r.locks == nil {
 		return nil, ErrUnsupported
 	}
+	if !r.locks.MatchesRoot(layout.Locks) {
+		return nil, ErrPersistence
+	}
 	return r, nil
 }
 

@@ -10,8 +10,16 @@ import (
 	"github.com/trungqwe/dual-pool/internal/dataroot"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
+	"github.com/trungqwe/dual-pool/internal/update"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
+
+func TestComposeUpdaterCannotSplitManagerAuthority(t *testing.T) {
+	composition := reflect.TypeOf(ComposeUpdater)
+	if composition.NumIn() != 2 || composition.In(1) != reflect.TypeOf((*update.Smoke)(nil)).Elem() {
+		t.Fatalf("ComposeUpdater accepts caller-selected transaction authority: %v", composition)
+	}
+}
 
 func TestUpdaterLifecycleRejectsInvalidPoolSetsBeforeMutation(t *testing.T) {
 	lifecycle := (&Manager{}).updaterLifecycle()
@@ -32,6 +40,21 @@ func TestWithLockManagerNilFailsClosed(t *testing.T) {
 	fixture, _ := legacyInstallFixture(t)
 	if manager, err := New(fixture.layout, fixture.acl, fixture.lock, WithLockManager(nil)); err == nil || manager != nil {
 		t.Fatalf("nil lock manager accepted: %#v %v", manager, err)
+	}
+}
+
+func TestInjectedLockManagerMustMatchLayoutLocks(t *testing.T) {
+	fixture, _ := legacyInstallFixture(t)
+	otherLocks := filepath.Join(fixture.layout.Root, "other-locks")
+	if err := fixture.acl.Create(otherLocks); err != nil {
+		t.Fatal(err)
+	}
+	other, err := lockfile.NewManager(otherLocks)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manager, err := New(fixture.layout, fixture.acl, fixture.lock, WithLockManager(other), WithSlotRegistry(fixture.registry), WithStateReader(fixture.state)); err == nil || manager != nil {
+		t.Fatalf("mismatched lock root accepted: %#v %v", manager, err)
 	}
 }
 

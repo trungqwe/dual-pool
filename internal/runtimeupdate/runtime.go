@@ -41,14 +41,6 @@ type Runtime struct {
 }
 
 func New(c Config) (*Runtime, error) {
-	security, err := update.NewWindowsMarkerSecurity()
-	if err != nil {
-		return nil, ErrCompositionInvalid
-	}
-	return newRuntime(c, security)
-}
-
-func newRuntime(c Config, security update.MarkerSecurity) (*Runtime, error) {
 	if isNil(c.ACL) || isNil(c.Smoke) || c.Lock.Validate() != nil || c.Layout.Root == "" || c.Layout.State == "" || c.Layout.Locks == "" {
 		return nil, ErrCompositionInvalid
 	}
@@ -73,10 +65,7 @@ func newRuntime(c Config, security update.MarkerSecurity) (*Runtime, error) {
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	if isNil(security) {
-		return nil, ErrCompositionInvalid
-	}
-	updater, err := instance.ComposeUpdater(manager, update.Config{Locks: locks, State: store, Verifier: registry, Smoke: c.Smoke, MarkerDir: c.Layout.State, MarkerSecurity: security})
+	updater, err := instance.ComposeUpdater(manager, c.Smoke)
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}

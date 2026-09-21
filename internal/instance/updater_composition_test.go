@@ -207,11 +207,37 @@ func (f *composedFixture) start(ctx context.Context, id cliproxyconfig.ID) (Stat
 }
 func (f *composedFixture) updater(fault func(update.FaultPoint) error) *update.Updater {
 	f.t.Helper()
-	u, err := update.New(update.Config{Locks: f.locks, State: f.store, Verifier: f.registry, Lifecycle: f.lifecycle, Smoke: f.smoke, MarkerDir: f.markerDir, MarkerSecurity: composedMarkerSecurity{}, TransactionID: func() (string, error) { return "00112233445566778899aabbccddeeff", nil }, Fault: fault})
+	u, err := composeUpdaterForTest(f.manager, f.smoke, composedMarkerSecurity{}, fault, func() (string, error) { return "00112233445566778899aabbccddeeff", nil })
 	if err != nil {
 		f.t.Fatal(err)
 	}
 	return u
+}
+
+func updaterPointer(updater *update.Updater, name string) uintptr {
+	field := reflect.ValueOf(updater).Elem().FieldByName(name)
+	if field.Kind() == reflect.Interface {
+		field = field.Elem()
+	}
+	return field.Pointer()
+}
+
+func TestComposeUpdaterUsesExactManagerAuthorities(t *testing.T) {
+	f := newComposedFixture(t)
+	updater := f.updater(nil)
+	if updaterPointer(updater, "locks") != reflect.ValueOf(f.manager.locks).Pointer() {
+		t.Fatal("Updater locks differ from Manager locks")
+	}
+	if updaterPointer(updater, "state") != reflect.ValueOf(f.manager.state).Pointer() {
+		t.Fatal("Updater state differs from Manager state")
+	}
+	if updaterPointer(updater, "verifier") != reflect.ValueOf(f.manager.registry).Pointer() {
+		t.Fatal("Updater verifier differs from Manager registry")
+	}
+	markers := reflect.ValueOf(updater).Elem().FieldByName("markers")
+	if markers.Elem().FieldByName("dir").String() != f.manager.layout.State {
+		t.Fatal("Updater marker directory differs from Manager state directory")
+	}
 }
 func (f *composedFixture) active() string {
 	s, err := f.store.LoadState()
