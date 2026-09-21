@@ -664,3 +664,7 @@ The first live shadow run exposed an observability defect: after terminal checkp
 ## Delivery receipt — Management L2/L3
 
 - Evidence CI 35551378644 PASS. Delivery reconciles traceability/U-008 and repaired ESC corruption; Phase 2 Management L2/L3 DELIVERED. Next: staged update / atomic promotion / automatic rollback foundation.
+
+## Delivery corruption correction
+
+- Repaired the one literal ESC token in the Management L3 report; runtime/evidence behavior unchanged and real L3 not rerun. Report: docs/reports/2026-09-21T0330Z-phase-2-management-delivery-correction.md.

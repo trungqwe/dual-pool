@@ -24,7 +24,7 @@ Registers baseline cleanup before secret reads; adds inventory EOF and sentinel 
 
 ## Delivery receipt — Management L2/L3
 
-- Implementation: ac0a69d55577b1bafb40ee99c4567a5151b76e2; Source CI 35545625998 PASS.
+- Implementation: eac0a69d55577b1bafb40ee99c4567a5151b76e2; Source CI 35545625998 PASS.
 - Real gate: TestRealEmptyManagementInventory PASS, 1.89s.
 - Evidence: 4ad389d0d824a788b6ce0786b1be58f39490bb43; Source CI 35551378644 PASS.
 - Codex L2/L3/repeat and Google L2/L3/repeat PASS. Final records/listeners/auth/log/config mutations/config identity changes/key rotations = 0; binary revalidation PASS.
