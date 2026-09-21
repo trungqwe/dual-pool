@@ -10,7 +10,13 @@
     "TestNewRejectsTypedNilACL": "PASS",
     "TestRuntimePublicAPIHasNoStateOrLifecycleAuthority": "PASS",
     "TestRuntimeCannotExposeLockedUpdaterLifecycle": "PASS",
+    "TestComposeUpdaterDoesNotAcceptCallerSelectedAuthority": "PASS",
+    "TestComposeUpdaterCannotSplitManagerAuthority": "PASS",
+    "TestComposeUpdaterUsesExactManagerAuthorities": "PASS",
     "TestRuntimePrivateLifecycleUsesExactManager": "PASS",
+    "TestInjectedLockManagerMustMatchLayoutLocks": "PASS",
+    "TestRegistryInjectedLockManagerMustMatchLayoutLocks": "PASS",
+    "TestRegistryExplicitNilLockManagerFailsClosed": "PASS",
     "TestInjectedDependenciesSuppressDefaultConstruction": "PASS",
     "TestInjectedDependenciesDoNotBypassLayoutValidation": "PASS",
     "TestDefaultDependenciesStillConstruct": "PASS",
@@ -22,7 +28,8 @@
     "Updater and Manager share one installed-slot Registry",
     "production registry proof is limited to the pinned slot",
     "public Runtime exposes only Updater and Manager",
-    "the raw locked lifecycle adapter is private to instance and is sealed by ComposeUpdater",
+    "the raw locked lifecycle adapter is private to instance and ComposeUpdater derives locks, state, verifier, marker directory and marker security from Manager",
+    "injected lock managers must match the canonical layout.Locks root",
     "injected instance dependencies are construction-time authority, do not suppress layout validation and suppress default construction only when supplied",
     "MarkerSecurity is not part of public runtime Config"
   ]

@@ -6,6 +6,9 @@
     "TestUpdaterLifecycleDoesNotReacquireGlobal": "PASS",
     "TestRuntimeCompositionGlobalThenStateFileLock": "PASS",
     "TestUpdaterLifecycleCanonicalizesPoolOrderBeforeMutation": "PASS",
-    "TestRuntimePrivateLifecycleUsesExactManager": "PASS"
+    "TestRuntimePrivateLifecycleUsesExactManager": "PASS",
+    "TestComposeUpdaterUsesExactManagerAuthorities": "PASS",
+    "TestInjectedLockManagerMustMatchLayoutLocks": "PASS",
+    "TestRegistryInjectedLockManagerMustMatchLayoutLocks": "PASS"
   }
 }

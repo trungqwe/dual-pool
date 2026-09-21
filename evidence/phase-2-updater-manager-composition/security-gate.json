@@ -2,7 +2,10 @@
   "schema_version": "1",
   "status": "PASS",
   "scope": [
+    "internal/lockfile/manager.go",
+    "internal/lockfile/manager_test.go",
     "internal/installedslot/registry.go",
+    "internal/installedslot/audit_regression_test.go",
     "internal/instance/instance.go",
     "internal/instance/updater_composition_test.go",
     "internal/instance/updater_lifecycle_test.go",
@@ -12,11 +15,7 @@
     "docs/15-MASTER-CHECKLIST.md",
     "docs/18-HANDOFF.md",
     "docs/23-TRACEABILITY-MATRIX.md",
-    "docs/reports/2026-09-21T2003Z-phase-2-updater-manager-lifecycle-authority-repair.md",
-    "docs/reports/2026-09-21T1817Z-phase-2-updater-manager-composition.md",
-    "docs/18-HANDOFF.md",
-    "docs/15-MASTER-CHECKLIST.md",
-    "docs/23-TRACEABILITY-MATRIX.md",
+    "docs/reports/2026-09-21T2037Z-phase-2-updater-authority-binding-repair.md",
     "evidence/phase-2-updater-manager-composition"
   ],
   "checks": {

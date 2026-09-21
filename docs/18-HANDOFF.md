@@ -1,10 +1,10 @@
 # Current Handoff
 
-## Ưu tiên hiện tại — sửa authority lifecycle của updater/Manager composition
+## Ưu tiên hiện tại — sửa authority binding của updater/Manager composition
 
-Branch `phase-2/updater-manager-composition` đã đóng authority escape được phát hiện tại reviewed head `473a71c`. Public `Runtime` chỉ còn `Updater` và `Manager`; raw locked lifecycle adapter không còn là exported type hoặc method của `instance.Manager`, và chỉ `instance.ComposeUpdater` mới niêm phong adapter private vào một `update.Updater` hoàn chỉnh. `instance.New` luôn xác thực layout trước khi xét dependency inject, phân biệt option vắng với explicit nil, không dựng default throwaway khi dependency hợp lệ đã được inject, và chỉ dựng default khi dependency vắng. Runtime, Manager, Store và Registry dùng cùng một lock manager; `MarkerSecurity` vẫn không thuộc public `Config`.
+Branch `phase-2/updater-manager-composition` đã đóng authority-binding blocker được phát hiện tại reviewed head `87375ac`. `instance.ComposeUpdater` chỉ nhận `Manager` và `Smoke`; nó tự derive lock manager, State repository, Registry verifier, private lifecycle, marker directory và trusted Windows marker security từ Manager. `instance.New` và `installedslot.New` đều fail closed nếu lock manager injected không khớp canonical `layout.Locks`. Runtime, Manager, Store, Registry và Updater dùng cùng một lock manager; raw lifecycle vẫn không exported và `MarkerSecurity` không thuộc public `Config`.
 
-TEMP-only shared vA/vB tests dùng synthetic process records và deterministic lifecycle hooks; chúng chứng minh fault-injection recovery tại marker/state boundaries, không chứng minh subprocess crash hay process-handle composition. Xem [repair report](reports/2026-09-21T2003Z-phase-2-updater-manager-lifecycle-authority-repair.md) và [evidence](../evidence/phase-2-updater-manager-composition/composition.json). `phase-2/upstream-lifecycle` vẫn cố định tại `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`; production multi-version và live mutation vẫn OPEN.
+TEMP-only shared vA/vB tests dùng synthetic process records và deterministic lifecycle hooks; chúng chứng minh fault-injection recovery tại marker/state boundaries, không chứng minh subprocess crash hay process-handle composition. Xem [repair report](reports/2026-09-21T2037Z-phase-2-updater-authority-binding-repair.md) và [evidence](../evidence/phase-2-updater-manager-composition/composition.json). `phase-2/upstream-lifecycle` vẫn cố định tại `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`; production multi-version và live mutation vẫn OPEN.
 
 ## Lịch sử — audit installed-slot registry
 
