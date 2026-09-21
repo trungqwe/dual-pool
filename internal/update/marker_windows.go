@@ -76,12 +76,14 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	if err != nil {
 		return transactionMarker{}, markerFailure("marker_create", err)
 	}
-	ok := false
+	renamed := false
 	defer func() {
-		if !ok {
-			_ = deleteMarkerByHandle(f)
+		if f != nil {
+			if !renamed {
+				_ = deleteMarkerByHandle(f)
+			}
+			_ = f.Close()
 		}
-		_ = f.Close()
 	}()
 	if _, err = f.Write(b); err != nil {
 		return transactionMarker{}, markerFailure("marker_write", err)
@@ -102,13 +104,17 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	if err = renameMarkerByHandle(f, markerName); err != nil {
 		return transactionMarker{}, markerFailure("marker_rename", err)
 	}
+	renamed = true
 	if err = s.security.InspectHandle(f); err != nil {
 		return transactionMarker{}, markerFailure("marker_post_rename_acl", err)
+	}
+	if err = f.Sync(); err != nil {
+		return transactionMarker{}, markerFailure("marker_post_rename_sync", err)
 	}
 	if err = f.Close(); err != nil {
 		return transactionMarker{}, markerFailure("marker_close", err)
 	}
-	ok = true
+	f = nil
 	return m, nil
 }
 func (s *markerStore) load() (transactionMarker, bool, error) {
