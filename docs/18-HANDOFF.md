@@ -1,5 +1,9 @@
 # Current Handoff
 
+## Ưu tiên hiện tại — audit installed-slot registry
+
+Head e9b68f8 có blocker A/B/B2/C; không fast-forward. Xem [audit](reports/2026-09-21T1630Z-installed-slot-independent-audit.md) và [kế hoạch sửa giai đoạn 1](25-INSTALLED-SLOT-REPAIR-PLAN.md). Các claim không process/listener/WinCred mutation ở phần lịch sử được hiệu chỉnh trong audit; chúng không chứng minh không có fixture mutation.
+
 ## Phase 2 gated real harness — pending Source CI (2026-09-20)
 
 At `f06bab5`, Source CI `35500953921` passed. The next implementation replaces the deliberately fail-closed real test stub with `TestRealLifecycle`, an opt-in gated harness. It stages/installs the pinned binary and executes start/idempotence/status/restart/stop verification only when `DUALPOOL_RUN_REAL_LIFECYCLE=1`. The harness implementation requires its own CI PASS before execution; no real lifecycle action has occurred.
