@@ -98,7 +98,7 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	if _, err = decodeMarker(check); err != nil {
 		return transactionMarker{}, err
 	}
-	if err = renameMarkerByHandle(f, s.path()); err != nil {
+	if err = renameMarkerByHandle(f, s.dir, markerName); err != nil {
 		return transactionMarker{}, markerFailure("marker_rename", err)
 	}
 	if err = s.security.InspectHandle(f); err != nil {
@@ -215,8 +215,17 @@ type fileRenameInformation struct {
 	FileName        [1]uint16
 }
 
-func renameMarkerByHandle(file *os.File, target string) error {
-	name, err := windows.UTF16FromString(target)
+func renameMarkerByHandle(file *os.File, directory, targetName string) error {
+	directoryName, err := windows.UTF16PtrFromString(directory)
+	if err != nil {
+		return err
+	}
+	directoryHandle, err := windows.CreateFile(directoryName, windows.FILE_LIST_DIRECTORY, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE, nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		return err
+	}
+	defer windows.CloseHandle(directoryHandle)
+	name, err := windows.UTF16FromString(targetName)
 	if err != nil {
 		return err
 	}
@@ -224,6 +233,7 @@ func renameMarkerByHandle(file *os.File, target string) error {
 	size := unsafe.Offsetof(fileRenameInformation{}.FileName) + uintptr(len(name))*unsafe.Sizeof(name[0])
 	buffer := make([]byte, size)
 	info := (*fileRenameInformation)(unsafe.Pointer(&buffer[0]))
+	info.RootDirectory = directoryHandle
 	info.FileNameLength = uint32(len(name) * 2)
 	copy(unsafe.Slice(&info.FileName[0], len(name)), name)
 	deadline := time.Now().Add(250 * time.Millisecond)
