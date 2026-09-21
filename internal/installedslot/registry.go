@@ -123,11 +123,15 @@ type Option func(*Registry)
 
 func WithBinaryVerifier(v BinaryVerifier) Option        { return func(r *Registry) { r.binaryVerifier = v } }
 func WithFaultInjector(v func(FaultPoint) error) Option { return func(r *Registry) { r.fault = v } }
+func WithLockManager(v *lockfile.Manager) Option {
+	return func(r *Registry) { r.locksSet, r.locks = true, v }
+}
 
 type Registry struct {
 	layout                 dataroot.Layout
 	acl                    ACL
 	locks                  *lockfile.Manager
+	locksSet               bool
 	expectedPlatform       string
 	expectedProduct        string
 	expectedAdapter        string
@@ -146,11 +150,7 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, options ...Opt
 	if acl == nil || lock.Validate() != nil {
 		return nil, ErrUnsupported
 	}
-	locks, err := lockfile.NewManager(layout.Locks)
-	if err != nil {
-		return nil, ErrPersistence
-	}
-	r := &Registry{layout: layout, acl: acl, locks: locks, expectedPlatform: "windows_amd64", expectedProduct: lock.Product, expectedAdapter: lock.ConfigAdapterVersion, expectedVersion: lock.Version, expectedTag: lock.Tag, expectedCommit: lock.Commit, expectedLockHash: lock.Digest(), binaryVerifier: func(ctx context.Context, path string, _ Manifest) error {
+	r := &Registry{layout: layout, acl: acl, expectedPlatform: "windows_amd64", expectedProduct: lock.Product, expectedAdapter: lock.ConfigAdapterVersion, expectedVersion: lock.Version, expectedTag: lock.Tag, expectedCommit: lock.Commit, expectedLockHash: lock.Digest(), binaryVerifier: func(ctx context.Context, path string, _ Manifest) error {
 		identity, err := (upstreamstage.WindowsVerifier{}).Verify(ctx, path, lock)
 		if err != nil || !identity.VersionMatch || !identity.CommitMatch {
 			return ErrUnsafeSlot
@@ -161,7 +161,17 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, options ...Opt
 	for _, option := range options {
 		option(r)
 	}
-	if r.binaryVerifier == nil {
+	if r.locksSet && r.locks == nil {
+		return nil, ErrPersistence
+	}
+	if !r.locksSet {
+		locks, err := lockfile.NewManager(layout.Locks)
+		if err != nil {
+			return nil, ErrPersistence
+		}
+		r.locks = locks
+	}
+	if r.binaryVerifier == nil || r.locks == nil {
 		return nil, ErrUnsupported
 	}
 	return r, nil

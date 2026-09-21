@@ -33,6 +33,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/processidentity"
 	"github.com/trungqwe/dual-pool/internal/secretstore"
 	"github.com/trungqwe/dual-pool/internal/state"
+	"github.com/trungqwe/dual-pool/internal/update"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 	"golang.org/x/sys/windows"
@@ -129,16 +130,13 @@ type ActiveStateReader interface {
 	LoadState() (state.State, error)
 }
 
-// UpdaterLifecycle is the only lifecycle bridge for update.Updater. Its
-// methods require the caller to already hold the shared GLOBAL lock.
-type UpdaterLifecycle struct{ manager *Manager }
+// updaterLifecycle is only supplied to update.Updater by ComposeUpdater. Its
+// methods require update.Updater to already own the shared GLOBAL lock.
+type updaterLifecycle struct{ manager *Manager }
 
-// UpdaterLifecycle returns a bridge that deliberately uses Manager's locked
-// lifecycle operations. Public Manager methods acquire GLOBAL themselves and
-// must not be used while an update transaction owns it.
-func (m *Manager) UpdaterLifecycle() *UpdaterLifecycle { return &UpdaterLifecycle{manager: m} }
+func (m *Manager) updaterLifecycle() *updaterLifecycle { return &updaterLifecycle{manager: m} }
 
-func (l *UpdaterLifecycle) CaptureRunning(ctx context.Context) ([]state.Pool, error) {
+func (l *updaterLifecycle) CaptureRunning(ctx context.Context) ([]state.Pool, error) {
 	if l == nil || l.manager == nil {
 		return nil, ErrUnsafeInstance
 	}
@@ -175,7 +173,7 @@ func (m *Manager) updaterPortIsOccupied(port int) (bool, error) {
 	return m.portOccupied(port)
 }
 
-func (l *UpdaterLifecycle) Stop(_ context.Context, pools []state.Pool) error {
+func (l *updaterLifecycle) Stop(_ context.Context, pools []state.Pool) error {
 	if l == nil || l.manager == nil {
 		return ErrUnsafeInstance
 	}
@@ -195,7 +193,7 @@ func (l *UpdaterLifecycle) Stop(_ context.Context, pools []state.Pool) error {
 	return nil
 }
 
-func (l *UpdaterLifecycle) Start(ctx context.Context, pools []state.Pool) error {
+func (l *updaterLifecycle) Start(ctx context.Context, pools []state.Pool) error {
 	if l == nil || l.manager == nil {
 		return ErrUnsafeInstance
 	}
@@ -265,7 +263,14 @@ func lifecyclePoolID(pool state.Pool) (cliproxyconfig.ID, error) {
 }
 
 func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option) (*Manager, error) {
+	return newManager(layout, acl, lock, defaultDependencyFactories(), opts...)
+}
+
+func newManager(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, factories dependencyFactories, opts ...Option) (*Manager, error) {
 	if acl == nil || lock.Validate() != nil {
+		return nil, ErrUnsafeInstance
+	}
+	if err := validateManagerLayout(layout, acl); err != nil {
 		return nil, ErrUnsafeInstance
 	}
 	m := &Manager{layout: layout, acl: acl, lock: lock, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New(), opener: openForTermination}
@@ -276,21 +281,30 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 		return nil, ErrUnsafeInstance
 	}
 	if !m.locksSet {
-		locks, err := lockfile.NewManager(layout.Locks)
+		if factories.newLocks == nil {
+			return nil, ErrUnsafeInstance
+		}
+		locks, err := factories.newLocks(layout.Locks)
 		if err != nil {
 			return nil, ErrUnsafeInstance
 		}
 		m.locks = locks
 	}
 	if !m.registrySet {
-		registry, err := installedslot.New(layout, acl, lock)
+		if factories.newRegistry == nil {
+			return nil, ErrUnsafeInstance
+		}
+		registry, err := factories.newRegistry(layout, acl, lock, m.locks)
 		if err != nil {
 			return nil, ErrUnsafeInstance
 		}
 		m.registry = registry
 	}
 	if !m.stateSet {
-		stateStore, err := state.NewStore(layout.State, state.WithLockManager(m.locks))
+		if factories.newState == nil {
+			return nil, ErrUnsafeInstance
+		}
+		stateStore, err := factories.newState(layout.State, m.locks)
 		if err != nil {
 			return nil, ErrUnsafeInstance
 		}
@@ -300,6 +314,49 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 		return nil, ErrUnsafeInstance
 	}
 	return m, nil
+}
+
+type dependencyFactories struct {
+	newLocks    func(string) (*lockfile.Manager, error)
+	newRegistry func(dataroot.Layout, ACL, upstreamlock.Lock, *lockfile.Manager) (SlotRegistry, error)
+	newState    func(string, *lockfile.Manager) (ActiveStateReader, error)
+}
+
+func defaultDependencyFactories() dependencyFactories {
+	return dependencyFactories{
+		newLocks: func(dir string) (*lockfile.Manager, error) { return lockfile.NewManager(dir) },
+		newRegistry: func(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, locks *lockfile.Manager) (SlotRegistry, error) {
+			return installedslot.New(layout, acl, lock, installedslot.WithLockManager(locks))
+		},
+		newState: func(dir string, locks *lockfile.Manager) (ActiveStateReader, error) {
+			return state.NewStore(dir, state.WithLockManager(locks))
+		},
+	}
+}
+
+func validateManagerLayout(layout dataroot.Layout, acl ACL) error {
+	for _, path := range []string{layout.Root, layout.Bin, layout.Instances, layout.State, layout.Locks} {
+		if path == "" || filepath.Clean(path) != path || !filepath.IsAbs(path) || acl.Inspect(path) != nil {
+			return ErrUnsafeInstance
+		}
+		if path != layout.Root {
+			rel, err := filepath.Rel(layout.Root, path)
+			if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+				return ErrUnsafeInstance
+			}
+		}
+	}
+	return nil
+}
+
+// ComposeUpdater seals the already-locked lifecycle adapter inside this
+// package. Callers receive only a complete updater transaction authority.
+func ComposeUpdater(manager *Manager, config update.Config) (*update.Updater, error) {
+	if manager == nil || config.Lifecycle != nil {
+		return nil, ErrUnsafeInstance
+	}
+	config.Lifecycle = manager.updaterLifecycle()
+	return update.New(config)
 }
 
 func openForTermination(pid uint32) (terminationHandle, error) {

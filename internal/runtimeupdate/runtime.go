@@ -35,10 +35,9 @@ type Runtime struct {
 	Updater *update.Updater
 	Manager *instance.Manager
 
-	locks     *lockfile.Manager
-	state     *state.Store
-	registry  *installedslot.Registry
-	lifecycle *instance.UpdaterLifecycle
+	locks    *lockfile.Manager
+	state    *state.Store
+	registry *installedslot.Registry
 }
 
 func New(c Config) (*Runtime, error) {
@@ -66,7 +65,7 @@ func newRuntime(c Config, security update.MarkerSecurity) (*Runtime, error) {
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	registry, err := installedslot.New(c.Layout, c.ACL, c.Lock)
+	registry, err := installedslot.New(c.Layout, c.ACL, c.Lock, installedslot.WithLockManager(locks))
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
@@ -74,15 +73,14 @@ func newRuntime(c Config, security update.MarkerSecurity) (*Runtime, error) {
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	lifecycle := manager.UpdaterLifecycle()
 	if isNil(security) {
 		return nil, ErrCompositionInvalid
 	}
-	updater, err := update.New(update.Config{Locks: locks, State: store, Verifier: registry, Lifecycle: lifecycle, Smoke: c.Smoke, MarkerDir: c.Layout.State, MarkerSecurity: security})
+	updater, err := instance.ComposeUpdater(manager, update.Config{Locks: locks, State: store, Verifier: registry, Smoke: c.Smoke, MarkerDir: c.Layout.State, MarkerSecurity: security})
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	return &Runtime{Updater: updater, Manager: manager, locks: locks, state: store, registry: registry, lifecycle: lifecycle}, nil
+	return &Runtime{Updater: updater, Manager: manager, locks: locks, state: store, registry: registry}, nil
 }
 
 func isNil(value any) bool {

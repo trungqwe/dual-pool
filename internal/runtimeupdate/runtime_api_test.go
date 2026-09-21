@@ -22,10 +22,19 @@ func TestRuntimePublicAPIHasNoStateOrLifecycleAuthority(t *testing.T) {
 		t.Fatalf("unexpected exported Runtime fields: %v", exported)
 	}
 	stateStore := reflect.TypeOf((*state.Store)(nil))
-	lifecycle := reflect.TypeOf((*instance.UpdaterLifecycle)(nil))
 	for name, fieldType := range exported {
-		if fieldType == stateStore || fieldType == lifecycle {
+		if fieldType == stateStore {
 			t.Fatalf("exported authority escape %s: %v", name, fieldType)
+		}
+	}
+}
+
+func TestRuntimeCannotExposeLockedUpdaterLifecycle(t *testing.T) {
+	managerType := reflect.TypeOf((*instance.Manager)(nil))
+	for i := 0; i < managerType.NumMethod(); i++ {
+		method := managerType.Method(i)
+		if method.Name == "UpdaterLifecycle" {
+			t.Fatalf("Manager still exposes raw locked lifecycle through %s", method.Name)
 		}
 	}
 }

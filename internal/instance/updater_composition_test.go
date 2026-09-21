@@ -84,7 +84,7 @@ func (composedMarkerSecurity) InspectHandle(file *os.File) error {
 type composedFixture struct {
 	t             *testing.T
 	manager       *Manager
-	lifecycle     *UpdaterLifecycle
+	lifecycle     *updaterLifecycle
 	registry      *composedRegistry
 	store         *state.Store
 	locks         *lockfile.Manager
@@ -138,7 +138,7 @@ func newComposedFixture(t *testing.T, running ...state.Pool) *composedFixture {
 	f.manager.updaterStop = f.stop
 	f.manager.updaterStart = f.start
 	f.manager.updaterPortOccupied = func(int) (bool, error) { return false, nil }
-	f.lifecycle = f.manager.UpdaterLifecycle()
+	f.lifecycle = f.manager.updaterLifecycle()
 	for _, pool := range running {
 		id, _ := lifecyclePoolID(pool)
 		f.records[id] = f.record(id, registry.slots["vA"], uint32(len(f.records)+10))

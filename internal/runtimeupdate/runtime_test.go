@@ -212,8 +212,20 @@ func TestRuntimeCompositionSharesExactObjects(t *testing.T) {
 		t.Fatal("Registry is not shared")
 	}
 	updaterLocks := pointerField(runtime.Updater, "locks")
-	if updaterLocks == 0 || pointerField(runtime.Manager, "locks") != updaterLocks || pointerField(runtime.state, "locks") != updaterLocks || reflect.ValueOf(runtime.locks).Pointer() != updaterLocks {
+	if updaterLocks == 0 || pointerField(runtime.Manager, "locks") != updaterLocks || pointerField(runtime.state, "locks") != updaterLocks || pointerField(runtime.registry, "locks") != updaterLocks || reflect.ValueOf(runtime.locks).Pointer() != updaterLocks {
 		t.Fatal("lock Manager is not shared")
+	}
+}
+
+func TestRuntimePrivateLifecycleUsesExactManager(t *testing.T) {
+	runtime, _ := productionFixture(t)
+	lifecycle := reflect.ValueOf(runtime.Updater).Elem().FieldByName("lifecycle")
+	if lifecycle.Kind() != reflect.Interface || lifecycle.IsNil() {
+		t.Fatal("Updater has no private lifecycle")
+	}
+	manager := lifecycle.Elem().Elem().FieldByName("manager")
+	if manager.Kind() != reflect.Pointer || manager.Pointer() != reflect.ValueOf(runtime.Manager).Pointer() {
+		t.Fatal("Updater lifecycle does not reference the Runtime Manager")
 	}
 }
 
