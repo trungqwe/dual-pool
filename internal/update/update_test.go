@@ -3,6 +3,7 @@ package update
 import (
 	"context"
 	"errors"
+	"github.com/trungqwe/dual-pool/internal/installedslot"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
 	"os"
@@ -13,6 +14,10 @@ import (
 
 	"golang.org/x/sys/windows"
 )
+
+func TestInstalledSlotRegistryIsTheUpdaterVerifierContract(t *testing.T) {
+	var _ SlotVerifier = (*installedslot.Registry)(nil)
+}
 
 type fakeState struct {
 	v          state.State

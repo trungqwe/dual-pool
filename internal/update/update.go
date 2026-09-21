@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
@@ -309,9 +308,7 @@ func normalizePools(in []state.Pool) []state.Pool {
 	return out
 }
 
-var logicalVersionPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$`)
-
-func validLogicalVersion(value string) bool { return logicalVersionPattern.MatchString(value) }
+func validLogicalVersion(value string) bool { return state.ValidLogicalVersion(value) }
 
 func validateRunningSet(in []state.Pool) ([]state.Pool, error) {
 	seen := map[state.Pool]bool{}

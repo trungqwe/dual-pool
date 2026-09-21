@@ -27,10 +27,12 @@ import (
 
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
 	"github.com/trungqwe/dual-pool/internal/dataroot"
+	"github.com/trungqwe/dual-pool/internal/installedslot"
 	"github.com/trungqwe/dual-pool/internal/keymaterial"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/processidentity"
 	"github.com/trungqwe/dual-pool/internal/secretstore"
+	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 	"golang.org/x/sys/windows"
@@ -44,6 +46,7 @@ var (
 	ErrPersistence           = errors.New("instance lifecycle persistence failed")
 	ErrPortOccupied          = errors.New("instance port is occupied")
 	ErrUnverifiable          = errors.New("managed process is unverifiable")
+	ErrActiveSelection       = errors.New("active upstream slot selection is invalid")
 )
 
 const manifestName = "install-manifest.json"
@@ -66,18 +69,7 @@ type terminationHandle interface {
 }
 type terminationOpener func(uint32) (terminationHandle, error)
 
-type InstallManifest struct {
-	SchemaVersion        int    `json:"schema_version"`
-	Product              string `json:"product"`
-	Version              string `json:"version"`
-	Tag                  string `json:"tag"`
-	Commit               string `json:"commit"`
-	Platform             string `json:"platform"`
-	ExecutableSHA256     string `json:"executable_sha256"`
-	UpstreamLockSHA256   string `json:"upstream_lock_sha256"`
-	ConfigAdapterVersion string `json:"config_adapter_version"`
-	ExecutableBasename   string `json:"executable_basename"`
-}
+type InstallManifest = installedslot.Manifest
 type installMarker struct {
 	SchemaVersion     int    `json:"schema_version"`
 	TransactionID     string `json:"transaction_id"`
@@ -95,6 +87,8 @@ type ProcessRecord struct {
 	ExecutableSHA256 string `json:"executable_sha256"`
 	ConfigSHA256     string `json:"config_sha256"`
 	Port             int    `json:"port"`
+	UpstreamVersion  string `json:"upstream_version"`
+	ManifestSHA256   string `json:"manifest_sha256"`
 }
 
 type Status struct {
@@ -111,6 +105,18 @@ type Manager struct {
 	inspector lockfile.ProcessInspector
 	reader    SecretReader
 	opener    terminationOpener
+	registry  SlotRegistry
+	state     ActiveStateReader
+}
+
+type SlotRegistry interface {
+	Resolve(string) (installedslot.ResolvedSlot, error)
+	VerifyInstalled(context.Context, string) error
+	RegisterLocked(context.Context, string) error
+}
+
+type ActiveStateReader interface {
+	LoadState() (state.State, error)
 }
 
 func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option) (*Manager, error) {
@@ -121,11 +127,13 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 	if err != nil {
 		return nil, ErrUnsafeInstance
 	}
-	m := &Manager{layout: layout, acl: acl, lock: lock, locks: locks, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New(), opener: openForTermination}
+	registry, _ := installedslot.New(layout, acl, lock)
+	stateStore, _ := state.NewStore(layout.State, state.WithLockManager(locks))
+	m := &Manager{layout: layout, acl: acl, lock: lock, locks: locks, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New(), opener: openForTermination, registry: registry, state: stateStore}
 	for _, opt := range opts {
 		opt(m)
 	}
-	if m.inspector == nil || m.reader == nil || m.opener == nil {
+	if m.inspector == nil || m.reader == nil || m.opener == nil || m.registry == nil || m.state == nil {
 		return nil, ErrUnsafeInstance
 	}
 	return m, nil
@@ -139,11 +147,39 @@ type Option func(*Manager)
 
 func WithInspector(v lockfile.ProcessInspector) Option { return func(m *Manager) { m.inspector = v } }
 func WithSecretReader(v SecretReader) Option           { return func(m *Manager) { m.reader = v } }
+func WithSlotRegistry(v SlotRegistry) Option           { return func(m *Manager) { m.registry = v } }
+func WithStateReader(v ActiveStateReader) Option       { return func(m *Manager) { m.state = v } }
 
 func (m *Manager) executableDir() string {
 	return filepath.Join(m.layout.Bin, "cliproxyapi", m.lock.Version)
 }
 func (m *Manager) executablePath() string { return filepath.Join(m.executableDir(), "cliproxyapi.exe") }
+
+func (m *Manager) activeSlot(ctx context.Context) (installedslot.ResolvedSlot, error) {
+	if m.state == nil || m.registry == nil {
+		return installedslot.ResolvedSlot{}, ErrActiveSelection
+	}
+	if recoverer, ok := m.state.(interface{ Recover() error }); ok {
+		if err := recoverer.Recover(); err != nil {
+			return installedslot.ResolvedSlot{}, ErrActiveSelection
+		}
+	}
+	active, err := m.state.LoadState()
+	if err != nil || state.ValidateState(active) != nil || active.ActiveUpstreamVersion == "" {
+		return installedslot.ResolvedSlot{}, ErrActiveSelection
+	}
+	if err = m.registry.VerifyInstalled(ctx, active.ActiveUpstreamVersion); err != nil {
+		return installedslot.ResolvedSlot{}, err
+	}
+	slot, err := m.registry.Resolve(active.ActiveUpstreamVersion)
+	if err != nil {
+		return installedslot.ResolvedSlot{}, err
+	}
+	if slot.ConfigAdapterVersion != m.lock.ConfigAdapterVersion || slot.Platform != "windows_amd64" || slot.ExecutableBasename != "cliproxyapi.exe" {
+		return installedslot.ResolvedSlot{}, ErrActiveSelection
+	}
+	return slot, nil
+}
 
 // Install accepts only bytes already verified by upstreamstage.  It never
 // overwrites a product install: a mismatching final directory is a hard stop.
@@ -202,6 +238,12 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if err = m.validateInstall(ctx, final); err != nil {
 		return "", false, err
 	}
+	if m.registry == nil {
+		return "", false, ErrUnsafeInstance
+	}
+	if err = m.registry.RegisterLocked(ctx, m.lock.Version); err != nil {
+		return "", false, err
+	}
 	if err = os.Remove(filepath.Join(filepath.Dir(final), markerName)); err != nil {
 		return "", false, ErrPersistence
 	}
@@ -234,6 +276,12 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 	candidate := filepath.Join(dir, mark.CandidateBasename)
 	if _, e := os.Lstat(final); e == nil {
 		if e = m.validateInstall(ctx, final); e != nil {
+			return e
+		}
+		if m.registry == nil {
+			return ErrUnsafeInstance
+		}
+		if e = m.registry.RegisterLocked(ctx, m.lock.Version); e != nil {
 			return e
 		}
 	}
@@ -296,7 +344,8 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 	if err = m.preflightRoots(); err != nil {
 		return Status{}, err
 	}
-	if err = m.validateInstall(ctx, m.executableDir()); err != nil {
+	slot, err := m.activeSlot(ctx)
+	if err != nil {
 		return Status{}, err
 	}
 	root, port, err := m.instanceRoot(id)
@@ -312,6 +361,9 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 		return Status{}, ErrUnsafeInstance
 	}
 	if status, e := m.statusLocked(id); e == nil && status.Running {
+		if status.Record.UpstreamVersion != slot.Version {
+			return Status{}, ErrActiveSelection
+		}
 		if e = m.awaitReady(ctx, id, status.Record); e != nil {
 			return Status{}, e
 		}
@@ -336,7 +388,7 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 	} else if occupied {
 		return Status{}, ErrPortOccupied
 	}
-	cmd := exec.Command(m.executablePath(), "-config", filepath.Join(root, "config.yaml"), "-local-model")
+	cmd := exec.Command(slot.ExecutablePath, "-config", filepath.Join(root, "config.yaml"), "-local-model")
 	cmd.Dir = root
 	cmd.Env = minimalEnv()
 	cmd.Stdin = nil
@@ -344,12 +396,12 @@ func (m *Manager) startLocked(ctx context.Context, id cliproxyconfig.ID) (Status
 		return Status{}, ErrPersistence
 	}
 	identity, err := m.inspector.Inspect(uint32(cmd.Process.Pid))
-	if err != nil || !samePath(identity.Image, m.executablePath()) {
+	if err != nil || !samePath(identity.Image, slot.ExecutablePath) {
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
 		return Status{}, ErrIdentityMismatch
 	}
-	record := ProcessRecord{1, string(id), identity.PID, identity.StartTime, digest(m.executablePath()), digest(filepath.Join(root, "config.yaml")), port}
+	record := ProcessRecord{SchemaVersion: 2, InstanceID: string(id), PID: identity.PID, StartTime: identity.StartTime, ExecutableSHA256: digest(slot.ExecutablePath), ConfigSHA256: digest(filepath.Join(root, "config.yaml")), Port: port, UpstreamVersion: slot.Version, ManifestSHA256: slot.ManifestSHA256}
 	if !validRecord(record) {
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
@@ -433,13 +485,17 @@ func (m *Manager) cleanupOwned(id cliproxyconfig.ID, record ProcessRecord) error
 	return nil
 }
 func (m *Manager) stopRecord(record ProcessRecord) error {
+	slot, err := m.recordSlot(record)
+	if err != nil {
+		return ErrIdentityMismatch
+	}
 	h, err := m.opener(record.PID)
 	if err != nil {
 		return ErrIdentityMismatch
 	}
 	defer h.Close()
 	live, err := h.Inspect()
-	if err != nil || !m.matchesLive(record, live) {
+	if err != nil || !m.matchesLive(record, live, slot.ExecutablePath) {
 		return ErrIdentityMismatch
 	}
 	if err = h.Terminate(); err != nil {
@@ -462,7 +518,17 @@ func (m *Manager) Restart(ctx context.Context, id cliproxyconfig.ID) (Status, er
 	}
 	return m.startLocked(ctx, id)
 }
-func (m *Manager) Status(id cliproxyconfig.ID) (Status, error) { return m.statusLocked(id) }
+func (m *Manager) Status(id cliproxyconfig.ID) (Status, error) {
+	if m.locks == nil {
+		return m.statusLocked(id)
+	}
+	guard, err := m.locks.AcquireGlobal()
+	if err != nil {
+		return Status{}, ErrPersistence
+	}
+	defer guard.Release()
+	return m.statusLocked(id)
+}
 func (m *Manager) instancePath(id cliproxyconfig.ID) string {
 	return filepath.Join(m.layout.Instances, string(id))
 }
@@ -491,6 +557,10 @@ func (m *Manager) statusLocked(id cliproxyconfig.ID) (Status, error) {
 	if e := readJSON(path, &r); e != nil || !validRecord(r) || r.InstanceID != string(id) {
 		return Status{}, ErrUnsafeInstance
 	}
+	slot, e := m.recordSlot(r)
+	if e != nil {
+		return Status{ID: id, Record: r}, ErrUnverifiable
+	}
 	live, e := m.inspector.Inspect(r.PID)
 	if errors.Is(e, lockfile.ErrProcessNotFound) {
 		return Status{ID: id, Record: r}, ErrNotRunning
@@ -498,17 +568,35 @@ func (m *Manager) statusLocked(id cliproxyconfig.ID) (Status, error) {
 	if e != nil {
 		return Status{ID: id, Record: r}, ErrUnverifiable
 	}
-	if !m.matchesLive(r, processidentity.Identity{PID: live.PID, StartTime: live.StartTime, Image: live.Image}) {
+	if !m.matchesLive(r, processidentity.Identity{PID: live.PID, StartTime: live.StartTime, Image: live.Image}, slot.ExecutablePath) {
 		return Status{}, ErrIdentityMismatch
 	}
 	return Status{ID: id, Running: true, Record: r}, nil
 }
-func (m *Manager) matchesLive(r ProcessRecord, live processidentity.Identity) bool {
-	return live.PID == r.PID && live.StartTime == r.StartTime && samePath(live.Image, m.executablePath()) && r.ExecutableSHA256 == digest(m.executablePath())
+func (m *Manager) matchesLive(r ProcessRecord, live processidentity.Identity, expectedPath string) bool {
+	return live.PID == r.PID && live.StartTime == r.StartTime && samePath(live.Image, expectedPath) && r.ExecutableSHA256 == digest(expectedPath)
+}
+
+func (m *Manager) recordSlot(record ProcessRecord) (installedslot.ResolvedSlot, error) {
+	if record.UpstreamVersion == "" || m.registry == nil {
+		if record.UpstreamVersion == "" {
+			return installedslot.ResolvedSlot{}, ErrIdentityMismatch
+		}
+		path := filepath.Join(m.layout.Bin, "cliproxyapi", record.UpstreamVersion, "cliproxyapi.exe")
+		return installedslot.ResolvedSlot{Version: record.UpstreamVersion, ExecutablePath: path, ExecutableSHA256: record.ExecutableSHA256, ManifestSHA256: record.ManifestSHA256}, nil
+	}
+	if err := m.registry.VerifyInstalled(context.Background(), record.UpstreamVersion); err != nil {
+		return installedslot.ResolvedSlot{}, err
+	}
+	slot, err := m.registry.Resolve(record.UpstreamVersion)
+	if err != nil || slot.ExecutableSHA256 != record.ExecutableSHA256 || slot.ManifestSHA256 != record.ManifestSHA256 {
+		return installedslot.ResolvedSlot{}, ErrIdentityMismatch
+	}
+	return slot, nil
 }
 func (m *Manager) manifest() InstallManifest {
 	p := m.lock.Platforms.WindowsAMD64
-	return InstallManifest{1, m.lock.Product, m.lock.Version, m.lock.Tag, m.lock.Commit, "windows_amd64", p.ExecutableSHA256, m.lock.Digest(), m.lock.ConfigAdapterVersion, "cliproxyapi.exe"}
+	return InstallManifest{SchemaVersion: 1, Product: m.lock.Product, Version: m.lock.Version, Tag: m.lock.Tag, Commit: m.lock.Commit, Platform: "windows_amd64", ExecutableSHA256: p.ExecutableSHA256, UpstreamLockSHA256: m.lock.Digest(), ConfigAdapterVersion: m.lock.ConfigAdapterVersion, ExecutableBasename: "cliproxyapi.exe"}
 }
 func (m *Manager) validateStage(ctx context.Context, s upstreamstage.Result) error {
 	if s.Manifest.ExecutableSHA256 != m.lock.Platforms.WindowsAMD64.ExecutableSHA256 || digest(s.Executable) != m.lock.Platforms.WindowsAMD64.ExecutableSHA256 {
@@ -686,7 +774,7 @@ var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 var transactionPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 
 func validRecord(r ProcessRecord) bool {
-	return r.SchemaVersion == 1 && r.PID > 0 && r.StartTime > 0 && digestPattern.MatchString(r.ExecutableSHA256) && digestPattern.MatchString(r.ConfigSHA256) && ((r.InstanceID == "codex" && r.Port == cliproxyconfig.CodexPort) || (r.InstanceID == "google" && r.Port == cliproxyconfig.GooglePort))
+	return r.SchemaVersion == 2 && r.PID > 0 && r.StartTime > 0 && digestPattern.MatchString(r.ExecutableSHA256) && digestPattern.MatchString(r.ConfigSHA256) && digestPattern.MatchString(r.ManifestSHA256) && installedslot.ValidVersion(r.UpstreamVersion) && ((r.InstanceID == "codex" && r.Port == cliproxyconfig.CodexPort) || (r.InstanceID == "google" && r.Port == cliproxyconfig.GooglePort))
 }
 func samePath(a, b string) bool {
 	x, e := filepath.Abs(a)

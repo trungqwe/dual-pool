@@ -33,7 +33,7 @@ func TestStateRoundTripDeterministic(t *testing.T) {
 }
 func TestStateValidationRejectsInvalidVariants(t *testing.T) {
 	hash := strings.Repeat("a", 64)
-	cases := map[string]func(*State){"duplicate ports": func(s *State) { s.Instances.Google.Port = s.Instances.Codex.Port }, "bridge collision": func(s *State) { s.Antigravity.BridgePort = s.Instances.Codex.Port }, "install id": func(s *State) { s.InstallID = "user@example.invalid" }, "mode": func(s *State) { s.Antigravity.Mode = "magic" }, "hash": func(s *State) { s.Instances.Codex.ConfigHash = "unknown" }, "status": func(s *State) { s.Instances.Codex.Status = "running" }, "pool": func(s *State) {
+	cases := map[string]func(*State){"unsafe active version": func(s *State) { s.ActiveUpstreamVersion = `..\x` }, "reserved active version": func(s *State) { s.ActiveUpstreamVersion = "NUL" }, "duplicate ports": func(s *State) { s.Instances.Google.Port = s.Instances.Codex.Port }, "bridge collision": func(s *State) { s.Antigravity.BridgePort = s.Instances.Codex.Port }, "install id": func(s *State) { s.InstallID = "user@example.invalid" }, "mode": func(s *State) { s.Antigravity.Mode = "magic" }, "hash": func(s *State) { s.Instances.Codex.ConfigHash = "unknown" }, "status": func(s *State) { s.Instances.Codex.Status = "running" }, "pool": func(s *State) {
 		s.Accounts = []Account{{OpaqueID: "opaque_fixture_01", Pool: "other", Eligibility: EligibilityUnknown}}
 	}, "eligibility": func(s *State) {
 		s.Accounts = []Account{{OpaqueID: "opaque_fixture_01", Pool: PoolCodex, Eligibility: "maybe"}}

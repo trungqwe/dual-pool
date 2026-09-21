@@ -200,7 +200,7 @@ func validText(s string, max int) bool {
 	return true
 }
 func validPort(p int) bool                 { return p >= 1 && p <= 65535 }
-func safeVersionOrEmpty(s string) bool     { return s == "" || versionPattern.MatchString(s) }
+func safeVersionOrEmpty(s string) bool     { return s == "" || ValidLogicalVersion(s) }
 func safeModelOrEmpty(s string) bool       { return s == "" || modelPattern.MatchString(s) }
 func safeFingerprintOrEmpty(s string) bool { return s == "" || fingerprintPattern.MatchString(s) }
 func oneOf(v string, x ...string) bool {
@@ -210,6 +210,21 @@ func oneOf(v string, x ...string) bool {
 		}
 	}
 	return false
+}
+
+// ValidLogicalVersion is the closed syntax shared by state selection,
+// installed-slot registration and process-record binding. It is deliberately
+// stricter than a generic semver parser because the value becomes a Windows
+// directory component under the trusted product root.
+func ValidLogicalVersion(s string) bool {
+	if s == "" || !versionPattern.MatchString(s) || strings.ContainsAny(s, `\\/:*?"<>|`) || strings.ContainsAny(s, " \t\r\n\x00") || s == "." || s == ".." || strings.HasSuffix(s, ".") || strings.HasSuffix(s, " ") {
+		return false
+	}
+	name := strings.ToUpper(strings.SplitN(s, ".", 2)[0])
+	if name == "CON" || name == "PRN" || name == "AUX" || name == "NUL" || name == "CLOCK$" || (len(name) == 4 && (strings.HasPrefix(name, "COM") || strings.HasPrefix(name, "LPT")) && name[3] >= '1' && name[3] <= '9') {
+		return false
+	}
+	return true
 }
 func asciiLetter(b byte) bool { return b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' }
 func reservedWindowsName(part string) bool {
