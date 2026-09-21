@@ -174,7 +174,7 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | Adapter pinned, YAML strict, bcrypt và secret placement | `internal/cliproxyconfig/adapter_test.go`, [config schema](../evidence/phase-2-instance-config/config-schema.json) | PASS |
 | ACL, atomic install, partial pair, fault/crash recovery | `internal/cliproxyconfig/recovery_test.go`, [recovery matrix](../evidence/phase-2-instance-config/recovery-matrix.json) | PASS |
 | Real generation và byte idempotence | `internal/cliproxyconfig/real_windows_test.go`, [real generation](../evidence/phase-2-instance-config/real-generation.json) | PASS |
-| Listener và runtime authentication | Slice lifecycle kế tiếp | OPEN |
+| CPA listener/runtime authentication | `internal/instance/real_windows_test.go`, `internal/instance/real_management_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json`, `evidence/phase-2-management-l3/real-l3.json` | PASS; provider health and global listener coverage remain open |
 
 ## Phase 2 lifecycle and Management API
 
@@ -185,4 +185,4 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P2-PROC-PID-REUSE-001 | `internal/instance/instance_test.go` (`TestStopRecordUsesOneVerifiedHandle`) | PASS; reused PID/image mismatch never reaches termination |
 | P2-LIFECYCLE-IDEMPOTENCE-001 | `internal/instance/real_windows_test.go` | PASS; start, restart, stop and repeated stop |
 | P2-REAL-CLEANUP-001 | `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json` | PASS; records/listeners/auth/logs/config/key integrity checked |
-| P2-L2-MGMT-DEBUG-001 / P2-L3-EMPTY-INVENTORY-001 | `internal/cliproxymgmt/client_test.go`, `internal/instance/real_management_windows_test.go` | Fixture PASS; real gate pending implementation CI and user audit |
+| P2-L2-MGMT-DEBUG-001 / P2-L3-EMPTY-INVENTORY-001 | `internal/cliproxymgmt/client_test.go`, `internal/instance/real_management_windows_test.go`, `evidence/phase-2-management-l3/real-l3.json`; Source CI `35545625998` | PASS — pinned Management `/debug` L2 contract and empty `/auth-files` L3 inventory proven for both Codex and Google instances; repeat empty inventory PASS |

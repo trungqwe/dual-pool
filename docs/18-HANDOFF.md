@@ -659,4 +659,8 @@ The first live shadow run exposed an observability defect: after terminal checkp
 
 ## Real Management L3 PASS
 
-- CI 35545625998 PASS for ac0a69; TestRealEmptyManagementInventory PASS (1.89s). Evidence: vidence/phase-2-management-l3/real-l3.json. U-008 PARTIAL_UNKNOWN; empty auth-files schema PROBED.
+- CI 35545625998 PASS for eac0a69; TestRealEmptyManagementInventory PASS (1.89s). Evidence: evidence/phase-2-management-l3/real-l3.json. U-008 PARTIAL_UNKNOWN; empty auth-files schema PROBED.
+
+## Delivery receipt — Management L2/L3
+
+- Evidence CI 35551378644 PASS. Delivery reconciles traceability/U-008 and repaired ESC corruption; Phase 2 Management L2/L3 DELIVERED. Next: staged update / atomic promotion / automatic rollback foundation.
