@@ -193,6 +193,8 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 
 ## Phase 2 trusted installed-slot registry slice — 2026-09-21
 
+Các nhãn dưới đây mô tả evidence lịch sử; audit e9b68f8 là FAIL_REPAIR_REQUIRED. Bản sửa A/B/B2/C và test chính xác hơn: [repair report](reports/2026-09-21T1700Z-installed-slot-stage1-repair.md), [verification](../evidence/phase-2-installed-slot-stage1/verification.json). Không diễn giải PASS_COMPONENT là production integration hoặc power-loss proof.
+
 | Requirement | Test and evidence | Status |
 |---|---|---|
 | P2-SLOT-REGISTRY-001: closed logical version to immutable product-root slot | `internal/installedslot/registry_test.go`, [registry contract](../evidence/phase-2-installed-slot-registry/registry-contract.json) | PASS_COMPONENT |

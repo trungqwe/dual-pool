@@ -27,4 +27,4 @@ Files dự kiến: registry.go/test, instance.go/test và regression test riêng
 
 ## Trạng thái
 
-Audit: FAIL_REPAIR_REQUIRED tại e9b68f8. Giai đoạn 1: PENDING. Upstream integration: OPEN.
+Audit: FAIL_REPAIR_REQUIRED tại e9b68f8. Giai đoạn 1: đã sửa A/B/B2/C, regression red/green; xem [báo cáo sửa](reports/2026-09-21T1700Z-installed-slot-stage1-repair.md). Upstream integration và audit độc lập bản sửa: OPEN.

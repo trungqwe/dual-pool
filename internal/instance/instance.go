@@ -204,6 +204,12 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	final := m.executableDir()
 	if _, e := os.Lstat(final); e == nil {
 		if m.validateInstall(ctx, final) == nil {
+			if m.registry == nil {
+				return "", false, ErrUnsafeInstance
+			}
+			if err := m.registry.RegisterLocked(ctx, m.lock.Version); err != nil {
+				return "", false, err
+			}
 			return m.executablePath(), true, nil
 		}
 		return "", false, ErrBinaryInstallConflict
@@ -579,11 +585,7 @@ func (m *Manager) matchesLive(r ProcessRecord, live processidentity.Identity, ex
 
 func (m *Manager) recordSlot(record ProcessRecord) (installedslot.ResolvedSlot, error) {
 	if record.UpstreamVersion == "" || m.registry == nil {
-		if record.UpstreamVersion == "" {
-			return installedslot.ResolvedSlot{}, ErrIdentityMismatch
-		}
-		path := filepath.Join(m.layout.Bin, "cliproxyapi", record.UpstreamVersion, "cliproxyapi.exe")
-		return installedslot.ResolvedSlot{Version: record.UpstreamVersion, ExecutablePath: path, ExecutableSHA256: record.ExecutableSHA256, ManifestSHA256: record.ManifestSHA256}, nil
+		return installedslot.ResolvedSlot{}, ErrIdentityMismatch
 	}
 	if err := m.registry.VerifyInstalled(context.Background(), record.UpstreamVersion); err != nil {
 		return installedslot.ResolvedSlot{}, err

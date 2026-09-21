@@ -150,6 +150,8 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 
 ## Phase 2 trusted installed-slot registry component — 2026-09-21
 
+Hiệu chỉnh: PASS component ở head e9b68f8 không cho phép integration vì audit phát hiện A/B/B2/C. [Audit](reports/2026-09-21T1630Z-installed-slot-independent-audit.md); [repair stage 1](reports/2026-09-21T1700Z-installed-slot-stage1-repair.md) đóng các regression này ở nhánh riêng; audit bản sửa và production gate vẫn OPEN.
+
 - [x] Closed logical version to immutable trusted slot mapping (component). Evidence: `evidence/phase-2-installed-slot-registry/registry-contract.json`.
 - [x] Strict slot manifest/hash/ACL/platform/adapter/provenance validation (component). Evidence: `evidence/phase-2-installed-slot-registry/slot-validation.json`.
 - [x] Manager active selection and schema-2 recorded slot identity (component). Evidence: `evidence/phase-2-installed-slot-registry/active-selection.json`.

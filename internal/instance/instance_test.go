@@ -45,6 +45,12 @@ func (r *slotRegistryFixture) VerifyInstalled(_ context.Context, version string)
 }
 func (r *slotRegistryFixture) RegisterLocked(context.Context, string) error { return nil }
 
+func recordedRegistryFixture(record ProcessRecord, executable string) SlotRegistry {
+	return &slotRegistryFixture{slots: map[string]installedslot.ResolvedSlot{
+		record.UpstreamVersion: {Version: record.UpstreamVersion, ExecutablePath: executable, ExecutableSHA256: record.ExecutableSHA256, ManifestSHA256: record.ManifestSHA256},
+	}}
+}
+
 type fakeTerminationHandle struct {
 	identity                          processidentity.Identity
 	inspectErr, terminateErr, waitErr error
@@ -86,6 +92,7 @@ func TestStopRecordUsesOneVerifiedHandle(t *testing.T) {
 				}
 				return h, nil
 			}}
+			m.registry = recordedRegistryFixture(record, exe)
 			if err := m.stopRecord(record); err != ErrIdentityMismatch {
 				t.Fatalf("got %v", err)
 			}
@@ -112,6 +119,7 @@ func TestStopRecordTerminatesTheVerifiedHandle(t *testing.T) {
 	record.ManifestSHA256 = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
 	h := &fakeTerminationHandle{identity: processidentity.Identity{PID: record.PID, StartTime: record.StartTime, Image: exe}}
 	m := &Manager{layout: dataroot.Layout{Bin: bin}, lock: upstreamlock.Lock{Version: "7.3.7"}, opener: func(uint32) (terminationHandle, error) { return h, nil }}
+	m.registry = recordedRegistryFixture(record, exe)
 	if err := m.stopRecord(record); err != nil {
 		t.Fatal(err)
 	}

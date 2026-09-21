@@ -135,9 +135,11 @@ func TestRegistryRejectsCorruptDocumentAndSlot(t *testing.T) {
 			t.Fatalf("corrupt registry accepted: %s", payload)
 		}
 	}
-	_ = os.Remove(path)
-	if _, err := r.Resolve("vA"); err == nil {
-		t.Fatal("missing registry accepted")
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Resolve("vA"); !errors.Is(err, ErrRegistryMissing) {
+		t.Fatalf("missing registry misclassified: %v", err)
 	}
 	if err := r.Register(context.Background(), "missing"); err == nil {
 		t.Fatal("missing slot registered")

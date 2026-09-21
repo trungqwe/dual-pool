@@ -125,18 +125,19 @@ func WithBinaryVerifier(v BinaryVerifier) Option        { return func(r *Registr
 func WithFaultInjector(v func(FaultPoint) error) Option { return func(r *Registry) { r.fault = v } }
 
 type Registry struct {
-	layout           dataroot.Layout
-	acl              ACL
-	locks            *lockfile.Manager
-	expectedPlatform string
-	expectedProduct  string
-	expectedAdapter  string
-	expectedVersion  string
-	expectedTag      string
-	expectedCommit   string
-	expectedLockHash string
-	binaryVerifier   BinaryVerifier
-	fault            func(FaultPoint) error
+	layout                 dataroot.Layout
+	acl                    ACL
+	locks                  *lockfile.Manager
+	expectedPlatform       string
+	expectedProduct        string
+	expectedAdapter        string
+	expectedVersion        string
+	expectedExecutableHash string
+	expectedTag            string
+	expectedCommit         string
+	expectedLockHash       string
+	binaryVerifier         BinaryVerifier
+	fault                  func(FaultPoint) error
 }
 
 // New constructs the production registry policy without creating product
@@ -156,6 +157,7 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, options ...Opt
 		}
 		return nil
 	}}
+	r.expectedExecutableHash = lock.Platforms.WindowsAMD64.ExecutableSHA256
 	for _, option := range options {
 		option(r)
 	}
@@ -309,6 +311,14 @@ func (r *Registry) validateDirectory(ctx context.Context, version, dir string, b
 }
 
 func (r *Registry) validateManifest(m Manifest, version string) error {
+	// Bind metadata to the trusted pin before the verifier can execute bytes.
+	// Only internal synthetic multi-slot fixtures omit these expected values.
+	if r.expectedVersion != "" && m.Version != r.expectedVersion {
+		return ErrUnsupported
+	}
+	if r.expectedExecutableHash != "" && m.ExecutableSHA256 != r.expectedExecutableHash {
+		return ErrUnsupported
+	}
 	if m.SchemaVersion != 1 || m.Product != r.expectedProduct || m.Version != version || m.ExecutableBasename != "cliproxyapi.exe" || m.Platform != r.expectedPlatform || m.ConfigAdapterVersion != r.expectedAdapter || !digestPattern.MatchString(m.ExecutableSHA256) || m.Tag == "" || m.Commit == "" || m.UpstreamLockSHA256 == "" || !commitPattern.MatchString(m.Commit) || m.Tag != r.expectedTag && r.expectedTag != "" || m.Commit != r.expectedCommit && r.expectedCommit != "" || m.UpstreamLockSHA256 != r.expectedLockHash && r.expectedLockHash != "" {
 		return ErrUnsupported
 	}
