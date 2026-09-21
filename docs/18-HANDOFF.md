@@ -668,3 +668,7 @@ The first live shadow run exposed an observability defect: after terminal checkp
 ## Delivery corruption correction
 
 - Repaired the one literal ESC token in the Management L3 report; runtime/evidence behavior unchanged and real L3 not rerun. Report: docs/reports/2026-09-21T0330Z-phase-2-management-delivery-correction.md.
+
+## Phase 2 update transaction foundation — 2026-09-21
+
+Start HEAD: `2f5e8859002fc01d3ee5794cc91aebe5eaa2b73d`. `internal/update` is an E3 synthetic logical-slot transaction foundation. It uses GLOBAL before state per-file operations, immutable strict marker publication, candidate pre-smoke before production lifecycle changes, conservative recovery from marker and state truth, and marker retention on rollback-unresolved. No product-root update, installed-slot registry, `instance.Manager` integration, `upstream.lock` change, provider traffic, or real updater gate ran. The checklist row for staged update remains open because production runtime integration is not proven. Next exact slice: trusted installed-slot registry and `instance.Manager` active-selection integration.

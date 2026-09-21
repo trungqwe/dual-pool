@@ -138,3 +138,7 @@ This fixture proof does not establish product-root or backup DACL acceptance. Re
 Config paths are inspected component by component from the local drive root. Every ancestor must be a non-reparse directory and the final target must be a non-reparse regular file; case and available short-name aliases remain valid. Recovery opens marker, backup and candidate artifacts without following reparses and validates the complete cleanup set before changing ownership or deleting anything. Required cleanup failures return a retryable recovery error and retain the marker.
 
 Rollback rechecks owned-value drift while holding the target lock, releases that lock, persists all matching ownership records as `conflict`, then returns `ErrRollbackConflict`. Repeated rollback remains conflicted and does not mutate the target. This preserves the documented `GLOBAL → ownership per-file lock` order without holding the target lock during ownership persistence.
+
+## Phase 2 update transaction foundation
+
+internal/update proves a fixture-only logical-slot transaction. It holds GLOBAL before state Store per-file operations, publishes an immutable bounded marker, performs candidate disposable smoke before any production stop, and recovers conservatively from marker plus state truth. No production multi-version lifecycle adapter, installed-slot registry, active-selection runtime integration, product-root mutation, or real updater gate exists in this slice.

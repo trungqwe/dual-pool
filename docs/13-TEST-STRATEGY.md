@@ -138,3 +138,9 @@ Skipped mandatory tests fail the release gate unless the owner explicitly accept
 # Gate cấu hình instance Phase 2
 
 Fixture TEMP kiểm tra wire encoding, YAML strict decode, bcrypt, secret placement, ACL, idempotence, partial-pair recovery, fault injection và subprocess crash. `TestRealInstanceConfigGeneration` chỉ chạy khi `DUALPOOL_RUN_REAL_INSTANCE_CONFIG=1`; CI thường bỏ qua gate này. Gate thực tế chỉ được mở sau implementation Source CI PASS, sau đó chạy hai lần để chứng minh không rewrite hoặc xoay key. Kiểm tra process/listener được giữ cho slice kế tiếp.
+
+## Phase 2 update foundation
+
+internal/update uses synthetic logical slots and injected lifecycle/smoke interfaces. Tests cover candidate pre-smoke refusal, production-smoke rollback, marker strictness, candidate-state recovery, marker retention on unresolved rollback, and global-lock serialization. Subprocess crash proof and product-root integration remain open for the next installed-slot slice.
+
+The crash matrix includes true subprocess exits at two durable boundaries: a marker committed before active-selection mutation, and candidate active selection before finalization. A fresh updater reclaims the stale GLOBAL lock and performs conservative recovery. Production runtime integration remains open.

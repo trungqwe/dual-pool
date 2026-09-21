@@ -1,0 +1,1 @@
+{"test_id":"P2-UPDATE-CRASH-FOUNDATION-001","status":"pass","scope":"synthetic logical-slot subprocess crash recovery","boundaries":["marker committed before active selection","candidate active selection before finalization"],"assertion":"fresh process reclaims stale GLOBAL, restores previous selection, removes marker","real_updater_run":false}

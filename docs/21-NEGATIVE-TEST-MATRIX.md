@@ -63,3 +63,7 @@ Phase 1 exit repair adds `CFG-PATH-001` ancestor reparse rejection, `CFG-RECOVER
 # Ma trận âm tính adapter cấu hình
 
 `P2-KEY-WIRE-001` từ chối raw key sai 32 bytes. `P2-CONFIG-ADAPTER-MISMATCH-001` từ chối adapter khác v7.3.7. `P2-CONFIG-SCHEMA-001` từ chối YAML duplicate/unknown/anchor/alias/multiple document/wrong type/invalid UTF-8/thiếu trường. `P2-CONFIG-SECRET-PLACEMENT-001` từ chối key khác pool hoặc plaintext management. `P2-CONFIG-INSTALL-RECOVERY-001` từ chối final lạ, candidate lạ, marker hỏng và topology ngoài danh sách; fault và subprocess tests kiểm tra điểm crash. Kết quả cụ thể nằm trong báo cáo/evidence của slice.
+
+## Phase 2 update foundation
+
+UPD-002 is proven at E3 component level: disposable candidate smoke failure occurs before marker publication, stop, or state save. UPD-003 is proven at E3 component level with injected candidate production smoke failure and prior logical selection restoration. Real binary pointer/runtime promotion remains open.

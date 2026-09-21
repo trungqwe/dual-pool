@@ -186,3 +186,5 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P2-LIFECYCLE-IDEMPOTENCE-001 | `internal/instance/real_windows_test.go` | PASS; start, restart, stop and repeated stop |
 | P2-REAL-CLEANUP-001 | `internal/instance/real_windows_test.go`, `evidence/phase-2-empty-lifecycle/real-lifecycle.json` | PASS; records/listeners/auth/logs/config/key integrity checked |
 | P2-L2-MGMT-DEBUG-001 / P2-L3-EMPTY-INVENTORY-001 | `internal/cliproxymgmt/client_test.go`, `internal/instance/real_management_windows_test.go`, `evidence/phase-2-management-l3/real-l3.json`; Source CI `35545625998` | PASS — pinned Management `/debug` L2 contract and empty `/auth-files` L3 inventory proven for both Codex and Google instances; repeat empty inventory PASS |
+
+| P2-UPDATE-FOUNDATION-001 / UPD-002 / UPD-003 | [update tests](../internal/update/update_test.go), [result](../evidence/phase-2-update-foundation/test-result.json), [crash matrix](../evidence/phase-2-update-foundation/crash-matrix.json) | E3 | PASS for synthetic logical-slot transaction; installed-slot registry and production integration Open |

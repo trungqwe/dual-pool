@@ -1,0 +1,1 @@
+{"test_id":"P2-UPDATE-SECURITY-FOUNDATION-001","status":"pass","assertions":["logical versions only","strict bounded marker rejects duplicate/trailing/oversized invalid data","marker and directory reparses rejected","no path or credentials in marker","same-directory no-replace marker publication"],"real_product_root":false}
