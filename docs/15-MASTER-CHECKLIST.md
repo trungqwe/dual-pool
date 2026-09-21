@@ -147,3 +147,13 @@ This is the authoritative progress ledger. Check a box only with an adjacent evi
 - [ ] U-006 live shadow run: `BLOCKED: WATCHDOG_STALL_REQUIRES_FORCED_OWNED_PROCESS_CLEANUP`; cleanup PASS, real config unchanged, no accepted Astra wire evidence. Evidence: `evidence/phase-0b-u006-shadow-home/live-shadow-result-20260919T1335Z.json`.
 - [ ] Audit primary-profile: PASS cũ không đủ bằng chứng; watchdog chặn trước mutation. Xem [audit](reports/2026-09-19T0814Z-phase-0b-primary-audit.md). Sửa và kiểm thử orchestration/rollback trước lần chạy live tiếp theo.
 - [x] Sửa safety primary-profile: 25 Node tests, 12 assertion transaction, syntax/privacy/docs/diff PASS; chỉ là gate chuẩn bị, U-006 vẫn chờ live. [Report](reports/2026-09-19T0840Z-phase-0b-primary-repair.md).
+
+## Phase 2 trusted installed-slot registry component — 2026-09-21
+
+- [x] Closed logical version to immutable trusted slot mapping (component). Evidence: `evidence/phase-2-installed-slot-registry/registry-contract.json`.
+- [x] Strict slot manifest/hash/ACL/platform/adapter/provenance validation (component). Evidence: `evidence/phase-2-installed-slot-registry/slot-validation.json`.
+- [x] Manager active selection and schema-2 recorded slot identity (component). Evidence: `evidence/phase-2-installed-slot-registry/active-selection.json`.
+- [x] Updater `SlotVerifier` common registry contract (component). Evidence: `evidence/phase-2-installed-slot-registry/updater-verifier.json`.
+- [x] Required focused/stress/race/full local gates. Evidence: `evidence/phase-2-installed-slot-registry/test-result.json`.
+- [ ] Production multi-version updater acceptance and automatic rollback. Intentionally remains open.
+- [ ] Full updater-to-Manager lifecycle composition under one GLOBAL lock. Intentionally remains open.

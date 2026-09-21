@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "commands": [
+    "go test -count=1 ./...",
+    "go test -count=100 ./internal/installedslot",
+    "go test -count=50 ./internal/instance",
+    "go test -count=50 ./internal/update",
+    "go test -race -count=10 ./internal/installedslot ./internal/instance ./internal/update",
+    "go vet ./...",
+    "go mod verify",
+    "go build ./cmd/poolbridge",
+    "node --test scripts/*.test.cjs",
+    "node scripts/phase0-upstream-lock.cjs"
+  ],
+  "scope": "TEMP/synthetic fixtures; opt-in real lifecycle test not enabled",
+  "source_ci": {
+    "run_id": 35619497269,
+    "head_sha": "68f3869bc3530e538973c3e74f75f1b2b8d81b80",
+    "conclusion": "success",
+    "job": "source-checks",
+    "job_conclusion": "success"
+  }
+}

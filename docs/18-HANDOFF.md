@@ -702,3 +702,11 @@ on synthetic Windows/TEMP fixtures. Report:
 Exact-SHA CI for the final documentation/evidence head remains pending; do not
 advance `phase-2/upstream-lifecycle` before that receipt. Production updater,
 installed-slot registry and real updater gates remain OPEN.
+
+# Phase 2 installed-slot registry slice — implementation and Source CI PASS (2026-09-21)
+
+Worktree `phase2-installed-slot-registry` starts exactly at `2f5dd7b134ad19b9390af9c174095ef94ed09abc` on branch `phase-2/installed-slot-registry`. Commit `68f3869bc3530e538973c3e74f75f1b2b8d81b80` adds a protected explicit registry at `<Bin>\cliproxyapi\installed-slots.json`, closed logical-version validation, immutable no-replace registration, shared manifest validation, and Manager active selection through `state.ActiveUpstreamVersion`. `ProcessRecord` schema 2 records the upstream version and manifest hash; Status/Stop resolve that recorded slot and retain PID/start-time/image/hash checks. The updater `SlotVerifier` contract accepts the same `installedslot.Registry` implementation.
+
+Focused tests, required stress counts, race tests, full Go/Node/upstream-lock gates, build, vet, module verification and diff checks passed locally. Source CI run `35619497269` completed successfully for exact head `68f3869bc3530e538973c3e74f75f1b2b8d81b80`; every `source-checks` step passed. No real updater, process, listener, provider, OAuth, product root, Credential Manager, Windows Registry or user config mutation occurred. `phase-2/upstream-lifecycle` remains unchanged at `2f5dd7b`.
+
+Evidence: `evidence/phase-2-installed-slot-registry/`; report: `docs/reports/2026-09-21T1533Z-phase-2-installed-slot-registry.md`; traceability rows: `docs/23-TRACEABILITY-MATRIX.md` addendum. Production multi-version updater acceptance, full updater-to-Manager lifecycle wiring, real second release/config adapter, and handle-retained launch identity remain OPEN.

@@ -1,0 +1,10 @@
+{
+  "gate": "P2-UPD-SLOT-VERIFY-001",
+  "status": "PASS_CONTRACT",
+  "verifier": "installedslot.Registry.VerifyInstalled",
+  "updater_contract": "update.SlotVerifier",
+  "integration": "registry implements the existing interface; callers inject the same registry into updater and instance.Manager",
+  "pre_mutation_rejection": "existing updater tests retain previous/candidate verification before lifecycle mutation",
+  "production_promote": "OPEN; no real updater run authorized",
+  "live_mutation": false
+}

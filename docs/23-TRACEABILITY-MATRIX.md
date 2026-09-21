@@ -190,3 +190,18 @@ No requirement may be marked DONE until every mapped mandatory test passes for t
 | P2-UPDATE-FOUNDATION-001 / UPD-002 / UPD-003 | [update tests](../internal/update/update_test.go), [result](../evidence/phase-2-update-foundation/test-result.json), [crash matrix](../evidence/phase-2-update-foundation/crash-matrix.json) | E3 | PASS for synthetic logical-slot transaction; installed-slot registry and production integration Open |
 | P2-UPD-CORRECTION-001 / UPD-002 / UPD-003 | [correction tests](../internal/update/correction_test.go), [result](../evidence/phase-2-update-foundation-correction/test-result.json), [fault/crash matrix](../evidence/phase-2-update-foundation-correction/fault-crash-matrix.json), [security gate](../evidence/phase-2-update-foundation-correction/security-gate.json) | E3 | Component PASS; supersedes historical marker/rollback claims. FR-025, INV-PROC-05 production acceptance, R-11 and production multi-version update remain OPEN. |
 | P2-UPD-AUDIT-REPAIR-001 / UPD-AUDIT-001 / UPD-AUDIT-002 | [repair tests](../internal/update/correction_test.go), [result](../evidence/phase-2-updater-audit-repair/test-result.json), [security gate](../evidence/phase-2-updater-audit-repair/security-gate.json), [durability scope](../evidence/phase-2-updater-audit-repair/durability.json) | E3 | Local synthetic component PASS; final exact-SHA Source CI pending. Production updater, FR-025, INV-PROC-05 production acceptance and installed-slot registry remain OPEN. |
+
+## Phase 2 trusted installed-slot registry slice — 2026-09-21
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P2-SLOT-REGISTRY-001: closed logical version to immutable product-root slot | `internal/installedslot/registry_test.go`, [registry contract](../evidence/phase-2-installed-slot-registry/registry-contract.json) | PASS_COMPONENT |
+| P2-SLOT-NOREPLACE-001: same version cannot be rebound | `TestRegistryResolvesTwoImmutableSlotsAndRejectsRebind`, registry contract | PASS_COMPONENT |
+| P2-SLOT-VERIFY-001: manifest/hash/ACL/platform/adapter/provenance verification | registry validator, [slot validation](../evidence/phase-2-installed-slot-registry/slot-validation.json) | PASS_COMPONENT |
+| P2-ACTIVE-SELECT-001: Manager selects only `ActiveUpstreamVersion` | `internal/instance/instance_test.go`, [active selection](../evidence/phase-2-installed-slot-registry/active-selection.json) | PASS_COMPONENT |
+| P2-PROC-SLOT-IDENTITY-001: process record binds recorded slot for Status/Stop | schema-2 record tests, active-selection evidence | PASS_COMPONENT |
+| P2-UPD-SLOT-VERIFY-001: updater contract accepts common registry verifier | `TestInstalledSlotRegistryIsTheUpdaterVerifierContract`, [updater verifier](../evidence/phase-2-installed-slot-registry/updater-verifier.json) | PASS_CONTRACT |
+| P2-GLOBAL-LOCK-REGISTRY-001: registry mutation uses GLOBAL and Manager install uses locked path | `Registry.Register`/`RegisterLocked` implementation and run report | PASS_COMPONENT |
+| P2-LIVE-NO-MUTATION-001: no production/provider mutation in component slice | [security gate](../evidence/phase-2-installed-slot-registry/security-gate.json) | PASS |
+
+Production multi-version update acceptance, real second-release adapter proof and full updater-to-Manager lifecycle composition remain OPEN.

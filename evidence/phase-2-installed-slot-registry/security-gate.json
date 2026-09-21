@@ -1,0 +1,13 @@
+{
+  "status": "PASS_COMPONENT",
+  "secret_scan": "no credentials, tokens, provider auth or raw paths added",
+  "network": "no provider traffic, OAuth, listener or real CLIProxyAPI process",
+  "trust": [
+    "upstreamlock validators unchanged",
+    "cliproxyconfig validators unchanged",
+    "registry has no arbitrary path resolver",
+    "global lock is retained for registry mutation"
+  ],
+  "privacy": "fixture bytes and temporary absolute paths are absent from evidence",
+  "live_mutation": false
+}

@@ -1,0 +1,15 @@
+{
+  "gate": "P2-SLOT-VERIFY-001",
+  "status": "PASS_COMPONENT",
+  "validated": [
+    "protected_acl_and_non_reparse_slot_directory",
+    "exact_manifest_schema_and_version_binding",
+    "fixed_executable_basename",
+    "regular_executable_and_sha256",
+    "platform_adapter_and_lock_provenance",
+    "registry_entry_manifest_identity"
+  ],
+  "toctou_scope": "pathname validation, exact hash, and post-start image inspection; handle-retained launch is not claimed",
+  "tests": "internal/installedslot/registry_test.go",
+  "live_mutation": false
+}

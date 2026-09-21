@@ -1,0 +1,15 @@
+{
+  "gate": "P2-SLOT-REGISTRY-001",
+  "status": "PASS_COMPONENT",
+  "claims": [
+    "logical_version_maps_to_one_product_root_relative_slot",
+    "path_device_traversal_and_reserved_versions_fail_closed",
+    "strict_registry_schema_rejects_unknown_duplicate_and_trailing_json",
+    "registration_is_idempotent_only_for_exact_identity",
+    "same_version_rebind_is_rejected",
+    "previous_slot_is_not_deleted_or_rewritten"
+  ],
+  "tests": "internal/installedslot/registry_test.go",
+  "fixture_scope": "TEMP synthetic slots only",
+  "live_mutation": false
+}
