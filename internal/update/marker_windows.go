@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 	"unicode/utf8"
 	"unsafe"
@@ -98,7 +99,7 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	if _, err = decodeMarker(check); err != nil {
 		return transactionMarker{}, err
 	}
-	if err = renameMarkerByHandle(f, s.dir, markerName); err != nil {
+	if err = renameMarkerByHandle(f, markerName); err != nil {
 		return transactionMarker{}, markerFailure("marker_rename", err)
 	}
 	if err = s.security.InspectHandle(f); err != nil {
@@ -209,40 +210,29 @@ func deleteMarkerByHandle(file *os.File) error {
 }
 
 type fileRenameInformation struct {
-	ReplaceIfExists byte
+	ReplaceIfExists uint32
 	RootDirectory   windows.Handle
 	FileNameLength  uint32
 	FileName        [1]uint16
 }
 
-func renameMarkerByHandle(file *os.File, directory, targetName string) error {
-	directoryName, err := windows.UTF16PtrFromString(directory)
-	if err != nil {
-		return err
+func renameMarkerByHandle(file *os.File, targetName string) error {
+	if targetName != markerName || strings.ContainsAny(targetName, `\/:`) {
+		return ErrRecoveryUnresolved
 	}
-	directoryHandle, err := windows.CreateFile(directoryName, windows.FILE_LIST_DIRECTORY, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE, nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
-	if err != nil {
-		return err
-	}
-	defer windows.CloseHandle(directoryHandle)
 	name, err := windows.UTF16FromString(targetName)
 	if err != nil {
 		return err
 	}
-	size := unsafe.Offsetof(fileRenameInformation{}.FileName) + uintptr(len(name))*unsafe.Sizeof(name[0])
+	fileNameLength := (len(name) - 1) * 2
+	headerLength := int(unsafe.Offsetof(fileRenameInformation{}.FileName))
+	size := headerLength + fileNameLength
 	buffer := make([]byte, size)
 	info := (*fileRenameInformation)(unsafe.Pointer(&buffer[0]))
-	info.RootDirectory = directoryHandle
-	info.FileNameLength = uint32((len(name) - 1) * 2)
-	copy(unsafe.Slice(&info.FileName[0], len(name)), name)
-	deadline := time.Now().Add(250 * time.Millisecond)
-	for {
-		err = windows.SetFileInformationByHandle(windows.Handle(file.Fd()), windows.FileRenameInfo, &buffer[0], uint32(len(buffer)))
-		if !errors.Is(err, windows.ERROR_ACCESS_DENIED) || time.Now().After(deadline) {
-			return err
-		}
-		time.Sleep(time.Millisecond)
-	}
+	info.FileNameLength = uint32(fileNameLength)
+	copy(unsafe.Slice(&info.FileName[0], fileNameLength/2), name[:len(name)-1])
+	var iosb windows.IO_STATUS_BLOCK
+	return windows.NtSetInformationFile(windows.Handle(file.Fd()), &iosb, &buffer[0], uint32(size), windows.FileRenameInformation)
 }
 func encodeMarker(m transactionMarker) ([]byte, error) {
 	if !validMarker(m) {

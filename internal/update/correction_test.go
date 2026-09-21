@@ -9,10 +9,12 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unsafe"
 
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/winacl"
+	"golang.org/x/sys/windows"
 )
 
 type recordingVerifier struct {
@@ -391,7 +393,7 @@ func TestP2UPDMarkerRenamePrimitivePreservesOpenHandleIdentity(t *testing.T) {
 	if err = file.Sync(); err != nil {
 		t.Fatal(err)
 	}
-	if err = renameMarkerByHandle(file, dir, markerName); err != nil {
+	if err = renameMarkerByHandle(file, markerName); err != nil {
 		t.Fatalf("rename primitive: %v", err)
 	}
 	if _, err = os.Stat(candidate); !os.IsNotExist(err) {
@@ -399,6 +401,114 @@ func TestP2UPDMarkerRenamePrimitivePreservesOpenHandleIdentity(t *testing.T) {
 	}
 	if got, err := readMarkerHandle(file); err != nil || string(got) != "marker" {
 		t.Fatalf("open handle changed: bytes=%q err=%v", got, err)
+	}
+}
+
+func createRenameProbeFile(path string, share uint32) (*os.File, error) {
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return nil, err
+	}
+	h, err := windows.CreateFile(p, windows.GENERIC_READ|windows.GENERIC_WRITE|windows.DELETE, share, nil, windows.CREATE_NEW, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(h), path), nil
+}
+
+func TestP2UPDMarkerNTRenamePrimitivePreservesOpenHandleIdentity(t *testing.T) {
+	if unsafe.Offsetof(fileRenameInformation{}.RootDirectory) != 8 || unsafe.Offsetof(fileRenameInformation{}.FileNameLength) != 16 || unsafe.Offsetof(fileRenameInformation{}.FileName) != 20 {
+		t.Fatal("unexpected FILE_RENAME_INFORMATION layout")
+	}
+	for _, tc := range []struct {
+		name  string
+		share uint32
+	}{
+		{name: "xsys_share", share: windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE},
+		{name: "production_exclusive", share: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			candidate := filepath.Join(dir, "candidate")
+			file, err := createRenameProbeFile(candidate, tc.share)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer file.Close()
+			if _, err = file.Write([]byte("marker")); err != nil {
+				t.Fatal(err)
+			}
+			if err = file.Sync(); err != nil {
+				t.Fatal(err)
+			}
+			var before windows.ByHandleFileInformation
+			if err = windows.GetFileInformationByHandle(windows.Handle(file.Fd()), &before); err != nil {
+				t.Fatal(err)
+			}
+			if err = renameMarkerByHandle(file, markerName); err != nil {
+				t.Fatalf("operation=marker_nt_rename_probe error=%v", err)
+			}
+			if _, err = os.Stat(candidate); !os.IsNotExist(err) {
+				t.Fatalf("candidate remains: %v", err)
+			}
+			if _, err = os.Stat(filepath.Join(dir, markerName)); err != nil {
+				t.Fatalf("target absent: %v", err)
+			}
+			if got, readErr := readMarkerHandle(file); readErr != nil || string(got) != "marker" {
+				t.Fatalf("same handle read failed: %v", readErr)
+			}
+			var after windows.ByHandleFileInformation
+			if err = windows.GetFileInformationByHandle(windows.Handle(file.Fd()), &after); err != nil {
+				t.Fatal(err)
+			}
+			if before.VolumeSerialNumber != after.VolumeSerialNumber || before.FileIndexHigh != after.FileIndexHigh || before.FileIndexLow != after.FileIndexLow {
+				t.Fatal("file identity changed across rename")
+			}
+		})
+	}
+}
+
+func TestP2UPDMarkerNTRenamePrimitiveDoesNotReplaceExistingTarget(t *testing.T) {
+	dir := t.TempDir()
+	candidate := filepath.Join(dir, "candidate")
+	target := filepath.Join(dir, markerName)
+	file, err := createRenameProbeFile(candidate, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closed := false
+	defer func() {
+		if !closed {
+			_ = file.Close()
+		}
+	}()
+	if _, err = file.Write([]byte("candidate-data")); err != nil {
+		t.Fatal(err)
+	}
+	if err = file.Sync(); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(target, []byte("existing-data"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = renameMarkerByHandle(file, markerName); err == nil {
+		t.Fatal("native rename replaced an existing marker")
+	}
+	if got, readErr := os.ReadFile(target); readErr != nil || string(got) != "existing-data" {
+		t.Fatalf("existing marker changed: %v", readErr)
+	}
+	if got, readErr := readMarkerHandle(file); readErr != nil || string(got) != "candidate-data" {
+		t.Fatalf("candidate handle changed: %v", readErr)
+	}
+	if _, statErr := os.Stat(candidate); statErr != nil {
+		t.Fatalf("candidate pathname absent: %v", statErr)
+	}
+	if err = file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	closed = true
+	if got, readErr := os.ReadFile(candidate); readErr != nil || string(got) != "candidate-data" {
+		t.Fatalf("candidate path changed: %v", readErr)
 	}
 }
 
@@ -413,19 +523,19 @@ func TestUpdateFaultMatrixRetainsUnresolvedMarker(t *testing.T) {
 				}
 				return nil
 			})
-			err := u.Promote(context.Background(), "7.3.8")
-			if err == nil {
+			promoteErr := u.Promote(context.Background(), "7.3.8")
+			if promoteErr == nil {
 				t.Fatal("false success")
 			}
-			_, ok, err := u.markers.load()
-			if err != nil {
-				t.Fatalf("marker load failed: %v", err)
+			_, ok, loadErr := u.markers.load()
+			if loadErr != nil {
+				t.Fatalf("marker load failed: %v", loadErr)
 			}
 			if point == AfterMarkerPublish {
 				if !ok {
 					t.Fatal("crash boundary marker removed")
 				}
-			} else if ok || !errors.Is(err, ErrPromotionRolledBack) {
+			} else if ok || !errors.Is(promoteErr, ErrPromotionRolledBack) {
 				t.Fatal("healthy rollback not completed")
 			}
 		})
