@@ -1,12 +1,12 @@
 # Current Handoff
 
-## Phase 2 updater/Manager composition — local acceptance PASS
+## Ưu tiên hiện tại — sửa authority của updater/Manager composition
 
-Branch `phase-2/updater-manager-composition` starts at `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`. The slice adds a single production runtime graph for Updater, Manager, State Store, Registry and GLOBAL locks, plus a locked lifecycle adapter. TEMP-only shared vA/vB tests cover promotion, rollback, partial Stop/Start, marker recovery, exact running-set classification and process-record authority. Production checks remain limited to the existing one-pin registry.
+Branch `phase-2/updater-manager-composition` đã sửa các authority escape được phát hiện tại reviewed head `948ff55`. Public `Runtime` chỉ còn `Updater` và `Manager`; mutable State Store, Registry, lock manager và locked lifecycle adapter là dependency private. `instance.New` phân biệt option vắng với explicit nil và không còn dựng default throwaway khi dependency đã được inject. `MarkerSecurity` đã rời khỏi public `Config`.
 
-All required package stress/race and full repository gates passed locally. See [report](reports/2026-09-21T1817Z-phase-2-updater-manager-composition.md) and [evidence](../evidence/phase-2-updater-manager-composition/composition.json). The delivery receipt and exact-SHA Source CI belong to the final branch head. `phase-2/upstream-lifecycle` remains fixed at the start SHA. No production product/provider/user mutation occurred.
+TEMP-only shared vA/vB tests dùng synthetic process records và deterministic lifecycle hooks; chúng chứng minh fault-injection recovery tại marker/state boundaries, không chứng minh subprocess crash hay process-handle composition. Xem [report](reports/2026-09-21T1817Z-phase-2-updater-manager-composition.md) và [evidence](../evidence/phase-2-updater-manager-composition/composition.json). `phase-2/upstream-lifecycle` vẫn cố định tại `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`; production multi-version và live mutation vẫn OPEN.
 
-## Ưu tiên hiện tại — audit installed-slot registry
+## Lịch sử — audit installed-slot registry
 
 Báo cáo audit đã push tại `3bf8216` trên `codex/installed-slot-audit-stage1`. Bản sửa giai đoạn 1 ở nhánh riêng `phase-2/installed-slot-audit-repair`: A/B/B2/C đã sửa với regression red/green; xem [report](reports/2026-09-21T1700Z-installed-slot-stage1-repair.md) và [evidence](../evidence/phase-2-installed-slot-stage1/verification.json). Exact-SHA Source CI chờ receipt sau commit. Mục tiêu kế tiếp: audit độc lập bản sửa. Không cập nhật upstream/nhánh review cũ.
 

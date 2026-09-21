@@ -17,5 +17,7 @@
     "upstream_lock_validation": "PASS"
   },
   "fixture_mutation": "TEMP-only protected files and synthetic process records",
+  "lifecycle_fixture": "deterministic private Manager hooks; no real process launch or termination",
+  "recovery_classification": "same-process injected fault boundaries",
   "real_mutation": false
 }

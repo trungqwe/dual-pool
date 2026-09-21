@@ -7,12 +7,18 @@
     "TestProductionRegistryRejectsCandidateBeforeLifecycleMutation": "PASS",
     "TestRuntimeCompositionConstructorFailureMatrixAndNoSideEffects": "PASS",
     "TestNewRejectsNilAndTypedNilSmoke": "PASS",
-    "TestNewRejectsTypedNilACL": "PASS"
+    "TestNewRejectsTypedNilACL": "PASS",
+    "TestRuntimePublicAPIHasNoStateOrLifecycleAuthority": "PASS",
+    "TestInjectedDependenciesSkipDefaultConstruction": "PASS",
+    "TestExplicitNilInjectedDependenciesFailClosed": "PASS"
   },
   "claims": [
     "Updater, Manager and State Store share one lock Manager",
     "Updater and Manager share one State Store",
     "Updater and Manager share one installed-slot Registry",
-    "production registry proof is limited to the pinned slot"
+    "production registry proof is limited to the pinned slot",
+    "public Runtime exposes only Updater and Manager",
+    "injected instance dependencies are construction-time authority and suppress default construction",
+    "MarkerSecurity is not part of public runtime Config"
   ]
 }

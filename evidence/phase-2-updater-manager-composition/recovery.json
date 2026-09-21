@@ -6,5 +6,5 @@
     "TestComposedRecoveryAfterActiveSaveRestoresPrevious": "PASS",
     "TestComposedRecoveryRejectsPartialRunningSet": "PASS"
   },
-  "limits": ["process-crash boundaries only", "OS crash and sudden power loss remain OPEN"]
+  "limits": ["same-process injected fault boundaries; no composed subprocess crash proof", "OS crash and sudden power loss remain OPEN"]
 }

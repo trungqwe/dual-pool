@@ -212,10 +212,10 @@ Production multi-version update acceptance, real second-release adapter proof an
 
 | Requirement | Implementation/evidence | Status |
 |---|---|---|
-| P2-UPD-COMPOSE-001: one lock/store/registry graph | `runtimeupdate.New`, [composition](../evidence/phase-2-updater-manager-composition/composition.json) | PASS_COMPONENT |
+| P2-UPD-COMPOSE-001: one private authoritative lock/store/registry graph; public Runtime exposes only Updater/Manager | `runtimeupdate.New`, external API regression, [composition](../evidence/phase-2-updater-manager-composition/composition.json) | PASS_COMPONENT |
 | P2-UPD-LIFECYCLE-001: no nested GLOBAL acquisition | `instance.UpdaterLifecycle`, [lock topology](../evidence/phase-2-updater-manager-composition/lock-topology.json) | PASS_COMPONENT |
 | P2-UPD-TXN-001: promotion and safe rollback | transaction tests, [promotion/rollback](../evidence/phase-2-updater-manager-composition/promotion-rollback.json) | PASS_COMPONENT |
-| P2-UPD-RECOVERY-001: process-crash recovery | recovery tests, [recovery](../evidence/phase-2-updater-manager-composition/recovery.json) | PASS_COMPONENT |
+| P2-UPD-RECOVERY-001: same-process injected fault recovery at marker/state boundaries | recovery tests, [recovery](../evidence/phase-2-updater-manager-composition/recovery.json) | PASS_COMPONENT |
 | P2-UPD-PROD-PREFLIGHT-001: one-pin production registry controls Manager and Updater | production composition tests | PASS_COMPONENT |
 | P2-UPD-NO-LIVE-MUTATION-001 | [security gate](../evidence/phase-2-updater-manager-composition/security-gate.json) | PASS |
 

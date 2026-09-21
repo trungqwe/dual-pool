@@ -13,7 +13,7 @@
 
 ## Assigned objective
 
-Compose the production updater object graph with `instance.Manager` under one GLOBAL lock, then prove promotion, rollback and process-crash recovery with a shared TEMP-only vA/vB trust fixture. Acceptance requires stress, race, repository, security and exact-SHA Source CI gates.
+Compose the production updater object graph with `instance.Manager` under one GLOBAL lock, then prove promotion, rollback and fault-injection recovery at marker/state boundaries with a shared TEMP-only vA/vB trust fixture. Acceptance requires stress, race, repository, security and exact-SHA Source CI gates.
 
 ## Non-goals
 
@@ -36,7 +36,7 @@ The clean isolated worktree started at the authoritative `phase-2/upstream-lifec
 
 ## Decisions
 
-`instance.UpdaterLifecycle` is the sole updater bridge and assumes the updater already owns GLOBAL. It validates and canonicalizes pool sets before mutation. `runtimeupdate.New` creates exactly one lock manager, Store and Registry and injects those same objects into Updater and Manager. Private test hooks exercise the real adapter and updater transaction engine without launching CLIProxyAPI.
+`instance.UpdaterLifecycle` is the sole updater bridge and assumes the updater already owns GLOBAL. It validates and canonicalizes pool sets before mutation. `runtimeupdate.New` creates exactly one authoritative lock manager, Store and Registry and injects those objects into Updater and Manager without constructing throwaway defaults. Public `Runtime` exposes only `Updater` and `Manager`; its mutable Store and locked lifecycle adapter remain private. Private Manager test hooks exercise the adapter and updater transaction engine with synthetic process records; they do not launch or terminate CLIProxyAPI.
 
 ## Changes
 
@@ -47,6 +47,7 @@ The clean isolated worktree started at the authoritative `phase-2/upstream-lifec
 | `internal/instance/updater_lifecycle_test.go` | Added invalid pool and nil lock regression tests. | Fail closed before lifecycle mutation. |
 | `internal/runtimeupdate/runtime.go` | Added production object-graph constructor. | Centralize shared runtime dependencies. |
 | `internal/runtimeupdate/runtime_test.go` | Added object identity, one-pin production and constructor tests. | Prove graph identity and preflight behavior. |
+| `internal/runtimeupdate/runtime_api_test.go` | Added external-package public API regression. | Prevent mutable Store or locked lifecycle authority from being re-exported. |
 
 ## Verification
 
@@ -64,7 +65,7 @@ The clean isolated worktree started at the authoritative `phase-2/upstream-lifec
 
 ## Security/privacy review
 
-- Listener/bind impact: no real listener was created; lifecycle state is synthetic and TEMP-only.
+- Listener/bind impact: no real listener or process was created; lifecycle records and hooks are synthetic and TEMP-only.
 - Secret/token handling impact: no credentials, auth files or provider material were read.
 - Config mutation/rollback impact: no real configuration was modified.
 - Logging/evidence review: evidence contains no local absolute path, SID, raw identity or secret.
