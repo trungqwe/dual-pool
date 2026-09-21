@@ -198,7 +198,7 @@ func (u *Updater) Recover(ctx context.Context) error {
 	}
 	switch current.ActiveUpstreamVersion {
 	case marker.PreviousVersion:
-		if err = u.lifecycle.Start(ctx, copyPools(marker.RestartPools)); err != nil {
+		if err = u.restoreRunning(ctx, marker.RestartPools); err != nil {
 			return ErrRecoveryUnresolved
 		}
 		if err = u.smoke.Production(ctx, marker.PreviousVersion); err != nil {
@@ -213,6 +213,33 @@ func (u *Updater) Recover(ctx context.Context) error {
 	default:
 		return ErrRecoveryUnresolved
 	}
+}
+
+// restoreRunning converges only the two states that can be proven safe from a
+// durable transaction marker: the exact pre-transaction set is already alive,
+// or every expected pool is stopped. Partial and unexpected states retain the
+// marker for an explicit later recovery; guessing which process to stop or
+// start would risk duplicate or foreign-process mutation.
+func (u *Updater) restoreRunning(ctx context.Context, want []state.Pool) error {
+	got, err := u.lifecycle.CaptureRunning(ctx)
+	if err != nil {
+		return err
+	}
+	got, err = validateRunningSet(got)
+	if err != nil {
+		return err
+	}
+	want, err = validateRunningSet(want)
+	if err != nil {
+		return err
+	}
+	if samePoolSet(got, want) {
+		return nil
+	}
+	if len(got) != 0 {
+		return ErrRecoveryUnresolved
+	}
+	return u.lifecycle.Start(ctx, copyPools(want))
 }
 func (u *Updater) rollback(ctx context.Context, marker transactionMarker, cause error) error {
 	if errors.Is(cause, ErrInjectedCrash) {
@@ -299,3 +326,19 @@ func validateRunningSet(in []state.Pool) ([]state.Pool, error) {
 }
 
 func copyPools(in []state.Pool) []state.Pool { return append([]state.Pool(nil), in...) }
+
+func samePoolSet(left, right []state.Pool) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	seen := make(map[state.Pool]bool, len(left))
+	for _, pool := range left {
+		seen[pool] = true
+	}
+	for _, pool := range right {
+		if !seen[pool] {
+			return false
+		}
+	}
+	return true
+}

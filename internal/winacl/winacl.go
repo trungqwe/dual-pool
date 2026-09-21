@@ -59,7 +59,7 @@ func (m *Manager) CreateFile(path string) (*os.File, error) {
 		return nil, ErrUnsafeACL
 	}
 	sa := &windows.SecurityAttributes{Length: uint32(unsafe.Sizeof(windows.SecurityAttributes{})), SecurityDescriptor: sd}
-	h, err := windows.CreateFile(p, windows.GENERIC_WRITE|windows.GENERIC_READ, 0, sa, windows.CREATE_NEW, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	h, err := windows.CreateFile(p, windows.GENERIC_WRITE|windows.GENERIC_READ|windows.READ_CONTROL|windows.DELETE, 0, sa, windows.CREATE_NEW, windows.FILE_ATTRIBUTE_NORMAL, 0)
 	if err != nil {
 		return nil, ErrUnsafeACL
 	}
@@ -87,6 +87,23 @@ func (m *Manager) InspectFile(path string) error {
 	return m.inspectACL(path, 0)
 }
 
+// InspectHandle validates the exact object already opened by the caller.
+func (m *Manager) InspectHandle(file *os.File) error {
+	if file == nil {
+		return ErrUnsafeACL
+	}
+	handle := windows.Handle(file.Fd())
+	var info windows.ByHandleFileInformation
+	if err := windows.GetFileInformationByHandle(handle, &info); err != nil || info.FileAttributes&(windows.FILE_ATTRIBUTE_REPARSE_POINT|windows.FILE_ATTRIBUTE_DIRECTORY) != 0 {
+		return ErrUnsafeACL
+	}
+	sd, err := windows.GetSecurityInfo(handle, windows.SE_FILE_OBJECT, windows.OWNER_SECURITY_INFORMATION|windows.DACL_SECURITY_INFORMATION)
+	if err != nil || sd == nil {
+		return ErrUnsafeACL
+	}
+	return m.inspectDescriptor(sd, 0)
+}
+
 func (m *Manager) Inspect(path string) error {
 	if !safeDirectory(path) {
 		return ErrUnsafeACL
@@ -99,6 +116,10 @@ func (m *Manager) inspectACL(path string, expectedFlags byte) error {
 	if err != nil || sd == nil {
 		return ErrUnsafeACL
 	}
+	return m.inspectDescriptor(sd, expectedFlags)
+}
+
+func (m *Manager) inspectDescriptor(sd *windows.SECURITY_DESCRIPTOR, expectedFlags byte) error {
 	owner, _, err := sd.Owner()
 	if err != nil || owner == nil || owner.String() != m.user {
 		return ErrUnsafeACL

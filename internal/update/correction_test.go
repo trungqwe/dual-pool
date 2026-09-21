@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -55,6 +56,76 @@ func TestP2UPDRollbackStop001(t *testing.T) {
 	}
 	if _, ok, _ := u.markers.load(); !ok {
 		t.Fatal("marker removed")
+	}
+}
+
+type convergingLife struct {
+	running        []state.Pool
+	duplicateStart bool
+}
+
+func (l *convergingLife) CaptureRunning(context.Context) ([]state.Pool, error) {
+	return append([]state.Pool(nil), l.running...), nil
+}
+func (l *convergingLife) Stop(_ context.Context, want []state.Pool) error {
+	if !reflect.DeepEqual(l.running, want) {
+		return errors.New("unexpected stop set")
+	}
+	l.running = nil
+	return nil
+}
+func (l *convergingLife) Start(_ context.Context, want []state.Pool) error {
+	if len(l.running) != 0 {
+		l.duplicateStart = true
+		return errors.New("already running")
+	}
+	l.running = append([]state.Pool(nil), want...)
+	return nil
+}
+
+func TestP2UPDAfterMarkerPublishRecoveryDoesNotDuplicateRunningPools(t *testing.T) {
+	fs := &fakeState{v: testState("7.3.7")}
+	life := &convergingLife{running: []state.Pool{state.PoolCodex, state.PoolGoogle}}
+	u := testUpdater(t, fs, &fakeLife{}, &fakeSmoke{}, nil)
+	u.lifecycle = life
+	u.fault = func(point FaultPoint) error {
+		if point == AfterMarkerPublish {
+			return ErrInjectedCrash
+		}
+		return nil
+	}
+	if err := u.Promote(context.Background(), "7.3.8"); !errors.Is(err, ErrInjectedCrash) {
+		t.Fatalf("expected marker-publish crash: %v", err)
+	}
+	u.fault = nil
+	if err := u.Recover(context.Background()); err != nil {
+		t.Fatalf("recovery failed: %v", err)
+	}
+	if life.duplicateStart || !reflect.DeepEqual(life.running, []state.Pool{state.PoolCodex, state.PoolGoogle}) {
+		t.Fatalf("running set changed or duplicated: %#v", life.running)
+	}
+	if _, exists, err := u.markers.load(); err != nil || exists {
+		t.Fatalf("marker after resolved recovery: exists=%v err=%v", exists, err)
+	}
+}
+
+func TestP2UPDRecoveryRetainsMarkerForPartialRunningSet(t *testing.T) {
+	fs := &fakeState{v: testState("7.3.7")}
+	life := &convergingLife{running: []state.Pool{state.PoolCodex}}
+	u := testUpdater(t, fs, &fakeLife{}, &fakeSmoke{}, nil)
+	u.lifecycle = life
+	m := transactionMarker{SchemaVersion: 1, PreviousVersion: "7.3.7", CandidateVersion: "7.3.8", BaseStateSHA256: stateFingerprint(fs.v), RestartPools: []state.Pool{state.PoolCodex, state.PoolGoogle}}
+	if _, err := u.markers.publish(m); err != nil {
+		t.Fatal(err)
+	}
+	if !errors.Is(u.Recover(context.Background()), ErrRecoveryUnresolved) {
+		t.Fatal("partial set was accepted")
+	}
+	if life.duplicateStart || !reflect.DeepEqual(life.running, []state.Pool{state.PoolCodex}) {
+		t.Fatal("partial state was mutated")
+	}
+	if _, exists, err := u.markers.load(); err != nil || !exists {
+		t.Fatalf("marker lost: exists=%v err=%v", exists, err)
 	}
 }
 
@@ -255,11 +326,11 @@ type recordingSecurity struct{ dirs, creates, files int }
 func (s *recordingSecurity) InspectDir(string) error { s.dirs++; return nil }
 func (s *recordingSecurity) CreateFile(path string) (*os.File, error) {
 	s.creates++
-	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+	return testMarkerSecurity{}.CreateFile(path)
 }
-func (s *recordingSecurity) InspectFile(path string) error {
+func (s *recordingSecurity) InspectHandle(file *os.File) error {
 	s.files++
-	return testMarkerSecurity{}.InspectFile(path)
+	return testMarkerSecurity{}.InspectHandle(file)
 }
 
 func TestMarkerSecurityGuardCoversCreateLoadRemove(t *testing.T) {
@@ -279,8 +350,34 @@ func TestMarkerSecurityGuardCoversCreateLoadRemove(t *testing.T) {
 	if err = store.remove(committed); err != nil {
 		t.Fatal(err)
 	}
-	if guard.creates != 1 || guard.dirs < 3 || guard.files < 5 {
+	if guard.creates != 1 || guard.dirs < 3 || guard.files < 3 {
 		t.Fatalf("guard calls: %#v", guard)
+	}
+}
+
+func TestP2UPDMarkerHandleBlocksPathReplacementUntilRelease(t *testing.T) {
+	store, err := newMarkerStore(t.TempDir(), func() (string, error) { return "00112233445566778899aabbccddeeff", nil }, testMarkerSecurity{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := transactionMarker{SchemaVersion: 1, PreviousVersion: "7.3.7", CandidateVersion: "7.3.8", BaseStateSHA256: strings.Repeat("a", 64), RestartPools: []state.Pool{}}
+	if _, err = store.publish(m); err != nil {
+		t.Fatal(err)
+	}
+	file, err := openMarker(store.path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	replacement := filepath.Join(store.dir, "replacement")
+	if err = os.WriteFile(replacement, []byte("replacement"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Rename(replacement, store.path()); err == nil {
+		t.Fatal("pathname replacement succeeded while the inspected marker handle was exclusive")
+	}
+	if _, err = readMarkerHandle(file); err != nil {
+		t.Fatal(err)
 	}
 }
 

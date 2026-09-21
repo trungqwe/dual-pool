@@ -676,3 +676,17 @@ Start HEAD: `2f5e8859002fc01d3ee5794cc91aebe5eaa2b73d`. `internal/update` is an 
 ## Phase 2 updater foundation correction — pending delivery
 
 Start HEAD `53613e4d69eeeafa22e71699a6fddea6859a385a`. The correction closes semantic gaps in previous-slot verification, rollback Stop handling, real state Store composition, pending-marker refusal, logical-version/running-set validation, exact marker schema and protected marker ACL. Historical foundation evidence remains immutable and is superseded for those claims by `evidence/phase-2-update-foundation-correction/`. Production updater acceptance and the real updater gate remain OPEN/NOT RUN; installed-slot registry remains NOT STARTED.
+
+## Phase 2 updater audit repair — incomplete
+
+Worktree `codex/phase2-updater-audit-repair` starts at `4eb550e`. It contains
+uncommitted synthetic-only work for UPD-AUDIT-001 and UPD-AUDIT-002. The
+lifecycle recovery regression is fixed in focused execution, but the attempted
+handle-based marker publication/load/remove design is nondeterministic under
+`go test -count=10 ./internal/update`. Theo yêu cầu của chủ sở hữu, trạng thái
+WIP này sẽ được commit và push lên nhánh kiểm toán riêng. Đây chỉ là bằng chứng
+cho kiểm toán: cổng marker vẫn thất bại và không có tuyên bố hoàn tất sửa chữa
+hay phát hành. Read `docs/reports/2026-09-21T0840Z-phase-2-updater-audit-repair-wip.md`
+before touching the worktree. Exact next objective: make marker handle operations
+deterministic and rerun the full fixture gate; do not begin installed-slot
+registry or a real updater gate.

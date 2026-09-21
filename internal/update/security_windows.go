@@ -18,4 +18,6 @@ func (s *WindowsMarkerSecurity) InspectDir(path string) error { return s.manager
 func (s *WindowsMarkerSecurity) CreateFile(path string) (*os.File, error) {
 	return s.manager.CreateFile(path)
 }
-func (s *WindowsMarkerSecurity) InspectFile(path string) error { return s.manager.InspectFile(path) }
+func (s *WindowsMarkerSecurity) InspectHandle(file *os.File) error {
+	return s.manager.InspectHandle(file)
+}

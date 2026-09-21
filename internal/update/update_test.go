@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"golang.org/x/sys/windows"
 )
 
 type fakeState struct {
@@ -22,11 +24,19 @@ type testMarkerSecurity struct{}
 
 func (testMarkerSecurity) InspectDir(string) error { return nil }
 func (testMarkerSecurity) CreateFile(path string) (*os.File, error) {
-	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return nil, err
+	}
+	h, err := windows.CreateFile(p, windows.GENERIC_READ|windows.GENERIC_WRITE|windows.READ_CONTROL|windows.DELETE, 0, nil, windows.CREATE_NEW, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(h), path), nil
 }
-func (testMarkerSecurity) InspectFile(path string) error {
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || reparse(path) {
+func (testMarkerSecurity) InspectHandle(file *os.File) error {
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() < 1 {
 		return ErrRecoveryUnresolved
 	}
 	return nil

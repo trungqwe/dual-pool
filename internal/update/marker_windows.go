@@ -10,7 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"time"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/trungqwe/dual-pool/internal/state"
 	"golang.org/x/sys/windows"
@@ -36,7 +38,7 @@ type markerStore struct {
 type MarkerSecurity interface {
 	InspectDir(string) error
 	CreateFile(string) (*os.File, error)
-	InspectFile(string) error
+	InspectHandle(*os.File) error
 }
 
 func newMarkerStore(dir string, id func() (string, error), security MarkerSecurity) (*markerStore, error) {
@@ -74,10 +76,10 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	}
 	ok := false
 	defer func() {
-		_ = f.Close()
 		if !ok {
-			_ = os.Remove(candidate)
+			_ = deleteMarkerByHandle(f)
 		}
+		_ = f.Close()
 	}()
 	if _, err = f.Write(b); err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
@@ -85,70 +87,142 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	if err = f.Sync(); err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
-	if err = f.Close(); err != nil {
+	if err = s.security.InspectHandle(f); err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
-	check, err := os.ReadFile(candidate)
+	check, err := readMarkerHandle(f)
 	if err != nil || !bytes.Equal(check, b) {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
 	if _, err = decodeMarker(check); err != nil {
 		return transactionMarker{}, err
 	}
-	if err = s.security.InspectFile(candidate); err != nil {
+	if err = renameMarkerByHandle(f, s.path()); err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
-	from, e := windows.UTF16PtrFromString(candidate)
-	if e != nil {
+	if err = s.security.InspectHandle(f); err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
-	to, e := windows.UTF16PtrFromString(s.path())
-	if e != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
-	}
-	if e = windows.MoveFileEx(from, to, windows.MOVEFILE_WRITE_THROUGH); e != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
-	}
-	if e = s.security.InspectFile(s.path()); e != nil {
+	if err = f.Close(); err != nil {
 		return transactionMarker{}, ErrRecoveryUnresolved
 	}
 	ok = true
 	return m, nil
 }
 func (s *markerStore) load() (transactionMarker, bool, error) {
-	p := s.path()
-	info, err := os.Lstat(p)
-	if os.IsNotExist(err) {
-		return transactionMarker{}, false, nil
+	file, marker, exists, err := s.loadHandle()
+	if file != nil {
+		_ = file.Close()
 	}
-	if err != nil || info.IsDir() || info.Mode()&os.ModeSymlink != 0 || reparse(p) || info.Size() < 1 || info.Size() > maxMarkerBytes {
-		return transactionMarker{}, false, ErrRecoveryUnresolved
-	}
-	if err = s.security.InspectDir(s.dir); err != nil {
-		return transactionMarker{}, false, ErrRecoveryUnresolved
-	}
-	if err = s.security.InspectFile(p); err != nil {
-		return transactionMarker{}, false, ErrRecoveryUnresolved
-	}
-	b, err := os.ReadFile(p)
-	if err != nil {
-		return transactionMarker{}, false, ErrRecoveryUnresolved
-	}
-	m, err := decodeMarker(b)
-	return m, true, err
+	return marker, exists, err
 }
 func (s *markerStore) remove(want transactionMarker) error {
-	got, exists, err := s.load()
+	file, got, exists, err := s.loadHandle()
 	if err != nil || !exists || !reflect.DeepEqual(got, want) {
+		if file != nil {
+			_ = file.Close()
+		}
 		return ErrRecoveryUnresolved
 	}
-	if err = s.security.InspectFile(s.path()); err != nil {
-		return ErrRecoveryUnresolved
-	}
-	if err = os.Remove(s.path()); err != nil {
+	defer file.Close()
+	if err = deleteMarkerByHandle(file); err != nil {
 		return ErrRecoveryUnresolved
 	}
 	return nil
+}
+
+func (s *markerStore) loadHandle() (*os.File, transactionMarker, bool, error) {
+	if err := s.security.InspectDir(s.dir); err != nil {
+		return nil, transactionMarker{}, false, ErrRecoveryUnresolved
+	}
+	file, err := openMarker(s.path())
+	if errors.Is(err, windows.ERROR_FILE_NOT_FOUND) || errors.Is(err, windows.ERROR_PATH_NOT_FOUND) {
+		return nil, transactionMarker{}, false, nil
+	}
+	if err != nil {
+		return nil, transactionMarker{}, false, ErrRecoveryUnresolved
+	}
+	if err = s.security.InspectHandle(file); err != nil {
+		_ = file.Close()
+		return nil, transactionMarker{}, false, ErrRecoveryUnresolved
+	}
+	b, err := readMarkerHandle(file)
+	if err != nil {
+		_ = file.Close()
+		return nil, transactionMarker{}, false, ErrRecoveryUnresolved
+	}
+	marker, err := decodeMarker(b)
+	if err != nil {
+		_ = file.Close()
+		return nil, transactionMarker{}, false, err
+	}
+	return file, marker, true, nil
+}
+
+func openMarker(path string) (*os.File, error) {
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return nil, ErrRecoveryUnresolved
+	}
+	deadline := time.Now().Add(250 * time.Millisecond)
+	var h windows.Handle
+	for {
+		h, err = windows.CreateFile(p, windows.GENERIC_READ|windows.READ_CONTROL|windows.DELETE, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_OPEN_REPARSE_POINT, 0)
+		if !errors.Is(err, windows.ERROR_ACCESS_DENIED) || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(h), path), nil
+}
+
+func readMarkerHandle(file *os.File) ([]byte, error) {
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() < 1 || info.Size() > maxMarkerBytes {
+		return nil, ErrRecoveryUnresolved
+	}
+	b := make([]byte, info.Size())
+	n, err := file.ReadAt(b, 0)
+	if (err != nil && !errors.Is(err, io.EOF)) || n != len(b) {
+		return nil, ErrRecoveryUnresolved
+	}
+	return b, nil
+}
+
+func deleteMarkerByHandle(file *os.File) error {
+	deleteFile := uint32(1)
+	return windows.SetFileInformationByHandle(windows.Handle(file.Fd()), windows.FileDispositionInfo, (*byte)(unsafe.Pointer(&deleteFile)), uint32(unsafe.Sizeof(deleteFile)))
+}
+
+type fileRenameInformation struct {
+	ReplaceIfExists byte
+	RootDirectory   windows.Handle
+	FileNameLength  uint32
+	FileName        [1]uint16
+}
+
+func renameMarkerByHandle(file *os.File, target string) error {
+	name, err := windows.UTF16FromString(target)
+	if err != nil {
+		return err
+	}
+	name = name[:len(name)-1]
+	size := unsafe.Offsetof(fileRenameInformation{}.FileName) + uintptr(len(name))*unsafe.Sizeof(name[0])
+	buffer := make([]byte, size)
+	info := (*fileRenameInformation)(unsafe.Pointer(&buffer[0]))
+	info.FileNameLength = uint32(len(name) * 2)
+	copy(unsafe.Slice(&info.FileName[0], len(name)), name)
+	deadline := time.Now().Add(250 * time.Millisecond)
+	for {
+		err = windows.SetFileInformationByHandle(windows.Handle(file.Fd()), windows.FileRenameInfo, &buffer[0], uint32(len(buffer)))
+		if !errors.Is(err, windows.ERROR_ACCESS_DENIED) || time.Now().After(deadline) {
+			return err
+		}
+		time.Sleep(time.Millisecond)
+	}
 }
 func encodeMarker(m transactionMarker) ([]byte, error) {
 	if !validMarker(m) {
