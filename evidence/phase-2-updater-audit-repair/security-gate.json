@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "scope": "phase_2_updater_audit_repair",
+  "status": "PASS",
+  "marker_acl_checked_on_exact_handle": true,
+  "marker_read_from_exact_handle": true,
+  "marker_removed_by_exact_handle": true,
+  "path_replacement_blocked": true,
+  "sharing_conflict_never_classified_absent": true,
+  "diagnostics_redacted": true,
+  "synthetic_temp_fixtures_only": true,
+  "credential_access": false,
+  "provider_traffic": false,
+  "listener_started": false,
+  "product_root_touched": false
+}

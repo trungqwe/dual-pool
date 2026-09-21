@@ -690,3 +690,15 @@ hay phát hành. Read `docs/reports/2026-09-21T0840Z-phase-2-updater-audit-repai
 before touching the worktree. Exact next objective: make marker handle operations
 deterministic and rerun the full fixture gate; do not begin installed-slot
 registry or a real updater gate.
+
+## Phase 2 updater independent-audit repair — local gates PASS
+
+Branch `phase-2/updater-audit-repair` starts this final slice at `33e74f1`.
+Native no-replace rename, exact-handle ACL/read/delete, bounded sharing
+contention, lifecycle convergence, pre/post-rename flush, updater count=100,
+updater race count=10, full Go/race, build, Node 55/55 and lock validation PASS
+on synthetic Windows/TEMP fixtures. Report:
+`docs/reports/2026-09-21T1332Z-phase-2-updater-audit-repair-complete.md`.
+Exact-SHA CI for the final documentation/evidence head remains pending; do not
+advance `phase-2/upstream-lifecycle` before that receipt. Production updater,
+installed-slot registry and real updater gates remain OPEN.

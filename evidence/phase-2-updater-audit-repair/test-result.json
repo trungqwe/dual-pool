@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "scope": "synthetic_windows_component",
+  "start_sha": "33e74f1ae006deecd44ae9d805b121e490fe71d0",
+  "implementation_sha": "20ef4d6f78f3f0747c4983a89f791a617e539859",
+  "native_rename": "PASS",
+  "exact_handle_acl": "PASS",
+  "transient_sharing_contention": "PASS",
+  "permanent_sharing_contention": "PASS_FAIL_CLOSED",
+  "exact_handle_delete": "PASS",
+  "publication_flush_before_and_after_rename": "PASS",
+  "updater_count_10": "PASS",
+  "updater_count_100": "PASS",
+  "updater_race_count_10": "PASS",
+  "full_go_suite": "PASS",
+  "full_go_race": "PASS",
+  "node_tests": "PASS_55_OF_55",
+  "upstream_lock": "PASS",
+  "real_product_mutation": false
+}
