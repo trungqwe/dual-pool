@@ -229,12 +229,11 @@ func renameMarkerByHandle(file *os.File, directory, targetName string) error {
 	if err != nil {
 		return err
 	}
-	name = name[:len(name)-1]
 	size := unsafe.Offsetof(fileRenameInformation{}.FileName) + uintptr(len(name))*unsafe.Sizeof(name[0])
 	buffer := make([]byte, size)
 	info := (*fileRenameInformation)(unsafe.Pointer(&buffer[0]))
 	info.RootDirectory = directoryHandle
-	info.FileNameLength = uint32(len(name) * 2)
+	info.FileNameLength = uint32((len(name) - 1) * 2)
 	copy(unsafe.Slice(&info.FileName[0], len(name)), name)
 	deadline := time.Now().Add(250 * time.Millisecond)
 	for {

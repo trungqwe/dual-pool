@@ -377,6 +377,31 @@ func TestP2UPDMarkerHandleBlocksPathReplacementUntilRelease(t *testing.T) {
 	}
 }
 
+func TestP2UPDMarkerRenamePrimitivePreservesOpenHandleIdentity(t *testing.T) {
+	dir := t.TempDir()
+	candidate := filepath.Join(dir, "candidate")
+	file, err := testMarkerSecurity{}.CreateFile(candidate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if _, err = file.Write([]byte("marker")); err != nil {
+		t.Fatal(err)
+	}
+	if err = file.Sync(); err != nil {
+		t.Fatal(err)
+	}
+	if err = renameMarkerByHandle(file, dir, markerName); err != nil {
+		t.Fatalf("rename primitive: %v", err)
+	}
+	if _, err = os.Stat(candidate); !os.IsNotExist(err) {
+		t.Fatalf("candidate remains: %v", err)
+	}
+	if got, err := readMarkerHandle(file); err != nil || string(got) != "marker" {
+		t.Fatalf("open handle changed: bytes=%q err=%v", got, err)
+	}
+}
+
 func TestUpdateFaultMatrixRetainsUnresolvedMarker(t *testing.T) {
 	forward := []FaultPoint{AfterMarkerPublish, AfterProductionStop, AfterCandidateStart, AfterCandidateSmoke, BeforeMarkerCleanup}
 	for _, point := range forward {
