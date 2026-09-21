@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -72,7 +73,7 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 	candidate := filepath.Join(s.dir, "."+markerName+".candidate-"+id)
 	f, err := s.security.CreateFile(candidate)
 	if err != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_create", err)
 	}
 	ok := false
 	defer func() {
@@ -82,29 +83,29 @@ func (s *markerStore) publish(m transactionMarker) (transactionMarker, error) {
 		_ = f.Close()
 	}()
 	if _, err = f.Write(b); err != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_write", err)
 	}
 	if err = f.Sync(); err != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_sync", err)
 	}
 	if err = s.security.InspectHandle(f); err != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_post_create_acl", err)
 	}
 	check, err := readMarkerHandle(f)
 	if err != nil || !bytes.Equal(check, b) {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_readback", err)
 	}
 	if _, err = decodeMarker(check); err != nil {
 		return transactionMarker{}, err
 	}
 	if err = renameMarkerByHandle(f, s.path()); err != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_rename", err)
 	}
 	if err = s.security.InspectHandle(f); err != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_post_rename_acl", err)
 	}
 	if err = f.Close(); err != nil {
-		return transactionMarker{}, ErrRecoveryUnresolved
+		return transactionMarker{}, markerFailure("marker_close", err)
 	}
 	ok = true
 	return m, nil
@@ -140,16 +141,16 @@ func (s *markerStore) loadHandle() (*os.File, transactionMarker, bool, error) {
 		return nil, transactionMarker{}, false, nil
 	}
 	if err != nil {
-		return nil, transactionMarker{}, false, ErrRecoveryUnresolved
+		return nil, transactionMarker{}, false, markerFailure("marker_open", err)
 	}
 	if err = s.security.InspectHandle(file); err != nil {
 		_ = file.Close()
-		return nil, transactionMarker{}, false, ErrRecoveryUnresolved
+		return nil, transactionMarker{}, false, markerFailure("marker_load_acl", err)
 	}
 	b, err := readMarkerHandle(file)
 	if err != nil {
 		_ = file.Close()
-		return nil, transactionMarker{}, false, ErrRecoveryUnresolved
+		return nil, transactionMarker{}, false, markerFailure("marker_load_read", err)
 	}
 	marker, err := decodeMarker(b)
 	if err != nil {
@@ -157,6 +158,16 @@ func (s *markerStore) loadHandle() (*os.File, transactionMarker, bool, error) {
 		return nil, transactionMarker{}, false, err
 	}
 	return file, marker, true, nil
+}
+
+// markerFailure intentionally includes only a stable operation label and the
+// underlying errno. It never includes a filesystem path, SID, marker bytes, or
+// other sensitive state, while preserving the public fail-closed contract.
+func markerFailure(operation string, cause error) error {
+	if cause == nil {
+		return fmt.Errorf("%s: %w", operation, ErrRecoveryUnresolved)
+	}
+	return fmt.Errorf("%s: %w: %w", operation, ErrRecoveryUnresolved, cause)
 }
 
 func openMarker(path string) (*os.File, error) {
