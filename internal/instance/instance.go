@@ -107,6 +107,13 @@ type Manager struct {
 	opener    terminationOpener
 	registry  SlotRegistry
 	state     ActiveStateReader
+	// updater hooks are nil in production. Package tests use them to exercise
+	// the real updater adapter and transaction engine without launching a real
+	// CLIProxyAPI process.
+	updaterStatus       func(cliproxyconfig.ID) (Status, error)
+	updaterStop         func(cliproxyconfig.ID) error
+	updaterStart        func(context.Context, cliproxyconfig.ID) (Status, error)
+	updaterPortOccupied func(int) (bool, error)
 }
 
 type SlotRegistry interface {
@@ -117,6 +124,141 @@ type SlotRegistry interface {
 
 type ActiveStateReader interface {
 	LoadState() (state.State, error)
+}
+
+// UpdaterLifecycle is the only lifecycle bridge for update.Updater. Its
+// methods require the caller to already hold the shared GLOBAL lock.
+type UpdaterLifecycle struct{ manager *Manager }
+
+// UpdaterLifecycle returns a bridge that deliberately uses Manager's locked
+// lifecycle operations. Public Manager methods acquire GLOBAL themselves and
+// must not be used while an update transaction owns it.
+func (m *Manager) UpdaterLifecycle() *UpdaterLifecycle { return &UpdaterLifecycle{manager: m} }
+
+func (l *UpdaterLifecycle) CaptureRunning(ctx context.Context) ([]state.Pool, error) {
+	if l == nil || l.manager == nil {
+		return nil, ErrUnsafeInstance
+	}
+	out := make([]state.Pool, 0, 2)
+	for _, pair := range []struct {
+		pool state.Pool
+		id   cliproxyconfig.ID
+	}{{state.PoolCodex, cliproxyconfig.Codex}, {state.PoolGoogle, cliproxyconfig.Google}} {
+		status, err := l.manager.updaterStatusLocked(pair.id)
+		if err == nil {
+			if !status.Running {
+				return nil, ErrUnverifiable
+			}
+			out = append(out, pair.pool)
+			continue
+		}
+		if !errors.Is(err, ErrNotRunning) {
+			return nil, err
+		}
+		if status.Record.PID != 0 {
+			occupied, checkErr := l.manager.updaterPortIsOccupied(status.Record.Port)
+			if checkErr != nil || occupied {
+				return nil, ErrUnverifiable
+			}
+		}
+	}
+	return out, nil
+}
+
+func (m *Manager) updaterPortIsOccupied(port int) (bool, error) {
+	if m.updaterPortOccupied != nil {
+		return m.updaterPortOccupied(port)
+	}
+	return m.portOccupied(port)
+}
+
+func (l *UpdaterLifecycle) Stop(_ context.Context, pools []state.Pool) error {
+	if l == nil || l.manager == nil {
+		return ErrUnsafeInstance
+	}
+	pools, err := canonicalLifecyclePools(pools)
+	if err != nil {
+		return err
+	}
+	for _, pool := range pools {
+		id, err := lifecyclePoolID(pool)
+		if err != nil {
+			return err
+		}
+		if err := l.manager.updaterStopLocked(id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (l *UpdaterLifecycle) Start(ctx context.Context, pools []state.Pool) error {
+	if l == nil || l.manager == nil {
+		return ErrUnsafeInstance
+	}
+	pools, err := canonicalLifecyclePools(pools)
+	if err != nil {
+		return err
+	}
+	for _, pool := range pools {
+		id, err := lifecyclePoolID(pool)
+		if err != nil {
+			return err
+		}
+		if _, err := l.manager.updaterStartLocked(ctx, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *Manager) updaterStatusLocked(id cliproxyconfig.ID) (Status, error) {
+	if m.updaterStatus != nil {
+		return m.updaterStatus(id)
+	}
+	return m.statusLocked(id)
+}
+
+func (m *Manager) updaterStopLocked(id cliproxyconfig.ID) error {
+	if m.updaterStop != nil {
+		return m.updaterStop(id)
+	}
+	return m.stopLocked(id)
+}
+
+func (m *Manager) updaterStartLocked(ctx context.Context, id cliproxyconfig.ID) (Status, error) {
+	if m.updaterStart != nil {
+		return m.updaterStart(ctx, id)
+	}
+	return m.startLocked(ctx, id)
+}
+
+func canonicalLifecyclePools(pools []state.Pool) ([]state.Pool, error) {
+	seen := map[state.Pool]bool{}
+	for _, pool := range pools {
+		if _, err := lifecyclePoolID(pool); err != nil || seen[pool] {
+			return nil, ErrUnsafeInstance
+		}
+		seen[pool] = true
+	}
+	out := make([]state.Pool, 0, len(pools))
+	for _, pool := range []state.Pool{state.PoolCodex, state.PoolGoogle} {
+		if seen[pool] {
+			out = append(out, pool)
+		}
+	}
+	return out, nil
+}
+
+func lifecyclePoolID(pool state.Pool) (cliproxyconfig.ID, error) {
+	switch pool {
+	case state.PoolCodex:
+		return cliproxyconfig.Codex, nil
+	case state.PoolGoogle:
+		return cliproxyconfig.Google, nil
+	default:
+		return "", ErrUnsafeInstance
+	}
 }
 
 func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option) (*Manager, error) {
@@ -133,7 +275,7 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 	for _, opt := range opts {
 		opt(m)
 	}
-	if m.inspector == nil || m.reader == nil || m.opener == nil || m.registry == nil || m.state == nil {
+	if m.locks == nil || m.inspector == nil || m.reader == nil || m.opener == nil || m.registry == nil || m.state == nil {
 		return nil, ErrUnsafeInstance
 	}
 	return m, nil
@@ -149,6 +291,7 @@ func WithInspector(v lockfile.ProcessInspector) Option { return func(m *Manager)
 func WithSecretReader(v SecretReader) Option           { return func(m *Manager) { m.reader = v } }
 func WithSlotRegistry(v SlotRegistry) Option           { return func(m *Manager) { m.registry = v } }
 func WithStateReader(v ActiveStateReader) Option       { return func(m *Manager) { m.state = v } }
+func WithLockManager(v *lockfile.Manager) Option       { return func(m *Manager) { m.locks = v } }
 
 func (m *Manager) executableDir() string {
 	return filepath.Join(m.layout.Bin, "cliproxyapi", m.lock.Version)
