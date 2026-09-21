@@ -98,15 +98,18 @@ type Status struct {
 }
 
 type Manager struct {
-	layout    dataroot.Layout
-	acl       ACL
-	lock      upstreamlock.Lock
-	locks     *lockfile.Manager
-	inspector lockfile.ProcessInspector
-	reader    SecretReader
-	opener    terminationOpener
-	registry  SlotRegistry
-	state     ActiveStateReader
+	layout      dataroot.Layout
+	acl         ACL
+	lock        upstreamlock.Lock
+	locks       *lockfile.Manager
+	inspector   lockfile.ProcessInspector
+	reader      SecretReader
+	opener      terminationOpener
+	registry    SlotRegistry
+	state       ActiveStateReader
+	locksSet    bool
+	registrySet bool
+	stateSet    bool
 	// updater hooks are nil in production. Package tests use them to exercise
 	// the real updater adapter and transaction engine without launching a real
 	// CLIProxyAPI process.
@@ -265,15 +268,33 @@ func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, opts ...Option
 	if acl == nil || lock.Validate() != nil {
 		return nil, ErrUnsafeInstance
 	}
-	locks, err := lockfile.NewManager(layout.Locks)
-	if err != nil {
-		return nil, ErrUnsafeInstance
-	}
-	registry, _ := installedslot.New(layout, acl, lock)
-	stateStore, _ := state.NewStore(layout.State, state.WithLockManager(locks))
-	m := &Manager{layout: layout, acl: acl, lock: lock, locks: locks, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New(), opener: openForTermination, registry: registry, state: stateStore}
+	m := &Manager{layout: layout, acl: acl, lock: lock, inspector: lockfile.WindowsProcessInspector{}, reader: secretstore.New(), opener: openForTermination}
 	for _, opt := range opts {
 		opt(m)
+	}
+	if (m.locksSet && m.locks == nil) || (m.registrySet && m.registry == nil) || (m.stateSet && m.state == nil) {
+		return nil, ErrUnsafeInstance
+	}
+	if !m.locksSet {
+		locks, err := lockfile.NewManager(layout.Locks)
+		if err != nil {
+			return nil, ErrUnsafeInstance
+		}
+		m.locks = locks
+	}
+	if !m.registrySet {
+		registry, err := installedslot.New(layout, acl, lock)
+		if err != nil {
+			return nil, ErrUnsafeInstance
+		}
+		m.registry = registry
+	}
+	if !m.stateSet {
+		stateStore, err := state.NewStore(layout.State, state.WithLockManager(m.locks))
+		if err != nil {
+			return nil, ErrUnsafeInstance
+		}
+		m.state = stateStore
 	}
 	if m.locks == nil || m.inspector == nil || m.reader == nil || m.opener == nil || m.registry == nil || m.state == nil {
 		return nil, ErrUnsafeInstance
@@ -289,9 +310,15 @@ type Option func(*Manager)
 
 func WithInspector(v lockfile.ProcessInspector) Option { return func(m *Manager) { m.inspector = v } }
 func WithSecretReader(v SecretReader) Option           { return func(m *Manager) { m.reader = v } }
-func WithSlotRegistry(v SlotRegistry) Option           { return func(m *Manager) { m.registry = v } }
-func WithStateReader(v ActiveStateReader) Option       { return func(m *Manager) { m.state = v } }
-func WithLockManager(v *lockfile.Manager) Option       { return func(m *Manager) { m.locks = v } }
+func WithSlotRegistry(v SlotRegistry) Option {
+	return func(m *Manager) { m.registrySet, m.registry = true, v }
+}
+func WithStateReader(v ActiveStateReader) Option {
+	return func(m *Manager) { m.stateSet, m.state = true, v }
+}
+func WithLockManager(v *lockfile.Manager) Option {
+	return func(m *Manager) { m.locksSet, m.locks = true, v }
+}
 
 func (m *Manager) executableDir() string {
 	return filepath.Join(m.layout.Bin, "cliproxyapi", m.lock.Version)

@@ -27,21 +27,29 @@ type Config struct {
 	Lock   upstreamlock.Lock
 	ACL    ACL
 	Smoke  update.Smoke
-	// MarkerSecurity is test-only injection; production callers leave it nil.
-	MarkerSecurity update.MarkerSecurity
 }
 
-// Runtime exposes the concrete objects for the future command boundary while
-// retaining a single Store and Registry as the transaction trust sources.
+// Runtime exposes only the operational command boundary. Mutable state and
+// locked lifecycle dependencies remain private transaction authorities.
 type Runtime struct {
-	Updater   *update.Updater
-	Manager   *instance.Manager
-	Registry  *installedslot.Registry
-	State     *state.Store
-	Lifecycle *instance.UpdaterLifecycle
+	Updater *update.Updater
+	Manager *instance.Manager
+
+	locks     *lockfile.Manager
+	state     *state.Store
+	registry  *installedslot.Registry
+	lifecycle *instance.UpdaterLifecycle
 }
 
 func New(c Config) (*Runtime, error) {
+	security, err := update.NewWindowsMarkerSecurity()
+	if err != nil {
+		return nil, ErrCompositionInvalid
+	}
+	return newRuntime(c, security)
+}
+
+func newRuntime(c Config, security update.MarkerSecurity) (*Runtime, error) {
 	if isNil(c.ACL) || isNil(c.Smoke) || c.Lock.Validate() != nil || c.Layout.Root == "" || c.Layout.State == "" || c.Layout.Locks == "" {
 		return nil, ErrCompositionInvalid
 	}
@@ -67,18 +75,14 @@ func New(c Config) (*Runtime, error) {
 		return nil, ErrCompositionInvalid
 	}
 	lifecycle := manager.UpdaterLifecycle()
-	security := c.MarkerSecurity
 	if isNil(security) {
-		security, err = update.NewWindowsMarkerSecurity()
-		if err != nil {
-			return nil, ErrCompositionInvalid
-		}
+		return nil, ErrCompositionInvalid
 	}
 	updater, err := update.New(update.Config{Locks: locks, State: store, Verifier: registry, Lifecycle: lifecycle, Smoke: c.Smoke, MarkerDir: c.Layout.State, MarkerSecurity: security})
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	return &Runtime{Updater: updater, Manager: manager, Registry: registry, State: store, Lifecycle: lifecycle}, nil
+	return &Runtime{Updater: updater, Manager: manager, locks: locks, state: store, registry: registry, lifecycle: lifecycle}, nil
 }
 
 func isNil(value any) bool {

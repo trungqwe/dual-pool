@@ -16,6 +16,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
 	"github.com/trungqwe/dual-pool/internal/dataroot"
 	"github.com/trungqwe/dual-pool/internal/installedslot"
+	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/update"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
@@ -141,12 +142,20 @@ func productionFixture(t *testing.T) (*Runtime, Config) {
 		t.Fatal(err)
 	}
 	smoke := &recordingSmoke{}
-	config := Config{Layout: layout, Lock: pin, ACL: acl, Smoke: smoke, MarkerSecurity: testMarkerSecurity{}}
-	runtime, err := New(config)
+	seedLocks, err := lockfile.NewManager(layout.Locks)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = runtime.State.SaveState(testState(pin.Version)); err != nil {
+	seedStore, err := state.NewStore(layout.State, state.WithLockManager(seedLocks))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = seedStore.SaveState(testState(pin.Version)); err != nil {
+		t.Fatal(err)
+	}
+	config := Config{Layout: layout, Lock: pin, ACL: acl, Smoke: smoke}
+	runtime, err := New(config)
+	if err != nil {
 		t.Fatal(err)
 	}
 	slotRoot, slotDir := filepath.Join(layout.Bin, "cliproxyapi"), filepath.Join(layout.Bin, "cliproxyapi", pin.Version)
@@ -159,7 +168,7 @@ func productionFixture(t *testing.T) (*Runtime, Config) {
 	manifest := installedslot.Manifest{SchemaVersion: 1, Product: pin.Product, Version: pin.Version, Tag: pin.Tag, Commit: pin.Commit, Platform: "windows_amd64", ExecutableSHA256: pin.Platforms.WindowsAMD64.ExecutableSHA256, UpstreamLockSHA256: pin.Digest(), ConfigAdapterVersion: pin.ConfigAdapterVersion, ExecutableBasename: "cliproxyapi.exe"}
 	manifestBytes, _ := json.Marshal(manifest)
 	writeProtected(t, acl, filepath.Join(slotDir, "install-manifest.json"), append(manifestBytes, '\n'))
-	if err = runtime.Registry.Register(context.Background(), pin.Version); err != nil {
+	if err = runtime.registry.Register(context.Background(), pin.Version); err != nil {
 		t.Fatal(err)
 	}
 	return runtime, config
@@ -196,25 +205,25 @@ func pointerField(object any, name string) uintptr {
 
 func TestRuntimeCompositionSharesExactObjects(t *testing.T) {
 	runtime, _ := productionFixture(t)
-	if pointerField(runtime.Updater, "state") != reflect.ValueOf(runtime.State).Pointer() || pointerField(runtime.Manager, "state") != reflect.ValueOf(runtime.State).Pointer() {
+	if pointerField(runtime.Updater, "state") != reflect.ValueOf(runtime.state).Pointer() || pointerField(runtime.Manager, "state") != reflect.ValueOf(runtime.state).Pointer() {
 		t.Fatal("state Store is not shared")
 	}
-	if pointerField(runtime.Updater, "verifier") != reflect.ValueOf(runtime.Registry).Pointer() || pointerField(runtime.Manager, "registry") != reflect.ValueOf(runtime.Registry).Pointer() {
+	if pointerField(runtime.Updater, "verifier") != reflect.ValueOf(runtime.registry).Pointer() || pointerField(runtime.Manager, "registry") != reflect.ValueOf(runtime.registry).Pointer() {
 		t.Fatal("Registry is not shared")
 	}
 	updaterLocks := pointerField(runtime.Updater, "locks")
-	if updaterLocks == 0 || pointerField(runtime.Manager, "locks") != updaterLocks || pointerField(runtime.State, "locks") != updaterLocks {
+	if updaterLocks == 0 || pointerField(runtime.Manager, "locks") != updaterLocks || pointerField(runtime.state, "locks") != updaterLocks || reflect.ValueOf(runtime.locks).Pointer() != updaterLocks {
 		t.Fatal("lock Manager is not shared")
 	}
 }
 
 func TestProductionCompositionResolvesPinnedSlot(t *testing.T) {
 	runtime, config := productionFixture(t)
-	slot, err := runtime.Registry.Resolve(config.Lock.Version)
+	slot, err := runtime.registry.Resolve(config.Lock.Version)
 	if err != nil || slot.Version != config.Lock.Version || slot.ExecutableSHA256 != config.Lock.Platforms.WindowsAMD64.ExecutableSHA256 {
 		t.Fatalf("slot=%#v err=%v", slot, err)
 	}
-	if pointerField(runtime.Manager, "registry") != reflect.ValueOf(runtime.Registry).Pointer() {
+	if pointerField(runtime.Manager, "registry") != reflect.ValueOf(runtime.registry).Pointer() {
 		t.Fatal("Manager does not use production Registry")
 	}
 }
@@ -226,7 +235,7 @@ func TestProductionRegistryRejectsCandidateBeforeLifecycleMutation(t *testing.T)
 	if err == nil {
 		t.Fatal("unknown candidate accepted")
 	}
-	current, loadErr := runtime.State.LoadState()
+	current, loadErr := runtime.state.LoadState()
 	if loadErr != nil || current.ActiveUpstreamVersion != config.Lock.Version {
 		t.Fatalf("state=%#v err=%v", current, loadErr)
 	}
@@ -241,37 +250,36 @@ func TestProductionRegistryRejectsCandidateBeforeLifecycleMutation(t *testing.T)
 func TestRuntimeCompositionConstructorFailureMatrixAndNoSideEffects(t *testing.T) {
 	_, config := productionFixture(t)
 	marker := filepath.Join(config.Layout.State, ".update-transaction.json")
-	if _, err := New(Config{Layout: config.Layout, Lock: upstreamlock.Lock{}, ACL: config.ACL, Smoke: config.Smoke, MarkerSecurity: config.MarkerSecurity}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := newRuntime(Config{Layout: config.Layout, Lock: upstreamlock.Lock{}, ACL: config.ACL, Smoke: config.Smoke}, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("invalid lock: %v", err)
 	}
 	bad := config
 	bad.Layout.Locks = filepath.Join(config.Layout.Root, "missing-locks")
-	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("missing locks: %v", err)
 	}
 	bad = config
 	bad.Layout.State = filepath.Join(config.Layout.Root, "missing-state")
-	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("missing state: %v", err)
 	}
 	bad = config
 	bad.Layout.Bin = filepath.Join(config.Layout.Root, "missing-bin")
-	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("registry construction path: %v", err)
 	}
 	bad = config
 	bad.Layout.Instances = filepath.Join(config.Layout.Root, "missing-instances")
-	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("Manager construction path: %v", err)
 	}
 	bad = config
 	bad.Layout.Root = "relative"
-	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := newRuntime(bad, testMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("unsafe layout: %v", err)
 	}
 	bad = config
-	bad.MarkerSecurity = rejectingMarkerSecurity{}
-	if _, err := New(bad); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := newRuntime(bad, rejectingMarkerSecurity{}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("marker security: %v", err)
 	}
 	if _, err := os.Stat(marker); !os.IsNotExist(err) {

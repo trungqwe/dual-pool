@@ -3,6 +3,8 @@ package instance
 import (
 	"context"
 	"errors"
+	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/trungqwe/dual-pool/internal/state"
@@ -27,5 +29,36 @@ func TestWithLockManagerNilFailsClosed(t *testing.T) {
 	fixture, _ := legacyInstallFixture(t)
 	if manager, err := New(fixture.layout, fixture.acl, fixture.lock, WithLockManager(nil)); err == nil || manager != nil {
 		t.Fatalf("nil lock manager accepted: %#v %v", manager, err)
+	}
+}
+
+func TestExplicitNilInjectedDependenciesFailClosed(t *testing.T) {
+	fixture, _ := legacyInstallFixture(t)
+	for name, option := range map[string]Option{
+		"registry": WithSlotRegistry(nil),
+		"state":    WithStateReader(nil),
+	} {
+		if manager, err := New(fixture.layout, fixture.acl, fixture.lock, option); err == nil || manager != nil {
+			t.Fatalf("explicit nil %s accepted: %#v %v", name, manager, err)
+		}
+	}
+}
+
+func TestInjectedDependenciesSkipDefaultConstruction(t *testing.T) {
+	fixture, _ := legacyInstallFixture(t)
+	layout := fixture.layout
+	layout.Locks = filepath.Join(t.TempDir(), "missing-locks")
+	layout.State = filepath.Join(t.TempDir(), "missing-state")
+	layout.Bin = filepath.Join(t.TempDir(), "missing-bin")
+	manager, err := New(layout, fixture.acl, fixture.lock,
+		WithLockManager(fixture.locks),
+		WithSlotRegistry(fixture.registry),
+		WithStateReader(fixture.state),
+	)
+	if err != nil {
+		t.Fatalf("complete injection attempted default construction: %v", err)
+	}
+	if manager.locks != fixture.locks || manager.registry != fixture.registry || !reflect.DeepEqual(manager.state, fixture.state) {
+		t.Fatal("injected dependencies were not retained as construction authority")
 	}
 }
