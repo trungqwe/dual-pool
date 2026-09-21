@@ -32,8 +32,19 @@ func TestCreateFileAppliesProtectedExactACLAtCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = m.InspectFile(path); err != nil {
+	if err = m.InspectHandle(f); err != nil {
 		t.Fatal(err)
+	}
+	info, err := f.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+		t.Fatalf("created object is not a regular file: info=%v err=%v", info, err)
+	}
+	replacement := filepath.Join(t.TempDir(), "replacement")
+	if err = os.WriteFile(replacement, []byte("replacement"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Rename(replacement, path); err == nil {
+		t.Fatal("exclusive creation handle allowed pathname replacement")
 	}
 	if _, err = f.Write([]byte("fixture")); err != nil {
 		t.Fatal(err)

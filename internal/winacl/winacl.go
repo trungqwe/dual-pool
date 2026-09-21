@@ -64,7 +64,7 @@ func (m *Manager) CreateFile(path string) (*os.File, error) {
 		return nil, ErrUnsafeACL
 	}
 	f := os.NewFile(uintptr(h), path)
-	if err = m.InspectFile(path); err != nil {
+	if err = m.InspectHandle(f); err != nil {
 		_ = f.Close()
 		return nil, err
 	}
