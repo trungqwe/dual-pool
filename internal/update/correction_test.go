@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 	"unsafe"
 
 	"github.com/trungqwe/dual-pool/internal/lockfile"
@@ -509,6 +510,77 @@ func TestP2UPDMarkerNTRenamePrimitiveDoesNotReplaceExistingTarget(t *testing.T) 
 	closed = true
 	if got, readErr := os.ReadFile(candidate); readErr != nil || string(got) != "candidate-data" {
 		t.Fatalf("candidate path changed: %v", readErr)
+	}
+}
+
+func openConflictingMarkerHandle(t *testing.T, path string) windows.Handle {
+	t.Helper()
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, err := windows.CreateFile(p, windows.GENERIC_READ, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return h
+}
+
+func TestP2UPDMarkerOpenRetriesTransientSharingConflict(t *testing.T) {
+	store, err := newMarkerStore(t.TempDir(), func() (string, error) { return "00112233445566778899aabbccddeeff", nil }, testMarkerSecurity{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := transactionMarker{SchemaVersion: 1, PreviousVersion: "7.3.7", CandidateVersion: "7.3.8", BaseStateSHA256: strings.Repeat("a", 64)}
+	if _, err = store.publish(m); err != nil {
+		t.Fatal(err)
+	}
+	conflict := openConflictingMarkerHandle(t, store.path())
+	released := make(chan struct{})
+	go func() {
+		time.Sleep(25 * time.Millisecond)
+		_ = windows.CloseHandle(conflict)
+		close(released)
+	}()
+	file, err := openMarker(store.path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	<-released
+	if got, readErr := readMarkerHandle(file); readErr != nil || len(got) == 0 {
+		t.Fatalf("opened marker changed: %v", readErr)
+	}
+}
+
+func TestP2UPDMarkerOpenBoundsPermanentSharingConflict(t *testing.T) {
+	store, err := newMarkerStore(t.TempDir(), func() (string, error) { return "00112233445566778899aabbccddeeff", nil }, testMarkerSecurity{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := transactionMarker{SchemaVersion: 1, PreviousVersion: "7.3.7", CandidateVersion: "7.3.8", BaseStateSHA256: strings.Repeat("a", 64)}
+	_, err = store.publish(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conflict := openConflictingMarkerHandle(t, store.path())
+	defer windows.CloseHandle(conflict)
+	started := time.Now()
+	_, err = openMarker(store.path())
+	elapsed := time.Since(started)
+	if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) && !errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
+		t.Fatalf("unexpected contention result: %v", err)
+	}
+	if elapsed < 200*time.Millisecond || elapsed > time.Second {
+		t.Fatalf("retry was not bounded: %v", elapsed)
+	}
+	if _, _, loadErr := store.load(); !errors.Is(loadErr, ErrRecoveryUnresolved) {
+		t.Fatalf("sharing conflict was treated as absence: %v", loadErr)
+	}
+	buffer := make([]byte, maxMarkerBytes)
+	var read uint32
+	if readErr := windows.ReadFile(conflict, buffer, &read, nil); readErr != nil || read == 0 {
+		t.Fatalf("contended marker changed: %v", readErr)
 	}
 }
 

@@ -180,7 +180,8 @@ func openMarker(path string) (*os.File, error) {
 	var h windows.Handle
 	for {
 		h, err = windows.CreateFile(p, windows.GENERIC_READ|windows.READ_CONTROL|windows.DELETE, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_OPEN_REPARSE_POINT, 0)
-		if !errors.Is(err, windows.ERROR_ACCESS_DENIED) || time.Now().After(deadline) {
+		transient := errors.Is(err, windows.ERROR_SHARING_VIOLATION) || errors.Is(err, windows.ERROR_LOCK_VIOLATION)
+		if !transient || time.Now().After(deadline) {
 			break
 		}
 		time.Sleep(time.Millisecond)
