@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "audit_kind": "independent_read_only_stage1_repair",
+  "reviewed_base": "e9b68f8b679f6f1b3d97577f484192664f63bb86",
+  "repair_head": "a3060848f7b23edfbfb6c9b780841e7d5d6879eb",
+  "authoritative_upstream": "2f5dd7b134ad19b9390af9c174095ef94ed09abc",
+  "audit_branch": "codex/installed-slot-repair-independent-audit",
+  "verdict": "PASS_CONTROLLED_FAST_FORWARD_CONSIDERATION",
+  "ancestry": {"e9_to_repair_commits": 2, "upstream_to_repair_commits": 4, "merge_commits": 0, "divergence": false},
+  "ci": {
+    "reviewed_head": {"run": 35623726784, "head": "e9b68f8b679f6f1b3d97577f484192664f63bb86", "conclusion": "success"},
+    "repair": {"run": 35627228700, "head": "a3060848f7b23edfbfb6c9b780841e7d5d6879eb", "branch": "phase-2/installed-slot-audit-repair", "conclusion": "success"}
+  },
+  "red_green": {
+    "old_failures": ["version alias accepted", "unpinned bytes reached verifier", "legacy reuse remained unregistered", "nil registry bypassed trust"],
+    "new_passed": ["A", "B", "B2", "C", "positive_pin", "no_rebind", "strict_json", "publication_matrix_10"]
+  },
+  "blockers": {"A": "PROVEN_FIXED", "B": "PROVEN_FIXED", "B2": "PROVEN_FIXED", "C": "PROVEN_FIXED"},
+  "publication_evidence": "returned-error fault injection plus reopen; not abrupt-process, OS-crash, or power-loss proof",
+  "open_gates": ["automatic_legacy_migration_outside_install", "production_multi_version_rollback", "updater_manager_runtime_composition", "retained_handle_identity", "pathname_toctou", "abrupt_process_os_crash_power_loss", "vulnerability_scan"]
+}
