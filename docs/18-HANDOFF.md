@@ -1,10 +1,10 @@
 # Current Handoff
 
-## Ưu tiên hiện tại — sửa authority binding của updater/Manager composition
+## Ưu tiên hiện tại — trusted multi-release provenance catalog
 
-Branch `phase-2/updater-manager-composition` đã đóng authority-binding blocker được phát hiện tại reviewed head `87375ac`. `instance.ComposeUpdater` chỉ nhận `Manager` và `Smoke`; nó tự derive lock manager, State repository, Registry verifier, private lifecycle, marker directory và trusted Windows marker security từ Manager. `instance.New` và `installedslot.New` đều fail closed nếu lock manager injected không khớp canonical `layout.Locks`. Runtime, Manager, Store, Registry và Updater dùng cùng một lock manager; raw lifecycle vẫn không exported và `MarkerSecurity` không thuộc public `Config`.
+Slice bắt đầu từ authoritative `phase-2/upstream-lifecycle` tại `7ce7405548f10f06aa266c8d01f8c49957aae1bd`, với delivery Source CI `35655203612` PASS. Mục tiêu hiện tại là catalog provenance bất biến cho nhiều release và Registry bind metadata theo đúng logical version được yêu cầu. Production vẫn chỉ tin release pinned `v7.3.7`; release thứ hai chỉ dùng TEMP/component fixture và không phải production candidate đã xác minh.
 
-TEMP-only shared vA/vB tests dùng synthetic process records và deterministic lifecycle hooks; chúng chứng minh fault-injection recovery tại marker/state boundaries, không chứng minh subprocess crash hay process-handle composition. Xem [repair report](reports/2026-09-21T2037Z-phase-2-updater-authority-binding-repair.md) và [evidence](../evidence/phase-2-updater-manager-composition/composition.json). `phase-2/upstream-lifecycle` vẫn cố định tại `a3060848f7b23edfbfb6c9b780841e7d5d6879eb`; production multi-version và live mutation vẫn OPEN.
+Authority-binding repair trước đó đã được delivery vào upstream. `instance.ComposeUpdater` vẫn tự derive lock, state, Registry, lifecycle và marker security từ Manager; không được mở lại API composition. Production multi-version rollback, candidate staging, Smoke production, live promotion, retained launch handle và subprocess/OS/power-loss proof vẫn OPEN.
 
 ## Lịch sử — audit installed-slot registry
 

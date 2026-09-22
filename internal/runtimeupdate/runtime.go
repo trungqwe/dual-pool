@@ -12,6 +12,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/update"
+	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
 
@@ -38,6 +39,7 @@ type Runtime struct {
 	locks    *lockfile.Manager
 	state    *state.Store
 	registry *installedslot.Registry
+	catalog  *upstreamcatalog.Catalog
 }
 
 func New(c Config) (*Runtime, error) {
@@ -49,6 +51,10 @@ func New(c Config) (*Runtime, error) {
 			return nil, ErrCompositionInvalid
 		}
 	}
+	catalog, err := upstreamcatalog.FromPinnedLock(c.Lock)
+	if err != nil {
+		return nil, ErrCompositionInvalid
+	}
 	locks, err := lockfile.NewManager(c.Layout.Locks)
 	if err != nil {
 		return nil, ErrCompositionInvalid
@@ -57,7 +63,7 @@ func New(c Config) (*Runtime, error) {
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	registry, err := installedslot.New(c.Layout, c.ACL, c.Lock, installedslot.WithLockManager(locks))
+	registry, err := installedslot.NewWithCatalog(c.Layout, c.ACL, catalog, installedslot.WithLockManager(locks))
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
@@ -69,7 +75,7 @@ func New(c Config) (*Runtime, error) {
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	return &Runtime{Updater: updater, Manager: manager, locks: locks, state: store, registry: registry}, nil
+	return &Runtime{Updater: updater, Manager: manager, locks: locks, state: store, registry: registry, catalog: catalog}, nil
 }
 
 func isNil(value any) bool {

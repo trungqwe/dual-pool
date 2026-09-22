@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "live_mutation": false,
+  "network": false,
+  "credentials_or_oauth": false,
+  "production_second_release": false,
+  "forbidden_sources": ["trusted-releases.json", "user-controlled catalog", "network catalog update"]
+}

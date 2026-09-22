@@ -170,3 +170,11 @@ Hiệu chỉnh: PASS component ở head e9b68f8 không cho phép integration vì
 - [x] Same-process fault-injection at marker-publish, active-save and partial-running boundaries is covered. No composed subprocess-crash claim is made. Evidence: [recovery](../evidence/phase-2-updater-manager-composition/recovery.json).
 - [x] Package stress/race, full repository, build, Node and lock gates pass. Evidence: [test result](../evidence/phase-2-updater-manager-composition/test-result.json).
 - [ ] Real second production release, production multi-version rollback, production Smoke, updater CLI, retained launch handle and OS crash/power-loss durability remain open.
+
+## Phase 2 trusted multi-release provenance catalog — 2026-09-22
+
+- [x] Immutable catalog resolves one exact provenance per logical version; inventory is not a trust root. Evidence: `evidence/phase-2-multi-release-provenance/catalog.json`.
+- [x] Registry validates metadata, executable hash and verifier expectation against provenance selected by requested version. Evidence: `evidence/phase-2-multi-release-provenance/registry-binding.json`.
+- [x] Synthetic vA/vB cross-binding, rebind, absent-entry and unknown-version attacks fail closed before verifier as applicable. Evidence: `evidence/phase-2-multi-release-provenance/registry-binding.json`.
+- [x] Production runtime derives exactly one catalog entry from validated current `upstream.lock`; `v7.3.8` remains untrusted. Evidence: `evidence/phase-2-multi-release-provenance/production-regression.json`.
+- [ ] Independently verified second production release, config compatibility, candidate staging and production multi-version rollback remain open.

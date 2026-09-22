@@ -24,6 +24,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/dataroot"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
+	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 	"golang.org/x/sys/windows"
@@ -107,7 +108,9 @@ type ResolvedSlot struct {
 	ConfigAdapterVersion string
 }
 
-type BinaryVerifier func(context.Context, string, Manifest) error
+// BinaryVerifier verifies bytes only after manifest metadata and the hash have
+// matched the exact catalog provenance for the requested logical release.
+type BinaryVerifier func(context.Context, string, upstreamcatalog.Provenance) error
 
 type FaultPoint string
 
@@ -128,36 +131,39 @@ func WithLockManager(v *lockfile.Manager) Option {
 }
 
 type Registry struct {
-	layout                 dataroot.Layout
-	acl                    ACL
-	locks                  *lockfile.Manager
-	locksSet               bool
-	expectedPlatform       string
-	expectedProduct        string
-	expectedAdapter        string
-	expectedVersion        string
-	expectedExecutableHash string
-	expectedTag            string
-	expectedCommit         string
-	expectedLockHash       string
-	binaryVerifier         BinaryVerifier
-	fault                  func(FaultPoint) error
+	layout         dataroot.Layout
+	acl            ACL
+	locks          *lockfile.Manager
+	locksSet       bool
+	catalog        *upstreamcatalog.Catalog
+	binaryVerifier BinaryVerifier
+	fault          func(FaultPoint) error
 }
 
-// New constructs the production registry policy without creating product
-// directories. The pinned upstream lock remains authoritative.
+// New constructs the production registry from the existing exact pin. It is
+// retained as a compatibility boundary for current-pin callers.
 func New(layout dataroot.Layout, acl ACL, lock upstreamlock.Lock, options ...Option) (*Registry, error) {
-	if acl == nil || lock.Validate() != nil {
+	catalog, err := upstreamcatalog.FromPinnedLock(lock)
+	if err != nil {
 		return nil, ErrUnsupported
 	}
-	r := &Registry{layout: layout, acl: acl, expectedPlatform: "windows_amd64", expectedProduct: lock.Product, expectedAdapter: lock.ConfigAdapterVersion, expectedVersion: lock.Version, expectedTag: lock.Tag, expectedCommit: lock.Commit, expectedLockHash: lock.Digest(), binaryVerifier: func(ctx context.Context, path string, _ Manifest) error {
-		identity, err := (upstreamstage.WindowsVerifier{}).Verify(ctx, path, lock)
+	return NewWithCatalog(layout, acl, catalog, options...)
+}
+
+// NewWithCatalog accepts only an already trusted immutable catalog. It does
+// not parse user metadata or establish trust; production runtime composition
+// uses New/FromPinnedLock. It exists for internally verified component sources.
+func NewWithCatalog(layout dataroot.Layout, acl ACL, catalog *upstreamcatalog.Catalog, options ...Option) (*Registry, error) {
+	if acl == nil || catalog == nil || catalog.Len() == 0 {
+		return nil, ErrUnsupported
+	}
+	r := &Registry{layout: layout, acl: acl, catalog: catalog, binaryVerifier: func(ctx context.Context, path string, expected upstreamcatalog.Provenance) error {
+		identity, err := (upstreamstage.WindowsVerifier{}).VerifyExpected(ctx, path, upstreamstage.ExpectedIdentity{Version: expected.Version, Commit: expected.Commit})
 		if err != nil || !identity.VersionMatch || !identity.CommitMatch {
 			return ErrUnsafeSlot
 		}
 		return nil
 	}}
-	r.expectedExecutableHash = lock.Platforms.WindowsAMD64.ExecutableSHA256
 	for _, option := range options {
 		option(r)
 	}
@@ -196,6 +202,9 @@ func (r *Registry) ResolveContext(ctx context.Context, version string) (Resolved
 	if !validVersion(version) {
 		return ResolvedSlot{}, ErrInvalidVersion
 	}
+	if _, err := r.provenance(version); err != nil {
+		return ResolvedSlot{}, err
+	}
 	doc, err := r.loadDocument()
 	if err != nil {
 		return ResolvedSlot{}, err
@@ -233,6 +242,9 @@ func (r *Registry) Register(ctx context.Context, version string) error {
 func (r *Registry) RegisterLocked(ctx context.Context, version string) error {
 	if !validVersion(version) {
 		return ErrInvalidVersion
+	}
+	if _, err := r.provenance(version); err != nil {
+		return err
 	}
 	resolved, err := r.validateDirectory(ctx, version, r.slotPath(version), nil)
 	if err != nil {
@@ -299,7 +311,8 @@ func (r *Registry) validateDirectory(ctx context.Context, version, dir string, b
 	if err != nil {
 		return ResolvedSlot{}, ErrUnsafeSlot
 	}
-	if err := r.validateManifest(manifest, version); err != nil {
+	provenance, err := r.provenance(version)
+	if err != nil || r.validateManifest(manifest, version, provenance) != nil {
 		return ResolvedSlot{}, ErrUnsafeSlot
 	}
 	info, err := os.Stat(executablePath)
@@ -307,7 +320,7 @@ func (r *Registry) validateDirectory(ctx context.Context, version, dir string, b
 		return ResolvedSlot{}, ErrUnsafeSlot
 	}
 	exeHash, err := hashFile(executablePath)
-	if err != nil || exeHash != manifest.ExecutableSHA256 {
+	if err != nil || exeHash != manifest.ExecutableSHA256 || exeHash != provenance.ExecutableSHA256 {
 		return ResolvedSlot{}, ErrSlotConflict
 	}
 	manifestHash := hashBytes(manifestBytes)
@@ -316,23 +329,25 @@ func (r *Registry) validateDirectory(ctx context.Context, version, dir string, b
 		return ResolvedSlot{}, ErrSlotConflict
 	}
 	if r.binaryVerifier != nil {
-		if err := r.binaryVerifier(ctx, executablePath, manifest); err != nil {
+		if err := r.binaryVerifier(ctx, executablePath, provenance); err != nil {
 			return ResolvedSlot{}, ErrUnsafeSlot
 		}
 	}
 	return resolved, nil
 }
 
-func (r *Registry) validateManifest(m Manifest, version string) error {
-	// Bind metadata to the trusted pin before the verifier can execute bytes.
-	// Only internal synthetic multi-slot fixtures omit these expected values.
-	if r.expectedVersion != "" && m.Version != r.expectedVersion {
-		return ErrUnsupported
+func (r *Registry) provenance(version string) (upstreamcatalog.Provenance, error) {
+	p, err := r.catalog.Resolve(version)
+	if err != nil {
+		return upstreamcatalog.Provenance{}, ErrSlotUnknown
 	}
-	if r.expectedExecutableHash != "" && m.ExecutableSHA256 != r.expectedExecutableHash {
-		return ErrUnsupported
-	}
-	if m.SchemaVersion != 1 || m.Product != r.expectedProduct || m.Version != version || m.ExecutableBasename != "cliproxyapi.exe" || m.Platform != r.expectedPlatform || m.ConfigAdapterVersion != r.expectedAdapter || !digestPattern.MatchString(m.ExecutableSHA256) || m.Tag == "" || m.Commit == "" || m.UpstreamLockSHA256 == "" || !commitPattern.MatchString(m.Commit) || m.Tag != r.expectedTag && r.expectedTag != "" || m.Commit != r.expectedCommit && r.expectedCommit != "" || m.UpstreamLockSHA256 != r.expectedLockHash && r.expectedLockHash != "" {
+	return p, nil
+}
+
+func (r *Registry) validateManifest(m Manifest, version string, p upstreamcatalog.Provenance) error {
+	// The inventory is never a trust root: every field binds to the exact
+	// provenance resolved by the requested logical version.
+	if m.SchemaVersion != 1 || m.Product != p.Product || m.Version != version || m.Version != p.Version || m.ExecutableBasename != "cliproxyapi.exe" || m.Platform != p.Platform || m.ConfigAdapterVersion != p.ConfigAdapterVersion || !digestPattern.MatchString(m.ExecutableSHA256) || m.Tag != p.Tag || m.Commit != p.Commit || m.UpstreamLockSHA256 != p.Digest || m.ExecutableSHA256 != p.ExecutableSHA256 || !commitPattern.MatchString(m.Commit) {
 		return ErrUnsupported
 	}
 	return nil

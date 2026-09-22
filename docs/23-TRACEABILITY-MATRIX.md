@@ -228,3 +228,15 @@ Production multi-version update acceptance, real second-release adapter proof an
 | P2-UPD-NO-LIVE-MUTATION-001 | [security gate](../evidence/phase-2-updater-manager-composition/security-gate.json) | PASS |
 
 Real second-release and production multi-version acceptance remain OPEN.
+
+## Phase 2 multi-release provenance catalog — 2026-09-22
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P2-PROVENANCE-CATALOG-001: immutable per-version release identity | `internal/upstreamcatalog/catalog_test.go`, `evidence/phase-2-multi-release-provenance/catalog.json` | PASS_COMPONENT |
+| P2-SLOT-CATALOG-BINDING-001: Registry resolves provenance before metadata/hash/verifier | `internal/installedslot/catalog_registry_test.go`, `registry-binding.json` | PASS_COMPONENT |
+| P2-SLOT-CROSS-BINDING-001: version/commit/hash/digest/tag/adapter cannot cross releases | `TestRegistryRejectsCatalogCrossBindingBeforeVerifier`, `registry-binding.json` | PASS_COMPONENT |
+| P2-BINARY-IDENTITY-RELEASE-001: expected version/commit identity remains bounded and exact | `TestVerifyExpectedIdentity`, `binary-identity.json` | PASS_COMPONENT |
+| P2-PROVENANCE-PRODUCTION-001: runtime derives only current exact pin | `TestProductionCompositionResolvesPinnedSlot`, `production-regression.json` | PASS_COMPONENT |
+
+Synthetic vA/vB entries prove component binding only. A real second release, config compatibility, staging, promotion and rollback remain OPEN.

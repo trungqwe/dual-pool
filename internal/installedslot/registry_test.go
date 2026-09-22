@@ -7,10 +7,12 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/trungqwe/dual-pool/internal/dataroot"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
+	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
 )
 
 type fixtureACL struct{}
@@ -48,12 +50,16 @@ func fixtureRegistry(t *testing.T) (*Registry, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := &Registry{layout: layout, acl: fixtureACL{}, locks: locks, expectedPlatform: "windows_amd64", expectedAdapter: "fixture-adapter", expectedProduct: "CLIProxyAPI", binaryVerifier: func(context.Context, string, Manifest) error { return nil }}
+	r := &Registry{layout: layout, acl: fixtureACL{}, locks: locks, binaryVerifier: func(context.Context, string, upstreamcatalog.Provenance) error { return nil }}
 	return r, root
 }
 
 func fixtureManifest(version, exeHash string) Manifest {
-	return Manifest{SchemaVersion: 1, Product: "CLIProxyAPI", Version: version, Tag: "fixture-" + version, Commit: "fixture-commit-" + version, Platform: "windows_amd64", ExecutableSHA256: exeHash, UpstreamLockSHA256: "fixture-lock", ConfigAdapterVersion: "fixture-adapter", ExecutableBasename: "cliproxyapi.exe"}
+	commit, digest := strings.Repeat("a", 40), strings.Repeat("b", 64)
+	if version == "vB" {
+		commit, digest = strings.Repeat("c", 40), strings.Repeat("d", 64)
+	}
+	return Manifest{SchemaVersion: 1, Product: "CLIProxyAPI", Version: version, Tag: "v" + version, Commit: commit, Platform: "windows_amd64", ExecutableSHA256: exeHash, UpstreamLockSHA256: digest, ConfigAdapterVersion: "fixture-adapter", ExecutableBasename: "cliproxyapi.exe"}
 }
 
 func writeFixtureSlot(t *testing.T, r *Registry, version string, body []byte) Manifest {
@@ -75,7 +81,36 @@ func writeFixtureSlot(t *testing.T, r *Registry, version string, body []byte) Ma
 	if err := os.WriteFile(filepath.Join(dir, manifestName), data, 0600); err != nil {
 		t.Fatal(err)
 	}
+	refreshFixtureCatalog(t, r)
 	return m
+}
+
+func refreshFixtureCatalog(t *testing.T, r *Registry) {
+	t.Helper()
+	dirs, err := os.ReadDir(r.slotRoot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries := make([]upstreamcatalog.Provenance, 0, len(dirs))
+	for _, dir := range dirs {
+		if !dir.IsDir() {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(r.slotRoot(), dir.Name(), manifestName))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err := decodeManifest(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		artifact := "CLIProxyAPI_" + m.Version + "_windows_amd64.zip"
+		entries = append(entries, upstreamcatalog.Provenance{Product: m.Product, Version: m.Version, Tag: m.Tag, Commit: m.Commit, Platform: m.Platform, Artifact: artifact, DownloadURL: "https://github.com/router-for-me/CLIProxyAPI/releases/download/" + m.Tag + "/" + artifact, ArchiveSHA256: strings.Repeat("e", 64), ExecutableSHA256: m.ExecutableSHA256, ConfigAdapterVersion: m.ConfigAdapterVersion, Digest: m.UpstreamLockSHA256, ReleaseMetadataURL: "https://github.com/router-for-me/CLIProxyAPI/releases/tag/" + m.Tag})
+	}
+	r.catalog, err = upstreamcatalog.NewVerified(entries...)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestLogicalVersionRejectsPathAndDeviceForms(t *testing.T) {

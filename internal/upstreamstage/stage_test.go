@@ -219,6 +219,30 @@ func TestBinaryIdentityTimeout(t *testing.T) {
 	}
 }
 
+func TestVerifyExpectedIdentity(t *testing.T) {
+	expected := ExpectedIdentity{Version: "vA", Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+	line := func(version, commit string) []byte {
+		return []byte(fmt.Sprintf("CLIProxyAPI Version: %s, Commit: %s, BuiltAt: fixture\n", version, commit))
+	}
+	for _, tc := range []struct {
+		name   string
+		output []byte
+		want   Identity
+	}{
+		{"match", line("vA", "aaaaaaaa"), Identity{true, true}},
+		{"wrong version", line("vB", "aaaaaaaa"), Identity{false, true}},
+		{"wrong commit", line("vA", "bbbbbbbb"), Identity{true, false}},
+		{"ambiguous short commit", line("vA", "aaaaaa"), Identity{true, false}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := (WindowsVerifier{runner: fakeIdentityRunner{stdout: tc.output}}).VerifyExpected(context.Background(), "ignored", expected)
+			if err != nil || got != tc.want {
+				t.Fatalf("got=%+v err=%v", got, err)
+			}
+		})
+	}
+}
+
 func TestZIPSafetyAndUniqueHashSelection(t *testing.T) {
 	exe := fixtureExecutable(t)
 	tests := []struct {

@@ -201,6 +201,13 @@ func TestRuntimePrivateLifecycleUsesExactManager(t *testing.T) {
 
 func TestProductionCompositionResolvesPinnedSlot(t *testing.T) {
 	runtime, config := productionFixture(t)
+	if runtime.catalog == nil || runtime.catalog.Len() != 1 {
+		t.Fatalf("production catalog length=%d", runtime.catalog.Len())
+	}
+	provenance, err := runtime.catalog.Resolve(config.Lock.Version)
+	if err != nil || provenance.Digest != config.Lock.Digest() || provenance.ExecutableSHA256 != config.Lock.Platforms.WindowsAMD64.ExecutableSHA256 {
+		t.Fatalf("production provenance=%+v err=%v", provenance, err)
+	}
 	slot, err := runtime.registry.Resolve(config.Lock.Version)
 	if err != nil || slot.Version != config.Lock.Version || slot.ExecutableSHA256 != config.Lock.Platforms.WindowsAMD64.ExecutableSHA256 {
 		t.Fatalf("slot=%#v err=%v", slot, err)

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "authority": "Catalog is trusted authority; installed-slots.json is inventory only.",
+  "validation_order": ["resolve requested version", "exact manifest/provenance comparison", "executable hash", "registered binding", "binary identity"],
+  "tests": [
+    "TestRegistryResolvesTwoCatalogBoundReleases",
+    "TestRegistryRejectsCatalogCrossBindingBeforeVerifier",
+    "TestRegistryRejectsUnknownReleaseBeforeVerifier",
+    "TestRegistryRejectsLogicalVersionRebind",
+    "TestRegistryDoesNotTrustEntryAbsentFromCatalogAndHashStopsVerifier"
+  ]
+}

@@ -397,7 +397,20 @@ type identityRunner interface {
 }
 type WindowsVerifier struct{ runner identityRunner }
 
+// ExpectedIdentity is the release-specific executable identity authority used
+// after an immutable provenance catalog has matched the executable hash.
+type ExpectedIdentity struct {
+	Version string
+	Commit  string
+}
+
 func (v WindowsVerifier) Verify(ctx context.Context, path string, l upstreamlock.Lock) (Identity, error) {
+	return v.VerifyExpected(ctx, path, ExpectedIdentity{Version: l.Version, Commit: l.Commit})
+}
+
+// VerifyExpected retains the existing bounded -h parser and requires a
+// non-ambiguous seven-character-or-longer commit prefix.
+func (v WindowsVerifier) VerifyExpected(ctx context.Context, path string, expected ExpectedIdentity) (Identity, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	runner := v.runner
@@ -414,7 +427,7 @@ func (v WindowsVerifier) Verify(ctx context.Context, path string, l upstreamlock
 	}
 	version := strings.TrimPrefix(string(m[1]), "v")
 	commit := string(m[2])
-	return Identity{version == l.Version, strings.HasPrefix(l.Commit, commit) && len(commit) >= 7}, nil
+	return Identity{version == strings.TrimPrefix(expected.Version, "v"), strings.HasPrefix(expected.Commit, commit) && len(commit) >= 7}, nil
 }
 
 type commandIdentityRunner struct{}

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/trungqwe/dual-pool/internal/lockfile"
+	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
 
@@ -69,7 +70,7 @@ func productionPolicyFixture(t *testing.T, body []byte, calls *int) (*Registry, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := New(fixture.layout, fixture.acl, pin, WithBinaryVerifier(func(_ context.Context, path string, _ Manifest) error {
+	r, err := New(fixture.layout, fixture.acl, pin, WithBinaryVerifier(func(_ context.Context, path string, _ upstreamcatalog.Provenance) error {
 		*calls++
 		data, err := os.ReadFile(path)
 		if err != nil || !bytes.Equal(data, body) {
@@ -94,6 +95,11 @@ func writePolicySlot(t *testing.T, r *Registry, pin upstreamlock.Lock, version s
 	if err = os.WriteFile(filepath.Join(r.slotPath(version), manifestName), data, 0600); err != nil {
 		t.Fatal(err)
 	}
+	catalog, err := upstreamcatalog.FromPinnedLock(pin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.catalog = catalog
 }
 
 func TestProductionPolicyRejectsVersionAliasBeforeVerifier(t *testing.T) {
@@ -101,7 +107,7 @@ func TestProductionPolicyRejectsVersionAliasBeforeVerifier(t *testing.T) {
 	body := []byte("synthetic pinned artifact")
 	r, pin := productionPolicyFixture(t, body, &calls)
 	writePolicySlot(t, r, pin, "7.3.8", body)
-	if err := r.Register(context.Background(), "7.3.8"); !errors.Is(err, ErrUnsafeSlot) {
+	if err := r.Register(context.Background(), "7.3.8"); !errors.Is(err, ErrSlotUnknown) {
 		t.Fatalf("version alias accepted: %v", err)
 	}
 	if calls != 0 {

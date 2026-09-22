@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "focused": "go test ./internal/upstreamcatalog; installedslot catalog registry; upstreamstage verifier; runtimeupdate catalog composition",
+  "status": "local focused checks passed before final full gate",
+  "scope": "component fixtures and current-pin regression only"
+}

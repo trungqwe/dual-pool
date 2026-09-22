@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "production_trust_set": ["7.3.7"],
+  "source": "validated repository upstream.lock",
+  "tests": ["TestProductionCompositionResolvesPinnedSlot", "TestProductionRegistryRejectsCandidateBeforeLifecycleMutation"],
+  "unknown_second_release": "fails closed"
+}

@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "claim": "WindowsVerifier.VerifyExpected compares release-specific normalized version and a non-ambiguous commit prefix of at least seven characters.",
+  "compatibility": "WindowsVerifier.Verify(upstreamlock.Lock) remains a wrapper for current stager behavior.",
+  "tests": ["TestBinaryIdentityFailures", "TestVerifyExpectedIdentity"]
+}
