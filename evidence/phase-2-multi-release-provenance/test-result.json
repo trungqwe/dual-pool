@@ -1,6 +1,8 @@
 {
   "schema_version": 1,
-  "focused": "go test ./internal/upstreamcatalog; installedslot catalog registry; upstreamstage verifier; runtimeupdate catalog composition",
-  "status": "local focused checks passed before final full gate",
+  "focused_x20": "PASS: upstreamcatalog, installedslot, runtimeupdate, upstreamstage",
+  "stress_x50": "PASS: upstreamcatalog, installedslot, upstreamstage, instance, runtimeupdate, update",
+  "race_x10": "PASS: upstreamcatalog, installedslot, upstreamstage, instance, runtimeupdate, update",
+  "full_go_test": "PASS before repair; final exact-SHA Source CI is delivery gate",
   "scope": "component fixtures and current-pin regression only"
 }

@@ -1,6 +1,6 @@
 # Current Handoff
 
-## Ưu tiên hiện tại — trusted multi-release provenance catalog
+## Ưu tiên hiện tại — trusted multi-release provenance catalog repair
 
 Slice bắt đầu từ authoritative `phase-2/upstream-lifecycle` tại `7ce7405548f10f06aa266c8d01f8c49957aae1bd`, với delivery Source CI `35655203612` PASS. Mục tiêu hiện tại là catalog provenance bất biến cho nhiều release và Registry bind metadata theo đúng logical version được yêu cầu. Production vẫn chỉ tin release pinned `v7.3.7`; release thứ hai chỉ dùng TEMP/component fixture và không phải production candidate đã xác minh.
 
