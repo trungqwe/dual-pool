@@ -1,8 +1,14 @@
 # Current Handoff
 
-## Ưu tiên hiện tại — independent audit v7.3.8 delivery
+## Ưu tiên hiện tại — owner audit và controlled delivery v7.3.8
 
 Slice bắt đầu từ authoritative `phase-2/upstream-lifecycle` tại `a0b1573346007ad08a9ebe7012167bffa79fbd99`, với Source CI `35692175916` PASS. Nhánh làm việc riêng là `phase-2/verify-v7.3.8-production-provenance`; upstream không được di chuyển trong slice này.
+
+Receipt byte-identity repair đã hoàn tất ở code/evidence commit `df106aad7c823d23fbc7cae8d88455157e4646cb`; exact-SHA Source CI run `35707709709` cho branch này completed/success và mọi source-checks đều PASS. `.gitattributes` ghim riêng trust receipt sang LF; parser production yêu cầu SHA-256 `0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776` và trả đúng digest này. Main Windows worktree cùng clean detached Windows worktree đều cho hash canonical; CRLF-equivalent JSON và valid-looking 64-hex hash substitutions bị từ chối. Chi tiết: [receipt byte-identity repair report](reports/2026-09-22T0904Z-phase-2-v738-receipt-byte-identity-repair.md) và `evidence/phase-2-v7.3.8-verification/test-result.json`.
+
+`upstream.lock` không đổi; `phase-2/upstream-lifecycle` vẫn ở `a0b1573346007ad08a9ebe7012167bffa79fbd99`; production catalog vẫn gồm current `v7.3.7` và verified `v7.3.8`, còn Stage chỉ cho current pin `v7.3.7`. Không chạy lại candidate thật, không tạo listener, không staging/install/promote và không product/provider mutation. Bcrypt policy giữ nguyên. TEMP classification vẫn `POLICY_BLOCKED_NONREPO_TEMP_RESIDUE`.
+
+Kết luận hiện tại là delivery gates PASS, chưa phải independent acceptance. Bước kế tiếp duy nhất: owner/auditor review và controlled delivery của toàn bộ v7.3.8 provenance lineage vào `phase-2/upstream-lifecycle`; dừng nếu review phát hiện mismatch. Các gate staging/install, Smoke, promotion/rollback, handle retention, TOCTOU, OS/power-loss durability và updater CLI vẫn OPEN.
 
 CLIProxyAPI `v7.3.8` đã được xác minh từ GitHub upstream: tag commit `c93978c4ea2e908255a2a06c37599fda3651554a`, archive Windows AMD64 triple-hash, PE AMD64/executable identity, output `-h`, source compatibility và disposable loopback-only harness với key synthetic. Catalog production dùng receipt embed bất biến tại `internal/upstreamcatalog/trust/v7.3.8.json`, với digest SHA-256 trên raw bytes; `upstream.lock` và `Stage(upstreamlock.Lock)` vẫn chỉ v7.3.7.
 
