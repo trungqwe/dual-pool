@@ -1,0 +1,1 @@
+{"schema_version":1,"executable":"cli-proxy-api.exe","executable_sha256":"479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd","regular_file":true,"reparse_point":false,"pe":true,"machine":"AMD64","help":{"exit_code":0,"version":"7.3.8","commit":"c93978c4","expected_commit":"c93978c4ea2e908255a2a06c37599fda3651554a","commit_prefix_verified":true},"temp_only":true}

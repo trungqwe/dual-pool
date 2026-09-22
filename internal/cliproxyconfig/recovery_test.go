@@ -11,6 +11,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/dataroot"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/winacl"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestFaultRecoveryMatrix(t *testing.T) {
@@ -81,6 +82,7 @@ func TestCrashHelper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	g.bcryptCost = bcrypt.MinCost
 	point := Fault(os.Getenv("DUALPOOL_CRASH_POINT"))
 	g.WithFault(func(p Fault) error {
 		if p == point {

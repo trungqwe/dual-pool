@@ -16,10 +16,14 @@ import (
 const header = "# managed-by: dualpool\n# config-adapter: " + AdapterVersion + "\n# upstream: CLIProxyAPI v" + UpstreamVersion + " " + UpstreamCommit + "\n"
 
 func render(id ID, authDir string, clientWire, managementWire []byte) ([]byte, error) {
+	return renderWithCost(id, authDir, clientWire, managementWire, bcrypt.DefaultCost)
+}
+
+func renderWithCost(id ID, authDir string, clientWire, managementWire []byte, cost int) ([]byte, error) {
 	if !id.valid() || len(clientWire) != 43 || len(managementWire) != 43 {
 		return nil, ErrConfigInvalid
 	}
-	hash, err := bcrypt.GenerateFromPassword(managementWire, bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword(managementWire, cost)
 	if err != nil {
 		return nil, ErrConfigInvalid
 	}
@@ -74,6 +78,10 @@ func yamlNode(v config, n *yaml.Node) error {
 }
 
 func validateConfig(data []byte, id ID, authDir string, clientWire, managementWire []byte, otherKeys [][]byte) error {
+	return validateConfigWithCost(data, id, authDir, clientWire, managementWire, otherKeys, bcrypt.DefaultCost)
+}
+
+func validateConfigWithCost(data []byte, id ID, authDir string, clientWire, managementWire []byte, otherKeys [][]byte, expectedCost int) error {
 	if !id.valid() || len(data) == 0 || len(data) > 16*1024 || !utf8.Valid(data) || !bytes.HasPrefix(data, []byte(header)) {
 		return ErrConfigInvalid
 	}
@@ -98,6 +106,10 @@ func validateConfig(data []byte, id ID, authDir string, clientWire, managementWi
 		return ErrConfigInvalid
 	}
 	if !strings.HasPrefix(actual.RemoteManagement.SecretKey, "$2a$") && !strings.HasPrefix(actual.RemoteManagement.SecretKey, "$2b$") && !strings.HasPrefix(actual.RemoteManagement.SecretKey, "$2y$") {
+		return ErrConfigInvalid
+	}
+	cost, err := bcrypt.Cost([]byte(actual.RemoteManagement.SecretKey))
+	if err != nil || cost != expectedCost {
 		return ErrConfigInvalid
 	}
 	if bcrypt.CompareHashAndPassword([]byte(actual.RemoteManagement.SecretKey), managementWire) != nil {

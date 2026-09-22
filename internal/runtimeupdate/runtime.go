@@ -51,7 +51,7 @@ func New(c Config) (*Runtime, error) {
 			return nil, ErrCompositionInvalid
 		}
 	}
-	catalog, err := upstreamcatalog.FromPinnedLock(c.Lock)
+	catalog, err := upstreamcatalog.Production(c.Lock)
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}

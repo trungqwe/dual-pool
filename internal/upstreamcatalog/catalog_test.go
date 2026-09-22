@@ -1,6 +1,8 @@
 package upstreamcatalog
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +11,90 @@ import (
 
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
+
+func TestProductionCatalogContainsCurrentAndVerifiedV738(t *testing.T) {
+	c, err := Production(pinned(t))
+	if err != nil || c.Len() != 2 {
+		t.Fatalf("catalog len=%d err=%v", c.Len(), err)
+	}
+	for _, version := range []string{"7.3.7", "7.3.8"} {
+		if _, err := c.Resolve(version); err != nil {
+			t.Fatalf("trusted version %s: %v", version, err)
+		}
+	}
+}
+
+func TestProductionCatalogPreservesCurrentPinnedIdentity(t *testing.T) {
+	lock := pinned(t)
+	c, err := Production(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := c.Resolve("7.3.7")
+	if err != nil || p.Digest != lock.Digest() || p.Commit != lock.Commit || p.ExecutableSHA256 != lock.Platforms.WindowsAMD64.ExecutableSHA256 {
+		t.Fatalf("current identity=%+v err=%v", p, err)
+	}
+}
+
+func TestProductionCatalogV738ExactIdentity(t *testing.T) {
+	c, err := Production(pinned(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := c.Resolve("7.3.8")
+	if err != nil || p.Tag != "v7.3.8" || p.Commit != "c93978c4ea2e908255a2a06c37599fda3651554a" || p.ArchiveSHA256 != "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351" || p.ExecutableSHA256 != "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd" || p.ConfigAdapterVersion != "dualpool-cpa-v7.3.7-config-v1" {
+		t.Fatalf("v7.3.8 identity=%+v err=%v", p, err)
+	}
+}
+
+func TestProductionCatalogRejectsUnknownVersion(t *testing.T) {
+	c, err := Production(pinned(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, version := range []string{"7.3.9", "7.3.12"} {
+		if _, err := c.Resolve(version); err == nil {
+			t.Fatalf("unknown version accepted: %s", version)
+		}
+	}
+}
+
+func TestVerifiedV738ReceiptDigestStable(t *testing.T) {
+	p, err := parseVerifiedV738Receipt(verifiedV738Receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(verifiedV738Receipt)
+	if p.Digest != hex.EncodeToString(sum[:]) {
+		t.Fatalf("digest=%s", p.Digest)
+	}
+}
+
+func TestVerifiedV738ReceiptRejectsTampering(t *testing.T) {
+	for _, old := range []string{"7.3.8", "v7.3.8", "c93978c4ea2e908255a2a06c37599fda3651554a", "CLIProxyAPI_7.3.8_windows_amd64.zip", "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351", "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd", "dualpool-cpa-v7.3.7-config-v1", "windows_amd64", "https://github.com/router-for-me/CLIProxyAPI/releases/tag/v7.3.8", "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.8/CLIProxyAPI_7.3.8_windows_amd64.zip"} {
+		t.Run(old, func(t *testing.T) {
+			bad := []byte(strings.Replace(string(verifiedV738Receipt), old, old+"x", 1))
+			if _, err := parseVerifiedV738Receipt(bad); err == nil {
+				t.Fatal("tampered receipt accepted")
+			}
+		})
+	}
+	for _, bad := range [][]byte{
+		[]byte(strings.Replace(string(verifiedV738Receipt), "\n}\n", ",\n  \"unknown\": true\n}\n", 1)),
+		[]byte(strings.Replace(string(verifiedV738Receipt), "\n  \"version\": \"7.3.8\",", "\n  \"version\": \"7.3.8\",\n  \"version\": \"7.3.8\",", 1)),
+	} {
+		if _, err := parseVerifiedV738Receipt(bad); err == nil {
+			t.Fatal("structurally tampered receipt accepted")
+		}
+	}
+}
+
+func TestVerifiedV738ReceiptRejectsDuplicateKeys(t *testing.T) {
+	bad := []byte(strings.Replace(string(verifiedV738Receipt), "\n  \"tag\": \"v7.3.8\",", "\n  \"tag\": \"v7.3.8\",\n  \"tag\": \"v7.3.8\",", 1))
+	if _, err := parseVerifiedV738Receipt(bad); err == nil {
+		t.Fatal("duplicate key accepted")
+	}
+}
 
 func pinned(t *testing.T) upstreamlock.Lock {
 	t.Helper()

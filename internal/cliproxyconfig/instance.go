@@ -16,6 +16,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/secretstore"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/winacl"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/sys/windows"
 )
 
@@ -61,6 +62,9 @@ type Generator struct {
 	reader SecretReader
 	lock   upstreamlock.Lock
 	fault  func(Fault) error
+	// bcryptCost is fixed to DefaultCost in production. Package-local fixtures
+	// may lower it before first use to keep crash-recovery stress bounded.
+	bcryptCost int
 }
 
 // NewCurrent checks the real product initialization gates without mutation.
@@ -87,7 +91,7 @@ func New(l dataroot.Layout, a ACL, reader SecretReader, lock upstreamlock.Lock) 
 	if a == nil || reader == nil {
 		return nil, ErrUnsafeInstanceArtifact
 	}
-	return &Generator{layout: l, acl: a, reader: reader, lock: lock}, nil
+	return &Generator{layout: l, acl: a, reader: reader, lock: lock, bcryptCost: bcrypt.DefaultCost}, nil
 }
 func (g *Generator) WithFault(f func(Fault) error) *Generator { g.fault = f; return g }
 func (g *Generator) hit(point Fault) error {
@@ -316,7 +320,7 @@ func (g *Generator) inspectInstance(root string, id ID, m *material, candidate b
 	} else {
 		other = [][]byte{m.wire[0], m.wire[1]}
 	}
-	if validateConfig(b, id, g.auth(id), m.wire[base], m.wire[base+1], other) != nil {
+	if validateConfigWithCost(b, id, g.auth(id), m.wire[base], m.wire[base+1], other, g.bcryptCost) != nil {
 		return ErrConfigInvalid
 	}
 	return nil

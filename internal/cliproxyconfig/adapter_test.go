@@ -15,6 +15,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/winacl"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/yaml.v3"
 )
 
 type fakeReader struct {
@@ -36,7 +37,7 @@ func fixtureValues() *fakeReader {
 		secretstore.GoogleClientKey: bytes.Repeat([]byte{3}, 32), secretstore.GoogleManagementKey: bytes.Repeat([]byte{4}, 32),
 	}}
 }
-func fixture(t *testing.T) (*Generator, *fakeReader) {
+func newFixture(t *testing.T) (*Generator, *fakeReader) {
 	t.Helper()
 	l, err := dataroot.Resolve(t.TempDir())
 	if err != nil {
@@ -65,6 +66,47 @@ func fixture(t *testing.T) (*Generator, *fakeReader) {
 		t.Fatal(err)
 	}
 	return g, s
+}
+
+func fixture(t *testing.T) (*Generator, *fakeReader) {
+	t.Helper()
+	g, reader := newFixture(t)
+	g.bcryptCost = bcrypt.MinCost
+	return g, reader
+}
+
+func TestFixtureGeneratorUsesPrivateFastBcryptCost(t *testing.T) {
+	g, _ := fixture(t)
+	if g.bcryptCost != bcrypt.MinCost {
+		t.Fatalf("fixture bcrypt cost=%d, want MinCost=%d", g.bcryptCost, bcrypt.MinCost)
+	}
+}
+
+func TestProductionGeneratorUsesDefaultBcryptCost(t *testing.T) {
+	g, _ := newFixture(t)
+	if g.bcryptCost != bcrypt.DefaultCost {
+		t.Fatalf("production bcrypt cost=%d, want DefaultCost=%d", g.bcryptCost, bcrypt.DefaultCost)
+	}
+	if _, err := g.GeneratePair(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(g.final(Codex), "config.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer zero(data)
+	management, _ := keymaterial.Encode(bytes.Repeat([]byte{2}, 32))
+	var generated config
+	if err := yaml.Unmarshal(data, &generated); err != nil {
+		t.Fatal(err)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(generated.RemoteManagement.SecretKey), management); err != nil {
+		t.Fatal("production management hash does not match synthetic key")
+	}
+	cost, err := bcrypt.Cost([]byte(generated.RemoteManagement.SecretKey))
+	if err != nil || cost != bcrypt.DefaultCost {
+		t.Fatalf("generated production bcrypt cost=%d err=%v", cost, err)
+	}
 }
 
 func TestRenderStrictSemanticAndSecretPlacement(t *testing.T) {
@@ -106,6 +148,24 @@ func TestRenderStrictSemanticAndSecretPlacement(t *testing.T) {
 	}
 	if bcrypt.CompareHashAndPassword([]byte("invalid"), mgmt) == nil {
 		t.Fatal("invalid bcrypt accepted")
+	}
+}
+
+func TestConfigValidationRejectsUnexpectedBcryptCost(t *testing.T) {
+	client, _ := keymaterial.Encode(bytes.Repeat([]byte{1}, 32))
+	management, _ := keymaterial.Encode(bytes.Repeat([]byte{2}, 32))
+	opposite, _ := keymaterial.Encode(bytes.Repeat([]byte{3}, 32))
+	path := `C:\fixture\DualPool\instances\codex\auth`
+	b, err := renderWithCost(Codex, path, client, management, bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer zero(b)
+	if validateConfigWithCost(b, Codex, path, client, management, [][]byte{opposite}, bcrypt.MinCost) != nil {
+		t.Fatal("fixture-cost config rejected by matching fixture policy")
+	}
+	if validateConfig(b, Codex, path, client, management, [][]byte{opposite}) == nil {
+		t.Fatal("production validation accepted correctly matching lower-cost bcrypt hash")
 	}
 }
 

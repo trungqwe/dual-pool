@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "product": "CLIProxyAPI",
+  "status": "verified",
+  "version": "7.3.8",
+  "tag": "v7.3.8",
+  "commit": "c93978c4ea2e908255a2a06c37599fda3651554a",
+  "platform": "windows_amd64",
+  "artifact": "CLIProxyAPI_7.3.8_windows_amd64.zip",
+  "download_url": "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.8/CLIProxyAPI_7.3.8_windows_amd64.zip",
+  "archive_sha256": "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351",
+  "executable_sha256": "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd",
+  "config_adapter_version": "dualpool-cpa-v7.3.7-config-v1",
+  "release_metadata_url": "https://github.com/router-for-me/CLIProxyAPI/releases/tag/v7.3.8",
+  "verified_at": "2026-09-22T06:00:00Z",
+  "verification_evidence_id": "phase-2-v7.3.8-verification"
+}

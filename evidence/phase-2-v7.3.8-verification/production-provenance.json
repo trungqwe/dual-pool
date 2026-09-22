@@ -1,0 +1,1 @@
+{"schema_version":1,"receipt":"internal/upstreamcatalog/trust/v7.3.8.json","receipt_sha256":"0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776","receipt_digest_derivation":"SHA-256 exact raw receipt bytes","catalog_versions":["7.3.7","7.3.8"],"current_lock_unchanged":true,"stager_current_pin_only":true,"candidate_install_authority":false}

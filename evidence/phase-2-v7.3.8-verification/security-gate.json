@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "verification": "PASS",
+  "repository_delivery_ready": true,
+  "secrets_committed": false,
+  "real_credentials_accessed": false,
+  "secretstore_or_winkey_accessed": false,
+  "oauth": false,
+  "provider_traffic": false,
+  "production_root_mutation": false,
+  "product_install": false,
+  "candidate_staging": false,
+  "candidate_promotion": false,
+  "candidate_process_remaining": false,
+  "listener_remaining": false,
+  "temporary_auth_files": 0,
+  "temp_cleanup": {
+    "status": "POLICY_BLOCKED_NONREPO_TEMP_RESIDUE",
+    "deletion_attempted": true,
+    "alternate_bypass_attempted": false,
+    "repository_contaminated": false,
+    "product_contaminated": false,
+    "process_remaining": false,
+    "listener_remaining": false,
+    "residual_committed": false,
+    "residual_location": "disposable system TEMP only; outside repository, product root, and known user configuration roots",
+    "synthetic_material": "temporary candidate client/management key material is synthetic and non-production; no raw values recorded"
+  },
+  "result": "PASS"
+}

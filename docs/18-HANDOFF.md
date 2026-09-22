@@ -1,6 +1,20 @@
 # Current Handoff
 
-## Ưu tiên hiện tại — trusted multi-release provenance catalog repair
+## Ưu tiên hiện tại — delivery v7.3.8 sau containment snapshot
+
+Slice bắt đầu từ authoritative `phase-2/upstream-lifecycle` tại `a0b1573346007ad08a9ebe7012167bffa79fbd99`, với Source CI `35692175916` PASS. Nhánh làm việc riêng là `phase-2/verify-v7.3.8-production-provenance`; upstream không được di chuyển trong slice này.
+
+CLIProxyAPI `v7.3.8` đã được xác minh từ GitHub upstream: tag commit `c93978c4ea2e908255a2a06c37599fda3651554a`, archive Windows AMD64 triple-hash, PE AMD64/executable identity, output `-h`, source compatibility và disposable loopback-only harness với key synthetic. Catalog production dùng receipt embed bất biến tại `internal/upstreamcatalog/trust/v7.3.8.json`, với digest SHA-256 trên raw bytes; `upstream.lock` và `Stage(upstreamlock.Lock)` vẫn chỉ v7.3.7.
+
+Timeout `cliproxyconfig -count=50` cũ được phân loại là acceptance-harness performance issue, đã sửa bằng private per-Generator bcrypt policy: production vẫn `bcrypt.DefaultCost`; TEMP fixtures dùng bcrypt thật ở `bcrypt.MinCost`; production validation từ chối hash cost thấp. Focused x20, stress x50 bảy package, race x10 bảy package, full Go/vet/build/Node/lock/JSON/docs-link/privacy/secret gates đều PASS; kết quả chi tiết ở `evidence/phase-2-v7.3.8-verification/test-result.json`.
+
+v7.3.8 provenance/config verification implementation đã sẵn sàng commit sau khi local gates và containment đạt. TEMP cleanup classification là `POLICY_BLOCKED_NONREPO_TEMP_RESIDUE`, không phải delivery blocker: automatic policy từ chối deletion, không có bypass; residual chỉ nằm trong system TEMP ngoài repository, product root và các user config roots đã kiểm tra. Candidate PID `19432` đã dừng; loopback port `60422` free; không có auth files trong TEMP harness dirs, không có v7.3.8 match trong `DualPool/bin`, không có repo binary/TEMP artifact hay staged file. Synthetic client/management keys chỉ dùng cho disposable verification, không đọc từ secretstore/WinCred, không dùng provider credential; không ghi raw keys vào evidence. Không có production mutation. Evidence: `evidence/phase-2-v7.3.8-verification/security-gate.json`.
+
+Chưa commit/push và chưa Source CI; release receipt/evidence chưa độc lập audit được từ GitHub. Exact next action: review scoped staging, tạo commit, push bình thường, đợi exact-SHA Source CI `completed/success`, rồi xác nhận `phase-2/upstream-lifecycle` vẫn ở `a0b1573346007ad08a9ebe7012167bffa79fbd99`. Sau đó giao owner audit. Report: [v7.3.8 verification](reports/2026-09-22T0600Z-phase-2-v7.3.8-production-provenance.md). Candidate staging/install và các gate production vẫn OPEN; không bắt đầu objective kỹ thuật tiếp theo trong slice delivery này.
+
+Exact next action: hoàn tất cleanup an toàn TEMP artifacts bằng thao tác được phép, xác nhận lại không process/listener, sau đó tiếp tục scoped commit/push/Source CI trên `phase-2/verify-v7.3.8-production-provenance`. Chỉ sau exact-SHA CI PASS mới giao auditor. Candidate staging/install và các gate production vẫn OPEN; không bắt đầu objective kỹ thuật tiếp theo trong slice delivery này. Report: [v7.3.8 verification](reports/2026-09-22T0600Z-phase-2-v7.3.8-production-provenance.md).
+
+## Lịch sử — trusted multi-release provenance catalog repair
 
 Slice bắt đầu từ authoritative `phase-2/upstream-lifecycle` tại `7ce7405548f10f06aa266c8d01f8c49957aae1bd`, với delivery Source CI `35655203612` PASS. Mục tiêu hiện tại là catalog provenance bất biến cho nhiều release và Registry bind metadata theo đúng logical version được yêu cầu. Production vẫn chỉ tin release pinned `v7.3.7`; release thứ hai chỉ dùng TEMP/component fixture và không phải production candidate đã xác minh.
 

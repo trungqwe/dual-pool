@@ -201,7 +201,7 @@ func TestRuntimePrivateLifecycleUsesExactManager(t *testing.T) {
 
 func TestProductionCompositionResolvesPinnedSlot(t *testing.T) {
 	runtime, config := productionFixture(t)
-	if runtime.catalog == nil || runtime.catalog.Len() != 1 {
+	if runtime.catalog == nil || runtime.catalog.Len() != 2 {
 		t.Fatalf("production catalog length=%d", runtime.catalog.Len())
 	}
 	provenance, err := runtime.catalog.Resolve(config.Lock.Version)
@@ -217,12 +217,15 @@ func TestProductionCompositionResolvesPinnedSlot(t *testing.T) {
 	}
 }
 
-func TestProductionRegistryRejectsCandidateBeforeLifecycleMutation(t *testing.T) {
+func TestProductionCandidateAbsentFailsUpdaterPreflight(t *testing.T) {
 	runtime, config := productionFixture(t)
 	smoke := config.Smoke.(*recordingSmoke)
+	if _, err := runtime.catalog.Resolve("7.3.8"); err != nil {
+		t.Fatalf("verified candidate is absent from catalog: %v", err)
+	}
 	err := runtime.Updater.Promote(context.Background(), "7.3.8")
 	if err == nil {
-		t.Fatal("unknown candidate accepted")
+		t.Fatal("absent candidate accepted")
 	}
 	current, loadErr := runtime.state.LoadState()
 	if loadErr != nil || current.ActiveUpstreamVersion != config.Lock.Version {

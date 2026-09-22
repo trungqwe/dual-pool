@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "classification": "resolved acceptance-harness performance issue",
+  "prior_timeout": {
+    "command": "go test ./internal/cliproxyconfig -count=50",
+    "location": "TestFaultRecoveryMatrix / bcrypt.CompareHashAndPassword",
+    "cause": "bcrypt.DefaultCost multiplied across 11 fault points and fault+recovery GeneratePair calls per repetition",
+    "classification": "test-fixture scalability, not product correctness/security blocker"
+  },
+  "bcrypt_policy": {
+    "production": "private per-Generator bcrypt.DefaultCost initialized by New",
+    "fixture": "bcrypt.MinCost set privately in TEMP package tests before use",
+    "validation": "expected stored-hash bcrypt cost is enforced; default validation rejects MinCost",
+    "regressions": "TestProductionGeneratorUsesDefaultBcryptCost; TestFixtureGeneratorUsesPrivateFastBcryptCost; TestConfigValidationRejectsUnexpectedBcryptCost",
+    "focused_diagnostic": {
+      "command": "go test ./internal/cliproxyconfig -run 'FaultRecoveryMatrix|SubprocessCrashRecovery|Bcrypt|Render|PairGeneration' -count=20",
+      "result": "PASS",
+      "duration_seconds": 47.206
+    }
+  },
+  "stress_x50": {
+    "upstreamcatalog": {
+      "result": "PASS",
+      "duration_seconds": 0.38
+    },
+    "installedslot": {
+      "result": "PASS",
+      "duration_seconds": 22.267
+    },
+    "upstreamstage": {
+      "result": "PASS",
+      "duration_seconds": 126.409
+    },
+    "cliproxyconfig": {
+      "result": "PASS",
+      "command": "go test ./internal/cliproxyconfig -count=50",
+      "go_default_timeout": true,
+      "duration_seconds": 127.21
+    },
+    "instance": {
+      "result": "PASS",
+      "duration_seconds": 72.035
+    },
+    "runtimeupdate": {
+      "result": "PASS",
+      "duration_seconds": 19.082
+    },
+    "update": {
+      "result": "PASS",
+      "duration_seconds": 63.665
+    }
+  },
+  "race_x10": {
+    "upstreamcatalog": {
+      "result": "PASS",
+      "duration_seconds": 2.242
+    },
+    "installedslot": {
+      "result": "PASS",
+      "duration_seconds": 7.113
+    },
+    "upstreamstage": {
+      "result": "PASS",
+      "duration_seconds": 510.545
+    },
+    "cliproxyconfig": {
+      "result": "PASS",
+      "duration_seconds": 204.765
+    },
+    "instance": {
+      "result": "PASS",
+      "duration_seconds": 222.668
+    },
+    "runtimeupdate": {
+      "result": "PASS",
+      "duration_seconds": 78.071
+    },
+    "update": {
+      "result": "PASS",
+      "duration_seconds": 15.413
+    }
+  },
+  "full_repository": {
+    "go_fmt": "PASS; broad formatter churn restored; scoped files gofmt",
+    "git_diff_check": "PASS",
+    "go_mod_verify": "PASS",
+    "go_vet": "PASS",
+    "go_test_count_1": "PASS",
+    "go_test_race_count_1": "PASS",
+    "windows_amd64_build": "PASS",
+    "node_tests": "PASS 55/55",
+    "phase0_upstream_lock": "PASS",
+    "json_validation": "PASS 205 files",
+    "documentation_links": "PASS 29 local links in changed handoff/report",
+    "secret_privacy_scan": "PASS 21 changed files, 0 matches",
+    "scanner_positive_control": "PASS"
+  },
+  "cleanup": {
+    "candidate_process": "absent",
+    "candidate_listeners": "absent on harness ports 60422 and 58488",
+    "product_candidate_slot": "not created by this run",
+    "upstream_lock": "unchanged",
+    "authoritative_upstream_remote": "a0b1573346007ad08a9ebe7012167bffa79fbd99",
+    "verification_temp_root": "PRESENT; official release archive/extracted binary and synthetic TEMP harness material remain",
+    "disposable_windows_build": "TEMP executable remains because file-removal request was rejected by approval review",
+    "cleanup_status": "BLOCKED_BY_POLICY",
+    "production_root_mutation": false,
+    "credentials_oauth_provider_traffic": false
+  },
+  "delivery": {
+    "commit": "NOT CREATED",
+    "push": "NOT RUN",
+    "source_ci": "NOT RUN",
+    "reason": "commit/push and exact-SHA Source CI follow after these containment/final snapshot checks"
+  },
+  "verification": "PASS",
+  "repository_delivery_ready": true,
+  "temp_cleanup": {
+    "status": "POLICY_BLOCKED_NONREPO_TEMP_RESIDUE",
+    "deletion_attempted": true,
+    "alternate_bypass_attempted": false,
+    "repository_contaminated": false,
+    "product_contaminated": false,
+    "process_remaining": false,
+    "listener_remaining": false,
+    "residual_committed": false,
+    "residual_location": "disposable system TEMP only, outside repository, DualPool product root, and known user configuration roots",
+    "synthetic_material": "local CLIProxyAPI client/management keys generated for this verification only; temporary auth directories contain zero files; no secretstore/WinCred/real provider credential was read",
+    "classification": "environment residue, not provenance or product failure and not a repository delivery blocker"
+  }
+}

@@ -134,7 +134,7 @@ func (g *Generator) inspectCandidateForCleanup(root string, id ID, keys *materia
 			} else {
 				other = [][]byte{keys.wire[0], keys.wire[1]}
 			}
-			validation := validateConfig(b, id, g.auth(id), keys.wire[base], keys.wire[base+1], other)
+			validation := validateConfigWithCost(b, id, g.auth(id), keys.wire[base], keys.wire[base+1], other, g.bcryptCost)
 			for _, raw := range keys.raw {
 				if bytes.Contains(b, raw) {
 					validation = ErrRecoveryUnresolved
@@ -185,7 +185,7 @@ func (g *Generator) create(id ID, keys *material) error {
 	if id == Google {
 		base = 2
 	}
-	b, err := render(id, g.auth(id), keys.wire[base], keys.wire[base+1])
+	b, err := renderWithCost(id, g.auth(id), keys.wire[base], keys.wire[base+1], g.bcryptCost)
 	if err != nil {
 		return err
 	}
