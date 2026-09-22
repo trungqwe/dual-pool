@@ -1,10 +1,13 @@
 package upstreamcatalog
 
 import (
+	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -42,7 +45,7 @@ func TestProductionCatalogV738ExactIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	p, err := c.Resolve("7.3.8")
-	if err != nil || p.Tag != "v7.3.8" || p.Commit != "c93978c4ea2e908255a2a06c37599fda3651554a" || p.ArchiveSHA256 != "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351" || p.ExecutableSHA256 != "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd" || p.ConfigAdapterVersion != "dualpool-cpa-v7.3.7-config-v1" {
+	if err != nil || p.Tag != "v7.3.8" || p.Commit != "c93978c4ea2e908255a2a06c37599fda3651554a" || p.ArchiveSHA256 != "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351" || p.ExecutableSHA256 != "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd" || p.ConfigAdapterVersion != "dualpool-cpa-v7.3.7-config-v1" || p.Digest != expectedV738ReceiptSHA256 {
 		t.Fatalf("v7.3.8 identity=%+v err=%v", p, err)
 	}
 }
@@ -65,8 +68,54 @@ func TestVerifiedV738ReceiptDigestStable(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(verifiedV738Receipt)
-	if p.Digest != hex.EncodeToString(sum[:]) {
-		t.Fatalf("digest=%s", p.Digest)
+	if got := fmt.Sprintf("%x", sum); got != expectedV738ReceiptSHA256 {
+		t.Fatalf("embedded receipt digest=%s, want %s", got, expectedV738ReceiptSHA256)
+	}
+	if p.Digest != expectedV738ReceiptSHA256 {
+		t.Fatalf("parsed provenance digest=%s, want %s", p.Digest, expectedV738ReceiptSHA256)
+	}
+}
+
+const expectedV738ReceiptSHA256 = "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776"
+
+func TestVerifiedV738ReceiptRejectsCRLFByteVariant(t *testing.T) {
+	crlf := bytes.ReplaceAll(verifiedV738Receipt, []byte("\n"), []byte("\r\n"))
+	if bytes.Equal(crlf, verifiedV738Receipt) {
+		t.Fatal("CRLF fixture did not change receipt bytes")
+	}
+	var canonicalJSON, crlfJSON any
+	if err := json.Unmarshal(verifiedV738Receipt, &canonicalJSON); err != nil {
+		t.Fatalf("canonical receipt JSON: %v", err)
+	}
+	if err := json.Unmarshal(crlf, &crlfJSON); err != nil {
+		t.Fatalf("CRLF receipt JSON: %v", err)
+	}
+	if !reflect.DeepEqual(canonicalJSON, crlfJSON) {
+		t.Fatal("CRLF fixture changed receipt JSON semantics")
+	}
+	if _, err := parseVerifiedV738Receipt(crlf); err != ErrInvalidCatalog {
+		t.Fatalf("CRLF receipt error=%v, want %v", err, ErrInvalidCatalog)
+	}
+}
+
+func TestVerifiedV738ReceiptRejectsValidLookingHashTampering(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		old  string
+		new  string
+	}{
+		{name: "archive", old: "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351", new: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		{name: "executable", old: "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd", new: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bad := bytes.Replace(verifiedV738Receipt, []byte(tc.old), []byte(tc.new), 1)
+			if bytes.Equal(bad, verifiedV738Receipt) || len(tc.new) != 64 || strings.Trim(tc.new, "0123456789abcdef") != "" {
+				t.Fatal("valid-looking hash fixture was not a different 64-character lowercase hex value")
+			}
+			if _, err := parseVerifiedV738Receipt(bad); err != ErrInvalidCatalog {
+				t.Fatalf("tampered receipt error=%v, want %v", err, ErrInvalidCatalog)
+			}
+		})
 	}
 }
 

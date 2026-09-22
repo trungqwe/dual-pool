@@ -217,6 +217,18 @@ func TestProductionCompositionResolvesPinnedSlot(t *testing.T) {
 	}
 }
 
+func TestProductionCompositionBindsPinnedV738DigestToRegistry(t *testing.T) {
+	const wantReceiptDigest = "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776"
+	runtime, _ := productionFixture(t)
+	provenance, err := runtime.catalog.Resolve("7.3.8")
+	if err != nil || provenance.Digest != wantReceiptDigest {
+		t.Fatalf("catalog v7.3.8 provenance digest=%q err=%v", provenance.Digest, err)
+	}
+	if got := pointerField(runtime.registry, "catalog"); got != reflect.ValueOf(runtime.catalog).Pointer() {
+		t.Fatalf("Registry catalog pointer=%x, production catalog=%x", got, reflect.ValueOf(runtime.catalog).Pointer())
+	}
+}
+
 func TestProductionCandidateAbsentFailsUpdaterPreflight(t *testing.T) {
 	runtime, config := productionFixture(t)
 	smoke := config.Smoke.(*recordingSmoke)

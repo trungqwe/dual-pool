@@ -4,3 +4,4 @@
 /scripts/phase0b-verify-v5.ps1 text eol=lf
 # PowerShell emits CRLF JSON; preserve exact bytes and recognize CR as EOL.
 /evidence/phase-0b-v5/*.json -text whitespace=cr-at-eol
+/internal/upstreamcatalog/trust/v7.3.8.json text eol=lf

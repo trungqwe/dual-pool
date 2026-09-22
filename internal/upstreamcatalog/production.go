@@ -13,6 +13,7 @@ import (
 )
 
 const verifiedV738EvidenceID = "phase-2-v7.3.8-verification"
+const verifiedV738ReceiptSHA256 = "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776"
 
 //go:embed trust/v7.3.8.json
 var verifiedV738Receipt []byte
@@ -37,6 +38,10 @@ func Production(lock upstreamlock.Lock) (*Catalog, error) {
 
 func parseVerifiedV738Receipt(raw []byte) (Provenance, error) {
 	if len(raw) == 0 || len(raw) > 4096 || !bytes.Equal(raw, bytes.ToValidUTF8(raw, []byte("?"))) {
+		return Provenance{}, ErrInvalidCatalog
+	}
+	digest := sha256.Sum256(raw)
+	if hex.EncodeToString(digest[:]) != verifiedV738ReceiptSHA256 {
 		return Provenance{}, ErrInvalidCatalog
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -91,8 +96,7 @@ func parseVerifiedV738Receipt(raw []byte) (Provenance, error) {
 	if _, err := time.Parse(time.RFC3339, strings["verified_at"]); err != nil {
 		return Provenance{}, ErrInvalidCatalog
 	}
-	digest := sha256.Sum256(raw)
-	p := Provenance{Product: strings["product"], Version: strings["version"], Tag: strings["tag"], Commit: strings["commit"], Platform: strings["platform"], Artifact: strings["artifact"], DownloadURL: strings["download_url"], ArchiveSHA256: strings["archive_sha256"], ExecutableSHA256: strings["executable_sha256"], ConfigAdapterVersion: strings["config_adapter_version"], Digest: hex.EncodeToString(digest[:]), ReleaseMetadataURL: strings["release_metadata_url"]}
+	p := Provenance{Product: strings["product"], Version: strings["version"], Tag: strings["tag"], Commit: strings["commit"], Platform: strings["platform"], Artifact: strings["artifact"], DownloadURL: strings["download_url"], ArchiveSHA256: strings["archive_sha256"], ExecutableSHA256: strings["executable_sha256"], ConfigAdapterVersion: strings["config_adapter_version"], Digest: verifiedV738ReceiptSHA256, ReleaseMetadataURL: strings["release_metadata_url"]}
 	if !valid(p) {
 		return Provenance{}, ErrInvalidCatalog
 	}

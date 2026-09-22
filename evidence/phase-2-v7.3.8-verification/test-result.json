@@ -107,11 +107,23 @@
     "production_root_mutation": false,
     "credentials_oauth_provider_traffic": false
   },
-  "delivery": {
-    "commit": "NOT CREATED",
-    "push": "NOT RUN",
-    "source_ci": "NOT RUN",
-    "reason": "commit/push and exact-SHA Source CI follow after these containment/final snapshot checks"
+  "prior_delivery": {
+    "provenance_commit": "918722fe91995436a9ffd24b8684ca210748f0e9",
+    "newline_test_repair_commit": "319e135c5888c3d41730c8eeb284316b3ca49706",
+    "delivery_report_commit": "50555a43f370e77f34dbcd134e367d4a7b427c11",
+    "newline_test_repair_source_ci": {
+      "run_id": "35703548549",
+      "sha": "319e135c5888c3d41730c8eeb284316b3ca49706",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "delivery_report_source_ci": {
+      "run_id": "35704607984",
+      "sha": "50555a43f370e77f34dbcd134e367d4a7b427c11",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "upstream_lifecycle_sha": "a0b1573346007ad08a9ebe7012167bffa79fbd99"
   },
   "verification": "PASS",
   "repository_delivery_ready": true,
@@ -148,5 +160,39 @@
       "all_other_steps": "format, module verification, vet PASS; later steps skipped"
     }
   ],
-  "source_ci_next": "PENDING correction commit push"
+  "receipt_byte_identity_repair": {
+    "receipt_path": "internal/upstreamcatalog/trust/v7.3.8.json",
+    "repository_eol_policy": "LF via /internal/upstreamcatalog/trust/v7.3.8.json text eol=lf",
+    "git_check_attr": "text: set; eol: lf",
+    "canonical_receipt_sha256": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+    "windows_worktree_receipt_sha256": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+    "production_digest_pin": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+    "crlf_semantically_equivalent_json": "rejected as ErrInvalidCatalog",
+    "valid_lowercase_64_hex_archive_sha256_tamper": "rejected as ErrInvalidCatalog",
+    "valid_lowercase_64_hex_executable_sha256_tamper": "rejected as ErrInvalidCatalog",
+    "production_catalog_v738_digest": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+    "registry_catalog_binding": "runtime Registry shares production catalog; v7.3.8 digest is pinned",
+    "upstream_lock": "unchanged",
+    "stager_current_pin": "7.3.7 only",
+    "bcrypt_policy": "unchanged: production bcrypt.DefaultCost; test fixtures private per-Generator bcrypt.MinCost; default validation rejects MinCost",
+    "clean_checkout_receipt_sha256": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+    "clean_checkout_proof": "PASS; detached clean Windows Git worktree checked out from the final local repair commit before push; receipt SHA-256 and focused embedded-receipt tests verified",
+    "targeted_tests": {
+      "upstreamcatalog_count_50": "PASS; 0.070s",
+      "upstreamcatalog_race_count_10": "PASS; 1.075s",
+      "runtimeupdate_count_20": "PASS; 7.553s",
+      "runtimeupdate_race_count_10": "PASS; 77.144s"
+    },
+    "full_snapshot": {
+      "go_fmt_all": "PASS; unrelated formatter churn restored",
+      "go_mod_verify": "PASS",
+      "go_vet_all": "PASS",
+      "go_test_all_count_1": "PASS",
+      "go_test_race_all_count_1": "PASS",
+      "windows_build": "PASS",
+      "node_tests": "PASS 55/55",
+      "phase0_upstream_lock": "PASS; UPSTREAM_LOCK_VALID",
+      "json_validation": "PASS; 205 files"
+    }
+  }
 }
