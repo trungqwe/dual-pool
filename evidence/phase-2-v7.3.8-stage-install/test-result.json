@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "os": "Windows",
+    "go_version": "from go.mod",
+    "branch": "phase-2/v7.3.8-candidate-stage-install",
+    "start_sha": "5bfb1518059a171a0f3858877585e3097d9fe099"
+  },
+  "focused_count_20": {
+    "go test ./internal/upstreamcatalog -run 'ProductionCandidate|ProductionCatalog|V738' -count=20": "PASS",
+    "go test ./internal/upstreamstage -run 'StageCandidate|Candidate|Current|Trust|Idempotent|Conflict' -count=20": "PASS",
+    "go test ./internal/instance -run 'InstallCandidate|Install|Marker|Recovery|Registry|CrossRelease' -count=20": "PASS",
+    "go test ./internal/runtimeupdate -run 'Candidate|Stage|Install|Composition|Public' -count=20": "PASS"
+  },
+  "stress_count_50": {
+    "upstreamcatalog": "PASS",
+    "upstreamstage": "PASS",
+    "installedslot": "PASS",
+    "instance": "PASS",
+    "runtimeupdate": "PASS",
+    "update": "PASS"
+  },
+  "race_count_10": {
+    "upstreamcatalog": "PASS",
+    "upstreamstage": "PASS",
+    "installedslot": "PASS",
+    "instance": "PASS",
+    "runtimeupdate": "PASS",
+    "update": "PASS"
+  },
+  "full_repository": {
+    "go test -count=1 ./...": "PASS",
+    "go test -race -count=1 ./...": "PASS",
+    "go fmt ./...": "PASS",
+    "git diff --check": "PASS",
+    "go mod verify": "PASS",
+    "go vet ./...": "PASS",
+    "disposable Windows build of ./cmd/poolbridge": "PASS; output placed outside repository",
+    "node --test scripts/*.test.cjs": "PASS; 55 passed, 0 failed",
+    "node scripts/phase0-upstream-lock.cjs": "PASS; UPSTREAM_LOCK_VALID"
+  },
+  "opt_in_real_candidate": {
+    "test": "TestRealV738TemporaryStageInstallOptIn",
+    "status": "SKIPPED",
+    "exit_code": 0,
+    "reason": "DUALPOOL_V738_ARCHIVE was unset; test performed no network request"
+  },
+  "json_validation": "PASS",
+  "changed_document_link_validation": "PASS",
+  "privacy_scan": "PASS",
+  "secret_scan": "PASS",
+  "secret_scanner_positive_control": "PASS"
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "status": "PASS_COMPONENT",
+  "public_api": "(*instance.Manager).InstallCandidate(context.Context, upstreamstage.Result)",
+  "generic_engine": "unexported installTrusted",
+  "destination": "<Bin>/cliproxyapi/7.3.8",
+  "manifest_schema_changed": false,
+  "manifest_provenance_field": "upstream_lock_sha256 stores reviewed candidate provenance digest",
+  "publication": "protected transaction marker; protected attempt; exact validation; atomic same-volume publication; post-publication validation; RegisterLocked under the same GLOBAL lock",
+  "synthetic_positive_test": "TestInstallTrustedSyntheticCandidateRegistersImmutableSlot",
+  "cross_install_cases": [
+    "v7.3.7 stage passed to InstallCandidate",
+    "v7.3.8 stage passed to current Install",
+    "v7.3.8 executable with current manifest",
+    "current executable with candidate manifest",
+    "correct manifest with wrong executable bytes",
+    "coherent unreviewed v7.3.9 stage"
+  ],
+  "cross_install_publication_count": 0,
+  "install_idempotence": "same exact identity is verified and reused without overwrite",
+  "active_state_before_after": "7.3.7 -> 7.3.7"
+}

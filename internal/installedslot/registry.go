@@ -62,13 +62,16 @@ type ACL interface {
 // Manifest is the immutable metadata written beside an installed executable.
 // It is intentionally shared by instance.Manager and this package.
 type Manifest struct {
-	SchemaVersion        int    `json:"schema_version"`
-	Product              string `json:"product"`
-	Version              string `json:"version"`
-	Tag                  string `json:"tag"`
-	Commit               string `json:"commit"`
-	Platform             string `json:"platform"`
-	ExecutableSHA256     string `json:"executable_sha256"`
+	SchemaVersion    int    `json:"schema_version"`
+	Product          string `json:"product"`
+	Version          string `json:"version"`
+	Tag              string `json:"tag"`
+	Commit           string `json:"commit"`
+	Platform         string `json:"platform"`
+	ExecutableSHA256 string `json:"executable_sha256"`
+	// UpstreamLockSHA256 keeps the legacy JSON name. Candidate releases bind
+	// this field to their reviewed catalog provenance digest, not a fabricated
+	// upstream.lock digest.
 	UpstreamLockSHA256   string `json:"upstream_lock_sha256"`
 	ConfigAdapterVersion string `json:"config_adapter_version"`
 	ExecutableBasename   string `json:"executable_basename"`

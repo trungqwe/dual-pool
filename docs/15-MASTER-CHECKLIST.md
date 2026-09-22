@@ -178,3 +178,15 @@ Hiệu chỉnh: PASS component ở head e9b68f8 không cho phép integration vì
 - [x] Synthetic vA/vB cross-binding, rebind, absent-entry and unknown-version attacks fail closed before verifier as applicable. Evidence: `evidence/phase-2-multi-release-provenance/registry-binding.json`.
 - [x] Production runtime derives exactly one catalog entry from validated current `upstream.lock`; `v7.3.8` remains untrusted. Evidence: `evidence/phase-2-multi-release-provenance/production-regression.json`.
 - [ ] Independently verified second production release, config compatibility, candidate staging and production multi-version rollback remain open.
+
+## Phase 2 trusted v7.3.8 candidate staging/install — 2026-09-22
+
+- [x] Candidate authority is restricted to the exact v7.3.8 receipt and a validated current lock. Evidence: `evidence/phase-2-v7.3.8-stage-install/candidate-authority.json`.
+- [x] Candidate stage wrapper preserves current-pin Stage and uses digest-bound cache/manifest identity. Evidence: `evidence/phase-2-v7.3.8-stage-install/staging.json`.
+- [x] Candidate install independently validates and atomically publishes the immutable logical slot, then registers it under the same GLOBAL lock. Evidence: `evidence/phase-2-v7.3.8-stage-install/install.json` and `registry.json`.
+- [x] Candidate/current marker recovery, cross-release attacks, owned partial cleanup, registry-publication retry, and active-state invariance are covered by deterministic component tests. Evidence: `evidence/phase-2-v7.3.8-stage-install/recovery.json`.
+- [x] Runtime candidate operations retain private release authority, lazy protected stage root, and the shared lock manager. Evidence: `evidence/phase-2-v7.3.8-stage-install/staging.json` and `test-result.json`.
+- [x] Smoke failure remains before lifecycle mutation and active-state publication. Evidence: `evidence/phase-2-v7.3.8-stage-install/promotion-boundary.json`.
+- [x] Focused x20, stress x50, race x10, full repository, Windows build, Node, lock, JSON, documentation-link, privacy, secret and scanner-positive-control gates. Evidence: `evidence/phase-2-v7.3.8-stage-install/test-result.json` and `security-gate.json`.
+- [ ] Real v7.3.8 TEMP archive stage/install acceptance; opt-in test skipped because `DUALPOOL_V738_ARCHIVE` was not supplied. Evidence: `evidence/phase-2-v7.3.8-stage-install/staging.json`.
+- [ ] Product-root candidate install, production Smoke, promotion/rollback, retained-handle launch, TOCTOU, OS/process/power-loss durability and updater CLI remain open.

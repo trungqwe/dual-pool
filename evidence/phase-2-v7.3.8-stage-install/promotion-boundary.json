@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "status": "PASS_COMPONENT",
+  "candidate_inventory_verification": "passes",
+  "promotion_executed": false,
+  "sentinel": "Disposable Smoke returns a deterministic error",
+  "expected_gate_order": "candidate VerifyInstalled -> Disposable Smoke -> lifecycle capture/stop -> state publication",
+  "observed_on_smoke_failure": {
+    "stop_calls": 0,
+    "start_calls": 0,
+    "active_version_before_after": "vA -> vA",
+    "promotion_marker_persisted": false
+  },
+  "test": "TestInstalledCandidateSmokeFailureBlocksPromotionBeforeLifecycle"
+}

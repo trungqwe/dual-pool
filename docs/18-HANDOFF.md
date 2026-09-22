@@ -1,5 +1,19 @@
 # Current Handoff
 
+## Phase 2 — trusted v7.3.8 candidate staging/install (2026-09-22)
+
+Slice start and authoritative upstream are `phase-2/upstream-lifecycle` at `5bfb1518059a171a0f3858877585e3097d9fe099`. Its ref remains unchanged. Implementation is on the new branch `phase-2/v7.3.8-candidate-stage-install`, created from that exact SHA in a clean worktree. The original dirty Phase 0 checkout was left untouched.
+
+The implementation adds a closed `ProductionCandidate(currentLock)` authority for the reviewed v7.3.8 receipt, separate `StageCandidate` and `InstallCandidate` wrappers, and private shared staging/install transaction engines. Runtime candidate staging uses a lazy protected `<Bin>\\upstream-stage` root and the same GLOBAL lock manager as Runtime, State, Registry, Manager and Updater. Candidate installation validates exact stage/installed bytes and identity, atomically publishes `<Bin>\\cliproxyapi\\7.3.8`, registers it under that lock, and leaves active selection unchanged. The existing v7.3.7 lock and current Stage/Install paths remain pinned-only.
+
+Focused x20, six-package stress x50, six-package race x10, full Go tests/race, vet, module, Windows build, Node, lock, JSON, changed-document link, privacy, secret and scanner-positive-control gates passed. The opt-in offline real archive test was explicitly run and skipped because `DUALPOOL_V738_ARCHIVE` is unset. No real candidate archive was downloaded, and no product/provider/credential/listener/promotion action occurred. Evidence is in [`phase-2-v7.3.8-stage-install`](../evidence/phase-2-v7.3.8-stage-install/); report: [`2026-09-22T1028Z-phase-2-v738-candidate-stage-install.md`](reports/2026-09-22T1028Z-phase-2-v738-candidate-stage-install.md).
+
+Current delivery state: local acceptance gates PASS; exact-SHA Source CI awaits the normal feature-branch push. Do not move `phase-2/upstream-lifecycle` from `5bfb1518059a171a0f3858877585e3097d9fe099`. Production Smoke, product-root candidate installation, promotion/rollback, retained-handle launch, TOCTOU, process/OS/power-loss durability and updater CLI remain OPEN.
+
+Exactly one next objective after owner review of the pushed SHA and successful Source CI: implement production compatibility Smoke for the already installed trusted v7.3.8 candidate, preserving INV-PROC-05 so promotion cannot stop active pools or publish active state until candidate Smoke passes.
+
+## Ưu tiên hiện tại — owner audit và controlled delivery v7.3.8 provenance
+
 ## Ưu tiên hiện tại — owner audit và controlled delivery v7.3.8
 
 Slice bắt đầu từ authoritative `phase-2/upstream-lifecycle` tại `a0b1573346007ad08a9ebe7012167bffa79fbd99`, với Source CI `35692175916` PASS. Nhánh làm việc riêng là `phase-2/verify-v7.3.8-production-provenance`; upstream không được di chuyển trong slice này.

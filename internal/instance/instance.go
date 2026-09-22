@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"debug/pe"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -34,6 +35,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/secretstore"
 	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/update"
+	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 	"golang.org/x/sys/windows"
@@ -118,7 +120,18 @@ type Manager struct {
 	updaterStop         func(cliproxyconfig.ID) error
 	updaterStart        func(context.Context, cliproxyconfig.ID) (Status, error)
 	updaterPortOccupied func(int) (bool, error)
+	identityVerifier    func(context.Context, string, upstreamstage.ExpectedIdentity) (upstreamstage.Identity, error)
+	installFault        func(installFaultPoint) error
 }
+
+type installFaultPoint string
+
+const (
+	beforeCandidateCreate installFaultPoint = "BEFORE_CANDIDATE_CREATE"
+	beforeExecutableCopy  installFaultPoint = "BEFORE_EXECUTABLE_COPY"
+	beforeManifestWrite   installFaultPoint = "BEFORE_MANIFEST_WRITE"
+	beforeInstallValidate installFaultPoint = "BEFORE_INSTALL_VALIDATE"
+)
 
 type SlotRegistry interface {
 	Resolve(string) (installedslot.ResolvedSlot, error)
@@ -423,9 +436,31 @@ func (m *Manager) activeSlot(ctx context.Context) (installedslot.ResolvedSlot, e
 	return slot, nil
 }
 
-// Install accepts only bytes already verified by upstreamstage.  It never
+// Install accepts only the current exact upstream.lock release. It never
 // overwrites a product install: a mismatching final directory is a hard stop.
 func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (string, bool, error) {
+	catalog, err := upstreamcatalog.FromPinnedLock(m.lock)
+	if err != nil {
+		return "", false, ErrBinaryInstallConflict
+	}
+	provenance, err := catalog.Resolve(m.lock.Version)
+	if err != nil {
+		return "", false, ErrBinaryInstallConflict
+	}
+	return m.installTrusted(ctx, provenance, stage)
+}
+
+// InstallCandidate installs only the reviewed production v7.3.8 candidate.
+// Callers cannot supply a version, catalog or provenance.
+func (m *Manager) InstallCandidate(ctx context.Context, stage upstreamstage.Result) (string, bool, error) {
+	provenance, err := upstreamcatalog.ProductionCandidate(m.lock)
+	if err != nil {
+		return "", false, ErrBinaryInstallConflict
+	}
+	return m.installTrusted(ctx, provenance, stage)
+}
+
+func (m *Manager) installTrusted(ctx context.Context, provenance upstreamcatalog.Provenance, stage upstreamstage.Result) (string, bool, error) {
 	guard, err := m.locks.AcquireGlobal()
 	if err != nil {
 		return "", false, ErrPersistence
@@ -434,7 +469,12 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if err = m.preflightRoots(); err != nil {
 		return "", false, err
 	}
-	if err = m.validateStage(ctx, stage); err != nil {
+	if provenance.Version == m.lock.Version {
+		err = m.validateStage(ctx, stage)
+	} else {
+		err = m.validateCandidateStage(ctx, provenance, stage)
+	}
+	if err != nil {
 		return "", false, err
 	}
 	if err = m.acl.Create(filepath.Join(m.layout.Bin, "cliproxyapi")); err != nil {
@@ -443,16 +483,16 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if err = m.recoverInstallMarker(ctx); err != nil {
 		return "", false, err
 	}
-	final := m.executableDir()
+	final := m.slotDir(provenance.Version)
 	if _, e := os.Lstat(final); e == nil {
-		if m.validateInstall(ctx, final) == nil {
+		if m.validateInstallFor(ctx, final, provenance) == nil {
 			if m.registry == nil {
 				return "", false, ErrUnsafeInstance
 			}
-			if err := m.registry.RegisterLocked(ctx, m.lock.Version); err != nil {
+			if err := m.registry.RegisterLocked(ctx, provenance.Version); err != nil {
 				return "", false, err
 			}
-			return m.executablePath(), true, nil
+			return filepath.Join(final, "cliproxyapi.exe"), true, nil
 		}
 		return "", false, ErrBinaryInstallConflict
 	} else if !os.IsNotExist(e) {
@@ -462,20 +502,32 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if err != nil {
 		return "", false, ErrPersistence
 	}
-	attempt := filepath.Join(filepath.Dir(final), "."+m.lock.Version+".install-"+txn)
-	if err = writeProtectedJSON(m.acl, filepath.Join(filepath.Dir(final), markerName), m.marker(txn, filepath.Base(attempt))); err != nil {
+	attempt := filepath.Join(filepath.Dir(final), "."+provenance.Version+".install-"+txn)
+	if err = writeProtectedJSON(m.acl, filepath.Join(filepath.Dir(final), markerName), markerFor(provenance, txn, filepath.Base(attempt))); err != nil {
+		return "", false, err
+	}
+	if err = m.injectInstallFault(beforeCandidateCreate); err != nil {
 		return "", false, err
 	}
 	if err = m.acl.Create(attempt); err != nil {
 		return "", false, ErrPersistence
 	}
+	if err = m.injectInstallFault(beforeExecutableCopy); err != nil {
+		return "", false, err
+	}
 	if err = copyProtected(m.acl, stage.Executable, filepath.Join(attempt, "cliproxyapi.exe")); err != nil {
 		return "", false, err
 	}
-	if err = writeProtectedJSON(m.acl, filepath.Join(attempt, manifestName), m.manifest()); err != nil {
+	if err = m.injectInstallFault(beforeManifestWrite); err != nil {
 		return "", false, err
 	}
-	if err = m.validateInstall(ctx, attempt); err != nil {
+	if err = writeProtectedJSON(m.acl, filepath.Join(attempt, manifestName), manifestFor(provenance)); err != nil {
+		return "", false, err
+	}
+	if err = m.injectInstallFault(beforeInstallValidate); err != nil {
+		return "", false, err
+	}
+	if err = m.validateInstallFor(ctx, attempt, provenance); err != nil {
 		return "", false, err
 	}
 	from, _ := windows.UTF16PtrFromString(attempt)
@@ -483,23 +535,61 @@ func (m *Manager) Install(ctx context.Context, stage upstreamstage.Result) (stri
 	if windows.MoveFileEx(from, to, windows.MOVEFILE_WRITE_THROUGH) != nil {
 		return "", false, ErrBinaryInstallConflict
 	}
-	if err = m.validateInstall(ctx, final); err != nil {
+	if err = m.validateInstallFor(ctx, final, provenance); err != nil {
 		return "", false, err
 	}
 	if m.registry == nil {
 		return "", false, ErrUnsafeInstance
 	}
-	if err = m.registry.RegisterLocked(ctx, m.lock.Version); err != nil {
+	if err = m.registry.RegisterLocked(ctx, provenance.Version); err != nil {
 		return "", false, err
 	}
 	if err = os.Remove(filepath.Join(filepath.Dir(final), markerName)); err != nil {
 		return "", false, ErrPersistence
 	}
-	return m.executablePath(), false, nil
+	return filepath.Join(final, "cliproxyapi.exe"), false, nil
 }
 func (m *Manager) marker(txn, candidate string) installMarker {
-	return installMarker{1, txn, m.lock.Version, candidate, m.lock.Digest(), m.lock.ConfigAdapterVersion}
+	catalog, err := upstreamcatalog.FromPinnedLock(m.lock)
+	if err != nil {
+		return installMarker{}
+	}
+	provenance, err := catalog.Resolve(m.lock.Version)
+	if err != nil {
+		return installMarker{}
+	}
+	return markerFor(provenance, txn, candidate)
 }
+
+func markerFor(provenance upstreamcatalog.Provenance, txn, candidate string) installMarker {
+	return installMarker{1, txn, provenance.Version, candidate, provenance.Digest, provenance.ConfigAdapterVersion}
+}
+
+func (m *Manager) slotDir(version string) string {
+	return filepath.Join(m.layout.Bin, "cliproxyapi", version)
+}
+
+func (m *Manager) injectInstallFault(point installFaultPoint) error {
+	if m.installFault == nil {
+		return nil
+	}
+	return m.installFault(point)
+}
+
+func (m *Manager) trustedInstallProvenance(version string) (upstreamcatalog.Provenance, error) {
+	if version == m.lock.Version {
+		catalog, err := upstreamcatalog.FromPinnedLock(m.lock)
+		if err != nil {
+			return upstreamcatalog.Provenance{}, ErrBinaryInstallConflict
+		}
+		return catalog.Resolve(version)
+	}
+	if version == "7.3.8" {
+		return upstreamcatalog.ProductionCandidate(m.lock)
+	}
+	return upstreamcatalog.Provenance{}, ErrBinaryInstallConflict
+}
+
 func randomTransaction() (string, error) {
 	b := make([]byte, 16)
 	if _, e := io.ReadFull(rand.Reader, b); e != nil {
@@ -517,27 +607,44 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 		return ErrBinaryInstallConflict
 	}
 	var mark installMarker
-	if e := readJSON(path, &mark); e != nil || !validMarker(mark, m) {
+	if e := readJSON(path, &mark); e != nil {
 		return ErrBinaryInstallConflict
 	}
-	final := m.executableDir()
+	provenance, err := m.trustedInstallProvenance(mark.Version)
+	if err != nil || !validMarkerFor(mark, provenance) {
+		return ErrBinaryInstallConflict
+	}
+	return m.recoverInstallMarkerTrusted(ctx, mark, provenance)
+}
+
+// recoverInstallMarkerTrusted is the generic transaction engine. Production
+// recovery reaches it only through trustedInstallProvenance; package tests may
+// supply synthetic provenance to exercise crash states without widening the
+// production marker authority.
+func (m *Manager) recoverInstallMarkerTrusted(ctx context.Context, mark installMarker, provenance upstreamcatalog.Provenance) error {
+	if !validMarkerFor(mark, provenance) {
+		return ErrBinaryInstallConflict
+	}
+	dir := filepath.Dir(m.executableDir())
+	path := filepath.Join(dir, markerName)
+	final := m.slotDir(provenance.Version)
 	candidate := filepath.Join(dir, mark.CandidateBasename)
 	if _, e := os.Lstat(final); e == nil {
-		if e = m.validateInstall(ctx, final); e != nil {
+		if e = m.validateInstallFor(ctx, final, provenance); e != nil {
 			return e
 		}
 		if m.registry == nil {
 			return ErrUnsafeInstance
 		}
-		if e = m.registry.RegisterLocked(ctx, m.lock.Version); e != nil {
+		if e = m.registry.RegisterLocked(ctx, provenance.Version); e != nil {
 			return e
 		}
 	}
 	if _, e := os.Lstat(candidate); e == nil {
-		if mark.CandidateBasename != "."+m.lock.Version+".install-"+mark.TransactionID || m.acl.Inspect(candidate) != nil {
+		if mark.CandidateBasename != "."+provenance.Version+".install-"+mark.TransactionID || m.acl.Inspect(candidate) != nil {
 			return ErrBinaryInstallConflict
 		}
-		if e = m.validatePartialCandidate(ctx, candidate); e != nil {
+		if e = m.validatePartialCandidate(ctx, candidate, provenance); e != nil {
 			return ErrBinaryInstallConflict
 		}
 		if e = os.RemoveAll(candidate); e != nil {
@@ -549,7 +656,7 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 	}
 	return nil
 }
-func (m *Manager) validatePartialCandidate(ctx context.Context, dir string) error {
+func (m *Manager) validatePartialCandidate(ctx context.Context, dir string, provenance upstreamcatalog.Provenance) error {
 	if m.acl.Inspect(dir) != nil {
 		return ErrUnsafeInstance
 	}
@@ -559,7 +666,8 @@ func (m *Manager) validatePartialCandidate(ctx context.Context, dir string) erro
 	}
 	seen := map[string]bool{}
 	for _, entry := range entries {
-		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || (entry.Name() != "cliproxyapi.exe" && entry.Name() != manifestName) || seen[entry.Name()] || m.acl.InspectFile(filepath.Join(dir, entry.Name())) != nil {
+		path := filepath.Join(dir, entry.Name())
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || (entry.Name() != "cliproxyapi.exe" && entry.Name() != manifestName) || seen[entry.Name()] || m.acl.InspectFile(path) != nil || isFileReparse(path) {
 			return ErrUnsafeInstance
 		}
 		seen[entry.Name()] = true
@@ -567,16 +675,23 @@ func (m *Manager) validatePartialCandidate(ctx context.Context, dir string) erro
 	if seen[manifestName] && !seen["cliproxyapi.exe"] {
 		return ErrUnsafeInstance
 	}
-	if seen["cliproxyapi.exe"] && seen[manifestName] {
-		// A complete candidate is additionally validated. A failed validation is
-		// still a safe crash artifact when the marker, topology and filenames
-		// prove ownership; recovery discards it rather than promoting it.
-		_ = m.validateInstall(ctx, dir)
+	if seen["cliproxyapi.exe"] {
+		if digest(filepath.Join(dir, "cliproxyapi.exe")) != provenance.ExecutableSHA256 || verifyPE(filepath.Join(dir, "cliproxyapi.exe")) != nil {
+			return ErrBinaryInstallConflict
+		}
+		if seen[manifestName] && m.validateInstallFor(ctx, dir, provenance) != nil {
+			return ErrBinaryInstallConflict
+		}
 	}
 	return nil
 }
 func validMarker(v installMarker, m *Manager) bool {
-	return v.SchemaVersion == 1 && transactionPattern.MatchString(v.TransactionID) && v.Version == m.lock.Version && v.LockSHA256 == m.lock.Digest() && v.AdapterVersion == m.lock.ConfigAdapterVersion && v.CandidateBasename == "."+v.Version+".install-"+v.TransactionID
+	provenance, err := m.trustedInstallProvenance(v.Version)
+	return err == nil && validMarkerFor(v, provenance)
+}
+
+func validMarkerFor(v installMarker, provenance upstreamcatalog.Provenance) bool {
+	return v.SchemaVersion == 1 && transactionPattern.MatchString(v.TransactionID) && v.Version == provenance.Version && v.LockSHA256 == provenance.Digest && v.AdapterVersion == provenance.ConfigAdapterVersion && v.CandidateBasename == "."+v.Version+".install-"+v.TransactionID
 }
 
 func (m *Manager) Start(ctx context.Context, id cliproxyconfig.ID) (Status, error) {
@@ -839,9 +954,21 @@ func (m *Manager) recordSlot(record ProcessRecord) (installedslot.ResolvedSlot, 
 	return slot, nil
 }
 func (m *Manager) manifest() InstallManifest {
-	p := m.lock.Platforms.WindowsAMD64
-	return InstallManifest{SchemaVersion: 1, Product: m.lock.Product, Version: m.lock.Version, Tag: m.lock.Tag, Commit: m.lock.Commit, Platform: "windows_amd64", ExecutableSHA256: p.ExecutableSHA256, UpstreamLockSHA256: m.lock.Digest(), ConfigAdapterVersion: m.lock.ConfigAdapterVersion, ExecutableBasename: "cliproxyapi.exe"}
+	catalog, err := upstreamcatalog.FromPinnedLock(m.lock)
+	if err != nil {
+		return InstallManifest{}
+	}
+	provenance, err := catalog.Resolve(m.lock.Version)
+	if err != nil {
+		return InstallManifest{}
+	}
+	return manifestFor(provenance)
 }
+
+func manifestFor(provenance upstreamcatalog.Provenance) InstallManifest {
+	return InstallManifest{SchemaVersion: 1, Product: provenance.Product, Version: provenance.Version, Tag: provenance.Tag, Commit: provenance.Commit, Platform: provenance.Platform, ExecutableSHA256: provenance.ExecutableSHA256, UpstreamLockSHA256: provenance.Digest, ConfigAdapterVersion: provenance.ConfigAdapterVersion, ExecutableBasename: "cliproxyapi.exe"}
+}
+
 func (m *Manager) validateStage(ctx context.Context, s upstreamstage.Result) error {
 	if s.Manifest.ExecutableSHA256 != m.lock.Platforms.WindowsAMD64.ExecutableSHA256 || digest(s.Executable) != m.lock.Platforms.WindowsAMD64.ExecutableSHA256 {
 		return ErrBinaryInstallConflict
@@ -852,23 +979,122 @@ func (m *Manager) validateStage(ctx context.Context, s upstreamstage.Result) err
 	}
 	return nil
 }
+
+func (m *Manager) validateCandidateStage(ctx context.Context, provenance upstreamcatalog.Provenance, stage upstreamstage.Result) error {
+	if stage.Directory == "" || filepath.Clean(stage.Directory) != stage.Directory || !filepath.IsAbs(stage.Directory) || stage.Manifest.ExecutableBasename == "" || !upstreamlock.SafeBasename(stage.Manifest.ExecutableBasename) {
+		return ErrBinaryInstallConflict
+	}
+	executable := filepath.Join(stage.Directory, stage.Manifest.ExecutableBasename)
+	if !samePath(stage.Executable, executable) {
+		return ErrBinaryInstallConflict
+	}
+	if m.acl.Inspect(stage.Directory) != nil || isFileReparse(stage.Directory) {
+		return ErrBinaryInstallConflict
+	}
+	dirInfo, err := os.Lstat(stage.Directory)
+	if err != nil || !dirInfo.IsDir() || dirInfo.Mode()&os.ModeSymlink != 0 {
+		return ErrBinaryInstallConflict
+	}
+	manifestPath := filepath.Join(stage.Directory, "stage-manifest.json")
+	if m.acl.InspectFile(manifestPath) != nil || m.acl.InspectFile(executable) != nil || isFileReparse(manifestPath) || isFileReparse(executable) {
+		return ErrBinaryInstallConflict
+	}
+	exeInfo, err := os.Lstat(executable)
+	if err != nil || !exeInfo.Mode().IsRegular() || exeInfo.Mode()&os.ModeSymlink != 0 {
+		return ErrBinaryInstallConflict
+	}
+	manifestInfo, err := os.Lstat(manifestPath)
+	if err != nil || !manifestInfo.Mode().IsRegular() || manifestInfo.Mode()&os.ModeSymlink != 0 {
+		return ErrBinaryInstallConflict
+	}
+	entries, err := os.ReadDir(stage.Directory)
+	if err != nil || len(entries) != 2 {
+		return ErrBinaryInstallConflict
+	}
+	for _, entry := range entries {
+		if entry.Name() != stage.Manifest.ExecutableBasename && entry.Name() != "stage-manifest.json" {
+			return ErrBinaryInstallConflict
+		}
+	}
+	expectedStage := upstreamstage.Manifest{SchemaVersion: 1, Product: provenance.Product, Version: provenance.Version, Tag: provenance.Tag, Commit: provenance.Commit, Platform: provenance.Platform, Artifact: provenance.Artifact, ArchiveSHA256: provenance.ArchiveSHA256, ExecutableSHA256: provenance.ExecutableSHA256, ExecutableBasename: stage.Manifest.ExecutableBasename, LockSHA256: provenance.Digest, BinaryVersionVerified: true, BinaryCommitVerified: true}
+	var onDisk upstreamstage.Manifest
+	if stage.Manifest != expectedStage || readJSON(manifestPath, &onDisk) != nil || onDisk != expectedStage || digest(executable) != provenance.ExecutableSHA256 || verifyPE(executable) != nil {
+		return ErrBinaryInstallConflict
+	}
+	identity, err := m.verifyIdentity(ctx, executable, upstreamstage.ExpectedIdentity{Version: provenance.Version, Commit: provenance.Commit})
+	if err != nil || !identity.VersionMatch || !identity.CommitMatch {
+		return ErrBinaryInstallConflict
+	}
+	return nil
+}
+
 func (m *Manager) validateInstall(ctx context.Context, dir string) error {
+	catalog, err := upstreamcatalog.FromPinnedLock(m.lock)
+	if err != nil {
+		return ErrBinaryInstallConflict
+	}
+	provenance, err := catalog.Resolve(m.lock.Version)
+	if err != nil {
+		return ErrBinaryInstallConflict
+	}
+	return m.validateInstallFor(ctx, dir, provenance)
+}
+
+func (m *Manager) validateInstallFor(ctx context.Context, dir string, provenance upstreamcatalog.Provenance) error {
 	if m.acl.Inspect(dir) != nil || m.acl.InspectFile(filepath.Join(dir, "cliproxyapi.exe")) != nil || m.acl.InspectFile(filepath.Join(dir, manifestName)) != nil {
 		return ErrUnsafeInstance
 	}
 	entries, e := os.ReadDir(dir)
-	if e != nil || len(entries) != 2 {
+	if e != nil || len(entries) != 2 || isFileReparse(dir) {
 		return ErrUnsafeInstance
 	}
+	for _, entry := range entries {
+		if entry.Name() != "cliproxyapi.exe" && entry.Name() != manifestName {
+			return ErrUnsafeInstance
+		}
+		path := filepath.Join(dir, entry.Name())
+		info, statErr := os.Lstat(path)
+		if statErr != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 || isFileReparse(path) {
+			return ErrUnsafeInstance
+		}
+	}
 	var got InstallManifest
-	if readJSON(filepath.Join(dir, manifestName), &got) != nil || got != m.manifest() || digest(filepath.Join(dir, "cliproxyapi.exe")) != got.ExecutableSHA256 {
+	if readJSON(filepath.Join(dir, manifestName), &got) != nil || got != manifestFor(provenance) || digest(filepath.Join(dir, "cliproxyapi.exe")) != got.ExecutableSHA256 || got.ExecutableSHA256 != provenance.ExecutableSHA256 || verifyPE(filepath.Join(dir, "cliproxyapi.exe")) != nil {
 		return ErrBinaryInstallConflict
 	}
-	i, e := (upstreamstage.WindowsVerifier{}).Verify(ctx, filepath.Join(dir, "cliproxyapi.exe"), m.lock)
+	i, e := m.verifyIdentity(ctx, filepath.Join(dir, "cliproxyapi.exe"), upstreamstage.ExpectedIdentity{Version: provenance.Version, Commit: provenance.Commit})
 	if e != nil || !i.VersionMatch || !i.CommitMatch {
 		return ErrBinaryInstallConflict
 	}
 	return nil
+}
+
+func (m *Manager) verifyIdentity(ctx context.Context, path string, expected upstreamstage.ExpectedIdentity) (upstreamstage.Identity, error) {
+	if m.identityVerifier != nil {
+		return m.identityVerifier(ctx, path, expected)
+	}
+	return (upstreamstage.WindowsVerifier{}).VerifyExpected(ctx, path, expected)
+}
+
+func verifyPE(path string) error {
+	file, err := pe.Open(path)
+	if err != nil {
+		return ErrBinaryInstallConflict
+	}
+	defer file.Close()
+	if file.FileHeader.Machine != pe.IMAGE_FILE_MACHINE_AMD64 {
+		return ErrBinaryInstallConflict
+	}
+	return nil
+}
+
+func isFileReparse(path string) bool {
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return true
+	}
+	attrs, err := windows.GetFileAttributes(p)
+	return err != nil || attrs&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0
 }
 func (m *Manager) preflightRoots() error {
 	for _, p := range []string{m.layout.Root, m.layout.Bin, m.layout.Instances, m.layout.Locks} {

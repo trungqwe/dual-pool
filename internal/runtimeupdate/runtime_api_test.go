@@ -1,6 +1,7 @@
 package runtimeupdate_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -8,6 +9,8 @@ import (
 	"github.com/trungqwe/dual-pool/internal/runtimeupdate"
 	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/update"
+	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
+	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 )
 
 func TestRuntimePublicAPIHasNoStateOrLifecycleAuthority(t *testing.T) {
@@ -45,5 +48,30 @@ func TestComposeUpdaterDoesNotAcceptCallerSelectedAuthority(t *testing.T) {
 	smokeType := reflect.TypeOf((*update.Smoke)(nil)).Elem()
 	if composition.NumIn() != 2 || composition.In(0) != reflect.TypeOf((*instance.Manager)(nil)) || composition.In(1) != smokeType {
 		t.Fatalf("unexpected ComposeUpdater public signature: %v", composition)
+	}
+}
+
+func TestRuntimeCandidateMethodsExposeNoMutableReleaseAuthority(t *testing.T) {
+	runtimeType := reflect.TypeOf((*runtimeupdate.Runtime)(nil))
+	stage, ok := runtimeType.MethodByName("StageVerifiedCandidate")
+	if !ok || stage.Type.NumIn() != 2 || stage.Type.In(1) != reflect.TypeOf((*context.Context)(nil)).Elem() || stage.Type.NumOut() != 2 || stage.Type.Out(0) != reflect.TypeOf(upstreamstage.Result{}) {
+		t.Fatalf("unsafe StageVerifiedCandidate signature: %v", stage)
+	}
+	install, ok := runtimeType.MethodByName("InstallVerifiedCandidate")
+	if !ok || install.Type.NumIn() != 3 || install.Type.In(1) != reflect.TypeOf((*context.Context)(nil)).Elem() || install.Type.In(2) != reflect.TypeOf(upstreamstage.Result{}) || install.Type.NumOut() != 3 {
+		t.Fatalf("unsafe InstallVerifiedCandidate signature: %v", install)
+	}
+	forbidden := []reflect.Type{
+		reflect.TypeOf(""), reflect.TypeOf(upstreamcatalog.Provenance{}), reflect.TypeOf((*upstreamcatalog.Catalog)(nil)),
+		reflect.TypeOf((*upstreamstage.Downloader)(nil)).Elem(), reflect.TypeOf((*upstreamstage.Verifier)(nil)).Elem(),
+	}
+	for _, method := range []reflect.Method{stage, install} {
+		for i := 0; i < method.Type.NumIn(); i++ {
+			for _, denied := range forbidden {
+				if method.Type.In(i) == denied {
+					t.Fatalf("%s exposes caller-selected authority %v", method.Name, denied)
+				}
+			}
+		}
 	}
 }

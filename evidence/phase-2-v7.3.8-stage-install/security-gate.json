@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "scope": "tracked diff and all untracked files for this run",
+  "secret_scan": "PASS",
+  "secret_scanner_positive_control": "PASS; synthetic GitHub token-shaped sentinel detected in memory only",
+  "privacy_scan": "PASS; no absolute user/workspace paths, email addresses, or credential values found",
+  "candidate_archive_or_executable_committed": false,
+  "credential_or_oauth_access": false,
+  "provider_request": false,
+  "product_process_or_listener_started": false,
+  "production_product_root_modified": false,
+  "active_state_or_promotion_marker_mutated": false,
+  "upstream_lock_modified": false,
+  "upstream_lifecycle_ref_modified": false,
+  "real_v738_archive_opt_in": "SKIPPED; DUALPOOL_V738_ARCHIVE is unset"
+}

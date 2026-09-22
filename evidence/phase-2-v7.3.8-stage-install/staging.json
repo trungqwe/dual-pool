@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "status": "PASS_COMPONENT",
+  "public_api": "(*upstreamstage.Stager).StageCandidate(context.Context, upstreamlock.Lock)",
+  "generic_engine": "unexported stageProvenance",
+  "authority_source": "upstreamcatalog.ProductionCandidate",
+  "generic_engine_visibility": "unexported; receives only already-resolved trust objects from current-pin or closed-candidate wrappers",
+  "NewVerified_used_to_establish_candidate_trust": false,
+  "cache_identity": "version-platform-provenance-digest",
+  "manifest_legacy_lock_sha256_semantics": "immutable trust-source digest; candidate uses provenance digest",
+  "verified_order": [
+    "resolve closed candidate authority",
+    "acquire GLOBAL",
+    "revalidate stage root",
+    "download exact candidate artifact URL",
+    "check archive SHA-256",
+    "inspect and safely extract ZIP",
+    "check executable SHA-256",
+    "verify PE/AMD64",
+    "run bounded VerifyExpected for exact version and commit",
+    "write manifest",
+    "atomically publish stage",
+    "revalidate published stage"
+  ],
+  "binary_execution_before_hash_gates": false,
+  "candidate_wrapper_network_test": "TestStageCandidateUsesOnlyReviewedV738BeforeVerification",
+  "synthetic_cache_test": "TestStageProvenanceCandidateCacheUsesDigestAndRejectsMutation",
+  "real_archive_test": {
+    "test": "TestRealV738TemporaryStageInstallOptIn",
+    "status": "SKIPPED",
+    "reason": "DUALPOOL_V738_ARCHIVE is unset; no network fallback exists"
+  }
+}

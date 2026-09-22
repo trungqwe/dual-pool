@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "status": "PASS_COMPONENT",
+  "authority": "closed resolver allows exact current lock release and exact reviewed 7.3.8 receipt only",
+  "states": [
+    "marker only",
+    "owned partial executable",
+    "complete pre-rename attempt",
+    "final slot published before registry update",
+    "slot registered while marker remains"
+  ],
+  "registry_publication_failure": "marker remains; active state unchanged; recovery verifies final slot and completes registration before removing marker",
+  "tamper_policy": "mismatched/corrupt artifacts and unowned directories fail closed and are preserved",
+  "cross_release_marker_attacks": [
+    "candidate version with current digest",
+    "candidate version with wrong adapter",
+    "current version with candidate digest",
+    "unknown version with syntactically valid metadata"
+  ],
+  "synthetic_tests": [
+    "TestCandidateInstallMarkerRecoveryConvergesWithoutActiveMutation",
+    "TestCandidateInstallMarkerRejectsCrossReleaseAndTamperedArtifacts",
+    "TestCandidateInstallFaultsNeverPublishAndRecoverOwnedAttempts",
+    "TestRegistryPublicationFailureRetainsMarkerAndRecoveryRegistersFinalCandidate",
+    "TestCurrentInstallMarkerRecoveryRemainsCompatible"
+  ],
+  "process_crash_or_power_loss_claimed": false
+}

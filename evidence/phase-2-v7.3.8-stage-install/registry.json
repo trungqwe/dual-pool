@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "status": "PASS_COMPONENT",
+  "registry_schema_changed": false,
+  "registration": "RegisterLocked(context.Context, \"7.3.8\") under install GLOBAL lock",
+  "verify": "VerifyInstalled(context.Context, \"7.3.8\")",
+  "resolve_identity": {
+    "version": "7.3.8",
+    "tag": "v7.3.8",
+    "commit": "c93978c4ea2e908255a2a06c37599fda3651554a",
+    "platform": "windows_amd64",
+    "executable_sha256": "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd",
+    "provenance_digest": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+    "config_adapter_version": "dualpool-cpa-v7.3.7-config-v1"
+  },
+  "production_catalog_entries": ["7.3.7", "7.3.8"],
+  "arbitrary_release_installable": false
+}

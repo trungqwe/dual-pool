@@ -50,6 +50,32 @@ func TestProductionCatalogV738ExactIdentity(t *testing.T) {
 	}
 }
 
+func TestProductionCandidateReturnsOnlyReviewedV738(t *testing.T) {
+	lock := pinned(t)
+	p, err := ProductionCandidate(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Provenance{
+		Product: "CLIProxyAPI", Version: "7.3.8", Tag: "v7.3.8",
+		Commit: "c93978c4ea2e908255a2a06c37599fda3651554a", Platform: "windows_amd64",
+		Artifact:             "CLIProxyAPI_7.3.8_windows_amd64.zip",
+		DownloadURL:          "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.8/CLIProxyAPI_7.3.8_windows_amd64.zip",
+		ArchiveSHA256:        "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351",
+		ExecutableSHA256:     "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd",
+		ConfigAdapterVersion: "dualpool-cpa-v7.3.7-config-v1",
+		Digest:               "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+		ReleaseMetadataURL:   "https://github.com/router-for-me/CLIProxyAPI/releases/tag/v7.3.8",
+	}
+	if p != want {
+		t.Fatalf("candidate provenance=%+v, want %+v", p, want)
+	}
+	lock.Version = "7.3.8"
+	if _, err := ProductionCandidate(lock); err == nil {
+		t.Fatal("candidate authority accepted a non-current upstream lock")
+	}
+}
+
 func TestProductionCatalogRejectsUnknownVersion(t *testing.T) {
 	c, err := Production(pinned(t))
 	if err != nil {

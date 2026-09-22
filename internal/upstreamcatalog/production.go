@@ -36,6 +36,24 @@ func Production(lock upstreamlock.Lock) (*Catalog, error) {
 	return newVerified([]Provenance{v737, v738})
 }
 
+// ProductionCandidate resolves the one reviewed production candidate that may
+// be staged alongside the current pinned release. It intentionally accepts no
+// version or caller-supplied provenance.
+func ProductionCandidate(current upstreamlock.Lock) (Provenance, error) {
+	if err := current.Validate(); err != nil {
+		return Provenance{}, ErrInvalidCatalog
+	}
+	catalog, err := Production(current)
+	if err != nil {
+		return Provenance{}, ErrInvalidCatalog
+	}
+	candidate, err := catalog.Resolve("7.3.8")
+	if err != nil || candidate.Version != "7.3.8" || candidate.Digest != verifiedV738ReceiptSHA256 {
+		return Provenance{}, ErrInvalidCatalog
+	}
+	return candidate, nil
+}
+
 func parseVerifiedV738Receipt(raw []byte) (Provenance, error) {
 	if len(raw) == 0 || len(raw) > 4096 || !bytes.Equal(raw, bytes.ToValidUTF8(raw, []byte("?"))) {
 		return Provenance{}, ErrInvalidCatalog

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "status": "PASS_COMPONENT",
+  "start_sha": "5bfb1518059a171a0f3858877585e3097d9fe099",
+  "upstream_lock_version": "7.3.7",
+  "upstream_lock_changed": false,
+  "authority_api": "upstreamcatalog.ProductionCandidate(current upstreamlock.Lock)",
+  "candidate": {
+    "version": "7.3.8",
+    "tag": "v7.3.8",
+    "commit": "c93978c4ea2e908255a2a06c37599fda3651554a",
+    "platform": "windows_amd64",
+    "artifact": "CLIProxyAPI_7.3.8_windows_amd64.zip",
+    "download_url": "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.8/CLIProxyAPI_7.3.8_windows_amd64.zip",
+    "archive_sha256": "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351",
+    "executable_sha256": "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd",
+    "config_adapter_version": "dualpool-cpa-v7.3.7-config-v1",
+    "provenance_digest": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776"
+  },
+  "source": "internal/upstreamcatalog/trust/v7.3.8.json",
+  "NewVerified_production_trust_call_sites": 0,
+  "constraints": [
+    "current lock must validate",
+    "candidate selector accepts no version or provenance input",
+    "only exact reviewed v7.3.8 receipt is returned",
+    "unknown production releases are absent"
+  ]
+}

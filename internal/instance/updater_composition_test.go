@@ -43,12 +43,16 @@ func (r *composedRegistry) Resolve(version string) (installedslot.ResolvedSlot, 
 func (*composedRegistry) RegisterLocked(context.Context, string) error { return nil }
 
 type composedSmoke struct {
-	calls       []string
-	failVersion string
+	calls          []string
+	failVersion    string
+	failDisposable bool
 }
 
 func (s *composedSmoke) Disposable(_ context.Context, version string) error {
 	s.calls = append(s.calls, "disposable:"+version)
+	if s.failDisposable {
+		return errors.New("synthetic disposable smoke failure")
+	}
 	return nil
 }
 func (s *composedSmoke) Production(_ context.Context, version string) error {
@@ -237,6 +241,29 @@ func TestComposeUpdaterUsesExactManagerAuthorities(t *testing.T) {
 	markers := reflect.ValueOf(updater).Elem().FieldByName("markers")
 	if markers.Elem().FieldByName("dir").String() != f.manager.layout.State {
 		t.Fatal("Updater marker directory differs from Manager state directory")
+	}
+}
+
+func TestInstalledCandidateSmokeFailureBlocksPromotionBeforeLifecycle(t *testing.T) {
+	f := newComposedFixture(t)
+	if err := f.manager.registry.VerifyInstalled(context.Background(), "vB"); err != nil {
+		t.Fatalf("installed synthetic candidate is not trusted: %v", err)
+	}
+	f.smoke.failDisposable = true
+	updater := f.updater(nil)
+	err := updater.Promote(context.Background(), "vB")
+	if err == nil || err.Error() != "synthetic disposable smoke failure" {
+		t.Fatalf("Promote error=%v, want disposable smoke sentinel", err)
+	}
+	if f.stopCount != 0 || f.startCount != 0 {
+		t.Fatalf("lifecycle ran before candidate Smoke: stops=%d starts=%d", f.stopCount, f.startCount)
+	}
+	active, err := f.store.LoadState()
+	if err != nil || active.ActiveUpstreamVersion != "vA" {
+		t.Fatalf("active state=%#v err=%v", active, err)
+	}
+	if _, err := os.Lstat(filepath.Join(f.markerDir, ".update-transaction.json")); !os.IsNotExist(err) {
+		t.Fatalf("promotion marker persisted after Smoke rejection: %v", err)
 	}
 }
 func (f *composedFixture) active() string {

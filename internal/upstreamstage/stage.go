@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/trungqwe/dual-pool/internal/lockfile"
+	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 	"golang.org/x/sys/windows"
 )
@@ -105,11 +106,34 @@ func WithVerifier(v Verifier) Option     { return func(s *Stager) { s.verifier =
 func WithPlatform(v string) Option       { return func(s *Stager) { s.platform = v } }
 
 func (s *Stager) Stage(ctx context.Context, l upstreamlock.Lock) (Result, error) {
+	catalog, err := upstreamcatalog.FromPinnedLock(l)
+	if err != nil {
+		return Result{}, err
+	}
+	provenance, err := catalog.Resolve(l.Version)
+	if err != nil {
+		return Result{}, err
+	}
+	return s.stageProvenance(ctx, provenance, l)
+}
+
+// StageCandidate stages only the reviewed production v7.3.8 candidate. The
+// candidate authority is resolved before taking GLOBAL or touching the stage
+// root, and callers cannot provide mutable release metadata.
+func (s *Stager) StageCandidate(ctx context.Context, current upstreamlock.Lock) (Result, error) {
+	provenance, err := upstreamcatalog.ProductionCandidate(current)
+	if err != nil {
+		return Result{}, err
+	}
+	return s.stageProvenance(ctx, provenance, current)
+}
+
+// stageProvenance accepts only an already-resolved trust object. Its only
+// production callers are Stage and StageCandidate, which derive it from the
+// exact current lock or ProductionCandidate respectively.
+func (s *Stager) stageProvenance(ctx context.Context, provenance upstreamcatalog.Provenance, current upstreamlock.Lock) (Result, error) {
 	if s.platform != "windows_amd64" || runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
 		return Result{}, ErrUnsupportedPlatform
-	}
-	if err := l.Validate(); err != nil {
-		return Result{}, err
 	}
 	guard, err := s.locks.AcquireGlobal()
 	if err != nil {
@@ -119,9 +143,14 @@ func (s *Stager) Stage(ctx context.Context, l upstreamlock.Lock) (Result, error)
 	if !safeDirectoryHierarchy(s.root) {
 		return Result{}, ErrPersistence
 	}
-	final := filepath.Join(s.root, fmt.Sprintf("%s-windows_amd64-%s", l.Version, l.Digest()[:12]))
+	stageName := fmt.Sprintf("%s-%s-%s", provenance.Version, provenance.Platform, provenance.Digest)
+	if provenance.Version == current.Version && provenance.Digest == current.Digest() {
+		// Preserve the established current-pin cache path for v7.3.7.
+		stageName = fmt.Sprintf("%s-windows_amd64-%s", provenance.Version, provenance.Digest[:12])
+	}
+	final := filepath.Join(s.root, stageName)
 	if _, statErr := os.Lstat(final); statErr == nil {
-		r, e := validateFinal(final, l)
+		r, e := validateFinal(final, provenance)
 		if e != nil {
 			return Result{}, ErrStageConflict
 		}
@@ -141,30 +170,31 @@ func (s *Stager) Stage(ctx context.Context, l upstreamlock.Lock) (Result, error)
 		}
 	}()
 	archive := filepath.Join(attempt, "download.tmp")
-	dl, err := s.downloader.Download(ctx, l.Platforms.WindowsAMD64, archive)
+	platform := upstreamlock.Platform{Artifact: provenance.Artifact, DownloadURL: provenance.DownloadURL, ArchiveSHA256: provenance.ArchiveSHA256, ExecutableSHA256: provenance.ExecutableSHA256}
+	dl, err := s.downloader.Download(ctx, platform, archive)
 	if err != nil {
 		return Result{}, err
 	}
-	if digestFile(archive) != l.Platforms.WindowsAMD64.ArchiveSHA256 {
+	if digestFile(archive) != provenance.ArchiveSHA256 {
 		return Result{}, ErrArchiveHashMismatch
 	}
-	base, err := s.extractor.Extract(archive, attempt, l.Platforms.WindowsAMD64.ExecutableSHA256)
+	base, err := s.extractor.Extract(archive, attempt, provenance.ExecutableSHA256)
 	if err != nil {
 		return Result{}, err
 	}
 	_ = os.Remove(archive)
 	exe := filepath.Join(attempt, base)
-	if digestFile(exe) != l.Platforms.WindowsAMD64.ExecutableSHA256 {
+	if digestFile(exe) != provenance.ExecutableSHA256 {
 		return Result{}, ErrExecutableHashMismatch
 	}
 	if err = verifyPE(exe); err != nil {
 		return Result{}, err
 	}
-	identity, err := s.verifier.Verify(ctx, exe, l)
+	identity, err := s.verifyProvenance(ctx, exe, provenance, current)
 	if err != nil || !identity.VersionMatch || !identity.CommitMatch {
 		return Result{}, ErrBinaryIdentityMismatch
 	}
-	m := newManifest(l, base, identity)
+	m := newManifest(provenance, base, identity)
 	if err = writeManifest(filepath.Join(attempt, "stage-manifest.json"), m); err != nil {
 		return Result{}, err
 	}
@@ -175,7 +205,7 @@ func (s *Stager) Stage(ctx context.Context, l upstreamlock.Lock) (Result, error)
 		return Result{}, ErrPersistence
 	}
 	owned = false
-	r, err := validateFinal(final, l)
+	r, err := validateFinal(final, provenance)
 	if err != nil {
 		return Result{}, err
 	}
@@ -185,24 +215,40 @@ func (s *Stager) Stage(ctx context.Context, l upstreamlock.Lock) (Result, error)
 }
 
 type Manifest struct {
-	SchemaVersion         int    `json:"schema_version"`
-	Product               string `json:"product"`
-	Version               string `json:"version"`
-	Tag                   string `json:"tag"`
-	Commit                string `json:"commit"`
-	Platform              string `json:"platform"`
-	Artifact              string `json:"artifact"`
-	ArchiveSHA256         string `json:"archive_sha256"`
-	ExecutableSHA256      string `json:"executable_sha256"`
-	ExecutableBasename    string `json:"executable_basename"`
+	SchemaVersion      int    `json:"schema_version"`
+	Product            string `json:"product"`
+	Version            string `json:"version"`
+	Tag                string `json:"tag"`
+	Commit             string `json:"commit"`
+	Platform           string `json:"platform"`
+	Artifact           string `json:"artifact"`
+	ArchiveSHA256      string `json:"archive_sha256"`
+	ExecutableSHA256   string `json:"executable_sha256"`
+	ExecutableBasename string `json:"executable_basename"`
+	// LockSHA256 keeps the legacy JSON name. It stores the immutable trust-source
+	// digest: the exact upstream.lock digest for the current pin, or the reviewed
+	// production-catalog provenance digest for a candidate release.
 	LockSHA256            string `json:"lock_sha256"`
 	BinaryVersionVerified bool   `json:"binary_version_verified"`
 	BinaryCommitVerified  bool   `json:"binary_commit_verified"`
 }
 
-func newManifest(l upstreamlock.Lock, b string, i Identity) Manifest {
-	p := l.Platforms.WindowsAMD64
-	return Manifest{1, l.Product, l.Version, l.Tag, l.Commit, "windows_amd64", p.Artifact, p.ArchiveSHA256, p.ExecutableSHA256, b, l.Digest(), i.VersionMatch, i.CommitMatch}
+func newManifest(p upstreamcatalog.Provenance, b string, i Identity) Manifest {
+	return Manifest{1, p.Product, p.Version, p.Tag, p.Commit, p.Platform, p.Artifact, p.ArchiveSHA256, p.ExecutableSHA256, b, p.Digest, i.VersionMatch, i.CommitMatch}
+}
+
+type expectedIdentityVerifier interface {
+	VerifyExpected(context.Context, string, ExpectedIdentity) (Identity, error)
+}
+
+func (s *Stager) verifyProvenance(ctx context.Context, path string, provenance upstreamcatalog.Provenance, current upstreamlock.Lock) (Identity, error) {
+	if verifier, ok := s.verifier.(expectedIdentityVerifier); ok {
+		return verifier.VerifyExpected(ctx, path, ExpectedIdentity{Version: provenance.Version, Commit: provenance.Commit})
+	}
+	if provenance.Version != current.Version || provenance.Commit != current.Commit {
+		return Identity{}, ErrBinaryIdentityMismatch
+	}
+	return s.verifier.Verify(ctx, path, current)
 }
 func writeManifest(path string, m Manifest) error {
 	b, e := json.MarshalIndent(m, "", "  ")
@@ -247,7 +293,7 @@ func readManifest(path string) (Manifest, error) {
 	}
 	return m, nil
 }
-func validateFinal(dir string, l upstreamlock.Lock) (Result, error) {
+func validateFinal(dir string, provenance upstreamcatalog.Provenance) (Result, error) {
 	if !safeDirectoryHierarchy(dir) {
 		return Result{}, ErrStageIncomplete
 	}
@@ -255,7 +301,7 @@ func validateFinal(dir string, l upstreamlock.Lock) (Result, error) {
 	if e != nil {
 		return Result{}, e
 	}
-	expected := newManifest(l, m.ExecutableBasename, Identity{true, true})
+	expected := newManifest(provenance, m.ExecutableBasename, Identity{true, true})
 	if m != expected || !upstreamlock.SafeBasename(m.ExecutableBasename) {
 		return Result{}, ErrStageIncomplete
 	}

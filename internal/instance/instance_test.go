@@ -149,7 +149,15 @@ func TestProcessRecordRejectsPIDReuseAndUnsafeValues(t *testing.T) {
 }
 
 func TestInstallMarkerTransactionIDValidation(t *testing.T) {
-	m := &Manager{lock: upstreamlock.Lock{Version: "7.3.7", ConfigAdapterVersion: "dualpool-cpa-v7.3.7-config-v1"}}
+	raw, err := os.ReadFile(filepath.Join("..", "..", "upstream.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	lock, err := upstreamlock.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := &Manager{lock: lock}
 	txn, err := randomTransaction()
 	if err != nil {
 		t.Fatal(err)

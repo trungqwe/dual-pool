@@ -19,6 +19,7 @@ import (
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
+	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 	"github.com/trungqwe/dual-pool/internal/winacl"
 )
 
@@ -229,15 +230,15 @@ func TestProductionCompositionBindsPinnedV738DigestToRegistry(t *testing.T) {
 	}
 }
 
-func TestProductionCandidateAbsentFailsUpdaterPreflight(t *testing.T) {
+func TestUninstalledProductionCandidateFailsUpdaterPreflight(t *testing.T) {
 	runtime, config := productionFixture(t)
 	smoke := config.Smoke.(*recordingSmoke)
 	if _, err := runtime.catalog.Resolve("7.3.8"); err != nil {
 		t.Fatalf("verified candidate is absent from catalog: %v", err)
 	}
 	err := runtime.Updater.Promote(context.Background(), "7.3.8")
-	if err == nil {
-		t.Fatal("absent candidate accepted")
+	if !errors.Is(err, installedslot.ErrSlotUnknown) {
+		t.Fatalf("uninstalled candidate error=%v, want registry absence", err)
 	}
 	current, loadErr := runtime.state.LoadState()
 	if loadErr != nil || current.ActiveUpstreamVersion != config.Lock.Version {
@@ -248,6 +249,66 @@ func TestProductionCandidateAbsentFailsUpdaterPreflight(t *testing.T) {
 	}
 	if _, statErr := os.Stat(filepath.Join(config.Layout.State, ".update-transaction.json")); !os.IsNotExist(statErr) {
 		t.Fatalf("marker exists: %v", statErr)
+	}
+}
+
+type failStageDownload struct {
+	count    int
+	platform upstreamlock.Platform
+	path     string
+	err      error
+}
+
+func (d *failStageDownload) Download(_ context.Context, platform upstreamlock.Platform, path string) (upstreamstage.DownloadResult, error) {
+	d.count++
+	d.platform = platform
+	d.path = path
+	return upstreamstage.DownloadResult{}, d.err
+}
+
+func TestRuntimeCandidateStageRootIsLazyAndUsesExactSharedLock(t *testing.T) {
+	runtime, config := productionFixture(t)
+	stageRoot := filepath.Join(config.Layout.Bin, "upstream-stage")
+	if _, err := os.Lstat(stageRoot); !os.IsNotExist(err) {
+		t.Fatalf("Runtime.New eagerly created stage root: %v", err)
+	}
+	if reflect.ValueOf(runtime.locks).Pointer() != pointerField(runtime.Manager, "locks") || pointerField(runtime.state, "locks") != reflect.ValueOf(runtime.locks).Pointer() || pointerField(runtime.registry, "locks") != reflect.ValueOf(runtime.locks).Pointer() || pointerField(runtime.Updater, "locks") != reflect.ValueOf(runtime.locks).Pointer() {
+		t.Fatal("runtime composition authorities do not share the lock manager")
+	}
+	if err := config.ACL.Create(stageRoot); err != nil {
+		t.Fatal(err)
+	}
+	stager, err := runtime.candidateStager()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stagerLock := reflect.ValueOf(stager).Elem().FieldByName("locks")
+	if stagerLock.Kind() != reflect.Pointer || stagerLock.Pointer() != reflect.ValueOf(runtime.locks).Pointer() {
+		t.Fatal("candidate Stager does not share Runtime GLOBAL lock manager by pointer identity")
+	}
+}
+
+func TestRuntimeCandidateStageCreatesRootOnlyOnRequestAndRequestsExactV738(t *testing.T) {
+	runtime, config := productionFixture(t)
+	stageRoot := filepath.Join(config.Layout.Bin, "upstream-stage")
+	if _, err := os.Lstat(stageRoot); !os.IsNotExist(err) {
+		t.Fatalf("candidate stage root exists before request: %v", err)
+	}
+	failure := errors.New("stop before network")
+	downloader := &failStageDownload{err: failure}
+	_, err := runtime.stageVerifiedCandidate(context.Background(), upstreamstage.WithDownloader(downloader))
+	if !errors.Is(err, failure) {
+		t.Fatalf("stage result error=%v", err)
+	}
+	if downloader.count != 1 || downloader.platform.Artifact != "CLIProxyAPI_7.3.8_windows_amd64.zip" || downloader.platform.DownloadURL != "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.3.8/CLIProxyAPI_7.3.8_windows_amd64.zip" || downloader.platform.ArchiveSHA256 != "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351" || downloader.platform.ExecutableSHA256 != "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd" {
+		t.Fatalf("downloader received wrong release: %+v calls=%d", downloader.platform, downloader.count)
+	}
+	if err = config.ACL.Inspect(stageRoot); err != nil {
+		t.Fatalf("request did not create/protect lazy stage root: %v", err)
+	}
+	entries, err := os.ReadDir(stageRoot)
+	if err != nil || len(entries) != 0 {
+		t.Fatalf("failed download left stage residue: %v entries=%v", err, entries)
 	}
 }
 
