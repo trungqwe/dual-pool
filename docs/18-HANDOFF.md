@@ -769,3 +769,7 @@ Slice implementation starts at `4d56626a361b10abfdef63d898a59267f1f6a84d` on bra
 ## Delivery receipt — Phase 2 v7.3.8 production compatibility Smoke (2026-09-22)
 
 Implementation/evidence commit `4ffc121e4ea39fb2a1fcb112049d8e79a4552664` was pushed normally to `origin/phase-2/v7.3.8-production-smoke`. Source CI run [`35758873089`](https://github.com/trungqwe/dual-pool/actions/runs/35758873089) completed successfully for that exact SHA; all mandatory steps passed. A documentation-only receipt commit follows so the final handoff records the delivery. `phase-2/upstream-lifecycle` remains `4d56626a361b10abfdef63d898a59267f1f6a84d`.
+
+## Process cleanup repair delivery receipt — 2026-09-22
+
+Repair commit `d8771d47228e66f4dc475441f19a4f6ac6c350df` was pushed normally after focused regression, full Go/race, vet, module, build, Node and lock checks. Exact Source CI run [`35771250029`](https://github.com/trungqwe/dual-pool/actions/runs/35771250029) completed successfully for that SHA; every mandatory source-check step passed. The repair accepts `*exec.ExitError` only after successful owned `Kill`; unexpected wait errors and child-gone-before-Kill remain fail-closed. `phase-2/upstream-lifecycle` is unchanged at `4d56626a361b10abfdef63d898a59267f1f6a84d`. No real archive, promotion, product or provider mutation occurred. Next objective: owner/auditor review and controlled delivery of this repaired lineage into `phase-2/upstream-lifecycle`.
