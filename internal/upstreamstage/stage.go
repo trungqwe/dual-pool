@@ -128,6 +128,24 @@ func (s *Stager) StageCandidate(ctx context.Context, current upstreamlock.Lock) 
 	return s.stageProvenance(ctx, provenance, current)
 }
 
+// CandidateStagePath returns the closed production candidate's cache path.
+// The path is derived from the current pinned lock and the reviewed catalog;
+// callers cannot select candidate metadata or a release name.
+func CandidateStagePath(root string, current upstreamlock.Lock) (string, error) {
+	if root == "" || filepath.Clean(root) != root || !filepath.IsAbs(root) {
+		return "", ErrPersistence
+	}
+	provenance, err := upstreamcatalog.ProductionCandidate(current)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(root, candidateStageName(provenance)), nil
+}
+
+func candidateStageName(provenance upstreamcatalog.Provenance) string {
+	return fmt.Sprintf("%s-%s-%s", provenance.Version, provenance.Platform, provenance.Digest)
+}
+
 // stageProvenance accepts only an already-resolved trust object. Its only
 // production callers are Stage and StageCandidate, which derive it from the
 // exact current lock or ProductionCandidate respectively.
@@ -143,7 +161,7 @@ func (s *Stager) stageProvenance(ctx context.Context, provenance upstreamcatalog
 	if !safeDirectoryHierarchy(s.root) {
 		return Result{}, ErrPersistence
 	}
-	stageName := fmt.Sprintf("%s-%s-%s", provenance.Version, provenance.Platform, provenance.Digest)
+	stageName := candidateStageName(provenance)
 	if provenance.Version == current.Version && provenance.Digest == current.Digest() {
 		// Preserve the established current-pin cache path for v7.3.7.
 		stageName = fmt.Sprintf("%s-windows_amd64-%s", provenance.Version, provenance.Digest[:12])

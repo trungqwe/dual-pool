@@ -457,10 +457,19 @@ func (m *Manager) InstallCandidate(ctx context.Context, stage upstreamstage.Resu
 	if err != nil {
 		return "", false, ErrBinaryInstallConflict
 	}
-	return m.installTrusted(ctx, provenance, stage)
+	stageRoot := filepath.Join(m.layout.Bin, "upstream-stage")
+	expectedStage, err := upstreamstage.CandidateStagePath(stageRoot, m.lock)
+	if err != nil || stage.Directory != expectedStage {
+		return "", false, ErrBinaryInstallConflict
+	}
+	return m.installTrustedAtStageRoot(ctx, provenance, stage, stageRoot, expectedStage)
 }
 
 func (m *Manager) installTrusted(ctx context.Context, provenance upstreamcatalog.Provenance, stage upstreamstage.Result) (string, bool, error) {
+	return m.installTrustedAtStageRoot(ctx, provenance, stage, "", "")
+}
+
+func (m *Manager) installTrustedAtStageRoot(ctx context.Context, provenance upstreamcatalog.Provenance, stage upstreamstage.Result, stageRoot, expectedStage string) (string, bool, error) {
 	guard, err := m.locks.AcquireGlobal()
 	if err != nil {
 		return "", false, ErrPersistence
@@ -468,6 +477,11 @@ func (m *Manager) installTrusted(ctx context.Context, provenance upstreamcatalog
 	defer guard.Release()
 	if err = m.preflightRoots(); err != nil {
 		return "", false, err
+	}
+	if stageRoot != "" {
+		if err = m.validateCandidateStageRoot(stageRoot, expectedStage, stage.Directory); err != nil {
+			return "", false, err
+		}
 	}
 	if provenance.Version == m.lock.Version {
 		err = m.validateStage(ctx, stage)
@@ -548,6 +562,17 @@ func (m *Manager) installTrusted(ctx context.Context, provenance upstreamcatalog
 		return "", false, ErrPersistence
 	}
 	return filepath.Join(final, "cliproxyapi.exe"), false, nil
+}
+
+func (m *Manager) validateCandidateStageRoot(stageRoot, expectedStage, actualStage string) error {
+	if stageRoot == "" || filepath.Clean(stageRoot) != stageRoot || !filepath.IsAbs(stageRoot) || expectedStage == "" || actualStage != expectedStage {
+		return ErrBinaryInstallConflict
+	}
+	info, err := os.Lstat(stageRoot)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || isFileReparse(stageRoot) || m.acl.Inspect(stageRoot) != nil {
+		return ErrBinaryInstallConflict
+	}
+	return nil
 }
 func (m *Manager) marker(txn, candidate string) installMarker {
 	catalog, err := upstreamcatalog.FromPinnedLock(m.lock)
@@ -985,10 +1010,10 @@ func (m *Manager) validateCandidateStage(ctx context.Context, provenance upstrea
 		return ErrBinaryInstallConflict
 	}
 	executable := filepath.Join(stage.Directory, stage.Manifest.ExecutableBasename)
-	if !samePath(stage.Executable, executable) {
+	if stage.Executable != executable {
 		return ErrBinaryInstallConflict
 	}
-	if m.acl.Inspect(stage.Directory) != nil || isFileReparse(stage.Directory) {
+	if isFileReparse(stage.Directory) {
 		return ErrBinaryInstallConflict
 	}
 	dirInfo, err := os.Lstat(stage.Directory)
@@ -996,7 +1021,7 @@ func (m *Manager) validateCandidateStage(ctx context.Context, provenance upstrea
 		return ErrBinaryInstallConflict
 	}
 	manifestPath := filepath.Join(stage.Directory, "stage-manifest.json")
-	if m.acl.InspectFile(manifestPath) != nil || m.acl.InspectFile(executable) != nil || isFileReparse(manifestPath) || isFileReparse(executable) {
+	if isFileReparse(manifestPath) || isFileReparse(executable) {
 		return ErrBinaryInstallConflict
 	}
 	exeInfo, err := os.Lstat(executable)

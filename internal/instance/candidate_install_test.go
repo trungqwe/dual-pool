@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -204,6 +205,166 @@ func TestInstallTrustedSyntheticCandidateRegistersImmutableSlot(t *testing.T) {
 	}
 	if _, err = os.Stat(filepath.Join(layout.Bin, "cliproxyapi", markerName)); !os.IsNotExist(err) {
 		t.Fatalf("install marker remains after success: %v", err)
+	}
+}
+
+func TestInstallTrustedAcceptsActualStagerACLTopology(t *testing.T) {
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	executable, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := syntheticInstallProvenance(executable)
+	manager, registry, layout, acl, _, _ := candidateManagerFixture(t, p)
+	stageRoot := filepath.Join(layout.Bin, "upstream-stage")
+	if err := acl.Create(stageRoot); err != nil {
+		t.Fatal(err)
+	}
+	if err := acl.Inspect(stageRoot); err != nil {
+		t.Fatalf("protected stage root: %v", err)
+	}
+	stageDir, err := os.MkdirTemp(stageRoot, "candidate-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	executablePath := filepath.Join(stageDir, "CLIProxyAPI.exe")
+	file, err := os.OpenFile(executablePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = file.Write(executable); err == nil {
+		err = file.Sync()
+	}
+	if closeErr := file.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := upstreamstage.Manifest{SchemaVersion: 1, Product: p.Product, Version: p.Version, Tag: p.Tag, Commit: p.Commit, Platform: p.Platform, Artifact: p.Artifact, ArchiveSHA256: p.ArchiveSHA256, ExecutableSHA256: p.ExecutableSHA256, ExecutableBasename: filepath.Base(executablePath), LockSHA256: p.Digest, BinaryVersionVerified: true, BinaryCommitVerified: true}
+	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestBytes = append(manifestBytes, '\n')
+	if err = os.WriteFile(filepath.Join(stageDir, "stage-manifest.json"), manifestBytes, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = acl.Inspect(stageDir); err == nil {
+		t.Fatal("normal os.MkdirTemp child unexpectedly has the protected installed-object ACL")
+	}
+	stage := upstreamstage.Result{Directory: stageDir, Executable: executablePath, Manifest: manifest}
+	installedPath, existing, err := manager.installTrusted(context.Background(), p, stage)
+	if err != nil || existing || installedPath != filepath.Join(layout.Bin, "cliproxyapi", p.Version, "cliproxyapi.exe") {
+		t.Fatalf("install path=%q existing=%v err=%v", installedPath, existing, err)
+	}
+	installedDir := filepath.Dir(installedPath)
+	if err = acl.Inspect(installedDir); err != nil {
+		t.Fatalf("protected installed slot: %v", err)
+	}
+	if err = acl.InspectFile(installedPath); err != nil {
+		t.Fatalf("protected installed executable: %v", err)
+	}
+	if err = acl.InspectFile(filepath.Join(installedDir, manifestName)); err != nil {
+		t.Fatalf("protected installed manifest: %v", err)
+	}
+	if err = registry.VerifyInstalled(context.Background(), p.Version); err != nil {
+		t.Fatalf("registered installed slot: %v", err)
+	}
+}
+
+func TestInstallCandidateRejectsValidCandidateOutsideProductStageRoot(t *testing.T) {
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	executable, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := syntheticInstallProvenance(executable)
+	manager, _, layout, acl, _, _ := candidateManagerFixture(t, p)
+	stageRoot := filepath.Join(layout.Bin, "upstream-stage")
+	if err = acl.Create(stageRoot); err != nil {
+		t.Fatal(err)
+	}
+	stage := writeCandidateStage(t, acl, p, executable)
+	expectedStage := filepath.Join(stageRoot, "vB-windows_amd64-"+p.Digest)
+	if stage.Directory == expectedStage {
+		t.Fatal("fixture stage unexpectedly resides at the expected product cache path")
+	}
+	if _, _, err = manager.installTrustedAtStageRoot(context.Background(), p, stage, stageRoot, expectedStage); !errors.Is(err, ErrBinaryInstallConflict) {
+		t.Fatalf("outside-root valid synthetic stage error=%v", err)
+	}
+	for _, path := range []string{
+		filepath.Join(layout.Bin, "cliproxyapi", p.Version),
+		filepath.Join(layout.Bin, "cliproxyapi", markerName),
+		filepath.Join(layout.Bin, "cliproxyapi", "installed-slots.json"),
+	} {
+		if _, statErr := os.Lstat(path); !os.IsNotExist(statErr) {
+			t.Fatalf("outside-root rejection mutated %q: %v", path, statErr)
+		}
+	}
+}
+
+func TestPublicInstallCandidateRejectsCandidateShapedStageOutsideProductStageRootBeforeMutation(t *testing.T) {
+	lock := candidateInstallLock(t)
+	candidate, err := upstreamcatalog.ProductionCandidate(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	executable, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager, _, layout, acl, _, _ := candidateManagerFixture(t, candidate)
+	stage := writeCandidateStage(t, acl, candidate, executable)
+	before, err := manager.state.LoadState()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err = manager.InstallCandidate(context.Background(), stage); !errors.Is(err, ErrBinaryInstallConflict) {
+		t.Fatalf("outside-root candidate install error=%v", err)
+	}
+	for _, path := range []string{
+		filepath.Join(layout.Bin, "cliproxyapi", candidate.Version),
+		filepath.Join(layout.Bin, "cliproxyapi", markerName),
+		filepath.Join(layout.Bin, "cliproxyapi", "installed-slots.json"),
+	} {
+		if _, statErr := os.Lstat(path); !os.IsNotExist(statErr) {
+			t.Fatalf("outside-root rejection mutated %q: %v", path, statErr)
+		}
+	}
+	after, err := manager.state.LoadState()
+	if err != nil || after.ActiveUpstreamVersion != before.ActiveUpstreamVersion {
+		t.Fatalf("active state changed: before=%q after=%q err=%v", before.ActiveUpstreamVersion, after.ActiveUpstreamVersion, err)
+	}
+}
+
+func TestInstallCandidateRejectsUnprotectedStageRoot(t *testing.T) {
+	lock := candidateInstallLock(t)
+	candidate, err := upstreamcatalog.ProductionCandidate(lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager, _, layout, _, _, _ := candidateManagerFixture(t, candidate)
+	stageRoot := filepath.Join(layout.Bin, "upstream-stage")
+	if err := os.Mkdir(stageRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	expectedStage, err := upstreamstage.CandidateStagePath(stageRoot, lock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = manager.validateCandidateStageRoot(stageRoot, expectedStage, expectedStage); !errors.Is(err, ErrBinaryInstallConflict) {
+		t.Fatalf("unprotected stage root validation error=%v", err)
 	}
 }
 

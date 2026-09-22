@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "status": "PASS_LOCAL",
+  "red": {
+    "command": "go test ./internal/instance -run '^TestInstallTrustedAcceptsActualStagerACLTopology$' -count=1",
+    "result": "EXPECTED_FAIL_BEFORE_FIX",
+    "failure": "pinned binary installation conflicts with existing artifact"
+  },
+  "green": {
+    "command": "go test ./internal/instance -run 'InstallCandidate|InstallTrusted|StageRoot|ACL|CrossRelease|Marker|Recovery' -count=50",
+    "result": "PASS",
+    "duration_seconds": 62.851
+  },
+  "targeted": {
+    "instance_count_50": "PASS; final tests included",
+    "instance_race_count_10": "PASS; final tests included",
+    "runtimeupdate_count_20": "PASS",
+    "runtimeupdate_race_count_10": "PASS"
+  },
+  "stress_count_50_seconds": {
+    "upstreamstage": 147.622,
+    "installedslot": 20.657,
+    "instance": 140.008,
+    "runtimeupdate": 28.523
+  },
+  "race_count_10_seconds": {
+    "upstreamstage": 575.391,
+    "installedslot": 5.734,
+    "instance": 283.206,
+    "runtimeupdate": 110.424,
+    "instance_targeted": 60.198,
+    "upstreamstage_full_repository": 59.051
+  },
+  "full_repository": {
+    "go_fmt_all": "PASS",
+    "git_diff_check": "PASS",
+    "go_mod_verify": "PASS",
+    "go_vet_all": "PASS",
+    "go_test_all_count_1": "PASS",
+    "go_race_all_count_1": "PASS",
+    "windows_amd64_poolbridge_build": "PASS; temporary output removed",
+    "node_tests": "PASS; 55 passed, 0 failed",
+    "phase0_upstream_lock": "PASS; UPSTREAM_LOCK_VALID"
+  },
+  "real_v738_opt_in": "SKIPPED; environment variable unset; no network request",
+  "json_validation": "PASS; 215 files",
+  "documentation_links": "PASS; changed handoff/report",
+  "privacy_scan": "PASS; 0 matches",
+  "secret_scan": "PASS; 0 matches",
+  "secret_scanner_positive_control": "PASS; in-memory sentinel detected",
+  "push": "PENDING",
+  "source_ci_exact_final_sha": "PENDING exact final SHA"
+}

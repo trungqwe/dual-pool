@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "status": "PASS_LOCAL_REPAIR_PENDING_SOURCE_CI",
+  "branch": "phase-2/v7.3.8-candidate-stage-install",
+  "repair_start_sha": "a4bc87bc4370a8010a8619ade147f53d3689eaed",
+  "authoritative_upstream_sha": "5bfb1518059a171a0f3858877585e3097d9fe099",
+  "scope": "StageCandidate to InstallCandidate source-stage filesystem/ACL seam only",
+  "candidate_authority": "ProductionCandidate(currentLock)",
+  "candidate": {
+    "version": "7.3.8",
+    "tag": "v7.3.8",
+    "commit": "c93978c4ea2e908255a2a06c37599fda3651554a",
+    "archive_sha256": "5e3278ac9b57d16df503fd845827a6fdb57ec241f102b35899788287eb431351",
+    "executable_sha256": "479da2fb56eb3db11a76e19adeb2e10c2a4069a512ab5e3933ac4c50628360fd",
+    "provenance_digest": "0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+    "adapter": "dualpool-cpa-v7.3.7-config-v1"
+  },
+  "production_stage_root": "<Bin>/upstream-stage",
+  "expected_candidate_stage_directory": "<Bin>/upstream-stage/7.3.8-windows_amd64-0e653e4f01e00c05a44c662e7a7b7321916e7705c901db370aec3cb1116a9776",
+  "shared_naming_helper": "upstreamstage.CandidateStagePath",
+  "stage_root_protected_acl": "PASS in Windows component regression fixture",
+  "source_child_creation": [
+    "os.MkdirTemp",
+    "os.OpenFile",
+    "os.WriteFile"
+  ],
+  "source_child_protected_acl_required": false,
+  "source_validation": [
+    "exact production provenance",
+    "exact public stage path",
+    "no symlink/reparse",
+    "regular file types",
+    "exact two-entry topology",
+    "exact manifest",
+    "candidate executable SHA-256",
+    "PE AMD64",
+    "VerifyExpected version and commit"
+  ],
+  "source_child_acl_state": "normal inherited filesystem ACL; test proves winacl Inspect does not treat it as protected installed-object ACL",
+  "outside_product_stage_root": "REJECTED: a complete valid synthetic stage was denied before marker, slot or registry mutation; public candidate-shaped outside-root input rejected before mutation; active state unchanged",
+  "unprotected_stage_root": "REJECTED by protected-root inspection",
+  "destination_directory_protected_acl": "PASS",
+  "destination_executable_protected_acl": "PASS",
+  "destination_manifest_protected_acl": "PASS",
+  "destination_post_copy_validation": [
+    "manifest",
+    "hash",
+    "PE AMD64",
+    "binary identity"
+  ],
+  "registry_publication": "PASS in synthetic Windows component regression",
+  "current_v7_3_7_stage_install_changed": false,
+  "real_v738_archive_test": "SKIPPED; DUALPOOL_V738_ARCHIVE unset; no network request",
+  "production_or_provider_mutation": false,
+  "product_root_mutated": false,
+  "upstream_ref_mutated": false,
+  "source_ci": "PENDING exact final SHA"
+}
