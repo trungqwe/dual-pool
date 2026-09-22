@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -365,15 +364,14 @@ func validateManagerLayout(layout dataroot.Layout, acl ACL) error {
 	return nil
 }
 
-// ComposeUpdater derives every transaction authority from manager. Callers
-// provide only the required smoke dependency and never choose a lock, state,
-// registry, marker directory or marker security implementation.
-func ComposeUpdater(manager *Manager, smoke update.Smoke) (*update.Updater, error) {
+// ComposeUpdater derives every transaction authority, including production
+// Smoke, from the same Manager. Callers cannot bypass INV-PROC-05.
+func ComposeUpdater(manager *Manager) (*update.Updater, error) {
 	security, err := update.NewWindowsMarkerSecurity()
 	if err != nil {
 		return nil, ErrUnsafeInstance
 	}
-	return composeUpdaterForTest(manager, smoke, security, nil, nil)
+	return composeUpdaterForTest(manager, newUpdaterSmoke(manager), security, nil, nil)
 }
 
 func composeUpdaterForTest(manager *Manager, smoke update.Smoke, security update.MarkerSecurity, fault func(update.FaultPoint) error, transactionID func() (string, error)) (*update.Updater, error) {
@@ -601,7 +599,7 @@ func (m *Manager) injectInstallFault(point installFaultPoint) error {
 	return m.installFault(point)
 }
 
-func (m *Manager) trustedInstallProvenance(version string) (upstreamcatalog.Provenance, error) {
+func (m *Manager) trustedOperationalProvenance(version string) (upstreamcatalog.Provenance, error) {
 	if version == m.lock.Version {
 		catalog, err := upstreamcatalog.FromPinnedLock(m.lock)
 		if err != nil {
@@ -635,7 +633,7 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 	if e := readJSON(path, &mark); e != nil {
 		return ErrBinaryInstallConflict
 	}
-	provenance, err := m.trustedInstallProvenance(mark.Version)
+	provenance, err := m.trustedOperationalProvenance(mark.Version)
 	if err != nil || !validMarkerFor(mark, provenance) {
 		return ErrBinaryInstallConflict
 	}
@@ -643,7 +641,7 @@ func (m *Manager) recoverInstallMarker(ctx context.Context) error {
 }
 
 // recoverInstallMarkerTrusted is the generic transaction engine. Production
-// recovery reaches it only through trustedInstallProvenance; package tests may
+// recovery reaches it only through trustedOperationalProvenance; package tests may
 // supply synthetic provenance to exercise crash states without widening the
 // production marker authority.
 func (m *Manager) recoverInstallMarkerTrusted(ctx context.Context, mark installMarker, provenance upstreamcatalog.Provenance) error {
@@ -711,7 +709,7 @@ func (m *Manager) validatePartialCandidate(ctx context.Context, dir string, prov
 	return nil
 }
 func validMarker(v installMarker, m *Manager) bool {
-	provenance, err := m.trustedInstallProvenance(v.Version)
+	provenance, err := m.trustedOperationalProvenance(v.Version)
 	return err == nil && validMarkerFor(v, provenance)
 }
 
@@ -1428,10 +1426,17 @@ func decodeTCP6(b []byte) ([]listener, error) {
 func fmtIPv4(b []byte) string { return fmt.Sprintf("%d.%d.%d.%d", b[0], b[1], b[2], b[3]) }
 
 func (m *Manager) awaitReady(parent context.Context, id cliproxyconfig.ID, record ProcessRecord) error {
+	return m.awaitReadyWith(parent, id, record, tcpListeners, requestLoopback)
+}
+
+func (m *Manager) awaitReadyWith(parent context.Context, id cliproxyconfig.ID, record ProcessRecord, listeners func() ([]listener, error), request smokeRequester) error {
+	if listeners == nil || request == nil {
+		return ErrPersistence
+	}
 	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
 	defer cancel()
 	for delay := 25 * time.Millisecond; ; {
-		if m.checkL0(id, record) == nil && m.checkL1(ctx, record) == nil && m.checkL2(ctx, id) == nil {
+		if m.checkL0(id, record) == nil && m.checkL1With(ctx, record, listeners, request) == nil && m.checkL2With(ctx, id, request) == nil {
 			return nil
 		}
 		select {
@@ -1452,48 +1457,44 @@ func (m *Manager) checkL0(id cliproxyconfig.ID, r ProcessRecord) error {
 	return nil
 }
 func (m *Manager) checkL1(ctx context.Context, r ProcessRecord) error {
-	all, err := tcpListeners()
+	return m.checkL1With(ctx, r, tcpListeners, requestLoopback)
+}
+func (m *Manager) checkL1With(ctx context.Context, r ProcessRecord, listeners func() ([]listener, error), request smokeRequester) error {
+	all, err := listeners()
 	if err != nil {
 		return ErrUnverifiable
 	}
-	expectedPortCount := 0
-	managedCount := 0
-	for _, l := range all {
-		if l.port == r.Port {
-			expectedPortCount++
-			if l.ipv6 || l.address != "127.0.0.1" || l.pid != r.PID {
-				return ErrPersistence
-			}
-		}
-		if l.pid != r.PID {
-			continue
-		}
-		managedCount++
-		if l.ipv6 || l.address != "127.0.0.1" || l.port != r.Port {
-			return ErrPersistence
-		}
-	}
-	if expectedPortCount != 1 || managedCount != 1 {
+	ready, err := exactLoopbackListener(all, r.PID, r.Port)
+	if err != nil || !ready {
 		return ErrPersistence
 	}
-	return m.request(ctx, r.Port, "/healthz", "", "", 200)
+	status, body, err := request(ctx, r.Port, smokeHealthPath, "", "")
+	if err != nil || status != 200 || !bytes.Equal(body, []byte(`{"status":"ok"}`)) {
+		zeroSmokeBytes(body)
+		return ErrPersistence
+	}
+	zeroSmokeBytes(body)
+	return nil
 }
 func (m *Manager) checkL2(ctx context.Context, id cliproxyconfig.ID) error {
+	return m.checkL2With(ctx, id, requestLoopback)
+}
+func (m *Manager) checkL2With(ctx context.Context, id cliproxyconfig.ID, request smokeRequester) error {
 	ownClient, ownMgmt, otherClient, otherMgmt := purposes(id)
 	for _, c := range []struct {
 		p            secretstore.Purpose
 		path, header string
 		status       int
 	}{{ownClient, "/v1/models", "Authorization", 200}, {otherClient, "/v1/models", "Authorization", 401}, {ownMgmt, "/v0/management/debug", "X-Management-Key", 200}, {otherMgmt, "/v0/management/debug", "X-Management-Key", 401}} {
-		if e := m.requestWithKey(ctx, id, c.p, c.path, c.header, c.status); e != nil {
+		if e := m.requestWithKeyUsing(ctx, id, c.p, c.path, c.header, c.status, request); e != nil {
 			return e
 		}
 	}
 	_, port, _ := m.instanceRoot(id)
-	if e := m.request(ctx, port, "/v1/models", "", "", 401); e != nil {
+	if e := m.requestStatus(ctx, port, "/v1/models", "", "", 401, request); e != nil {
 		return e
 	}
-	return m.request(ctx, port, "/v0/management/debug", "", "", 401)
+	return m.requestStatus(ctx, port, "/v0/management/debug", "", "", 401, request)
 }
 func purposes(id cliproxyconfig.ID) (secretstore.Purpose, secretstore.Purpose, secretstore.Purpose, secretstore.Purpose) {
 	if id == cliproxyconfig.Codex {
@@ -1502,6 +1503,9 @@ func purposes(id cliproxyconfig.ID) (secretstore.Purpose, secretstore.Purpose, s
 	return secretstore.GoogleClientKey, secretstore.GoogleManagementKey, secretstore.CodexClientKey, secretstore.CodexManagementKey
 }
 func (m *Manager) requestWithKey(ctx context.Context, id cliproxyconfig.ID, p secretstore.Purpose, path, header string, status int) error {
+	return m.requestWithKeyUsing(ctx, id, p, path, header, status, requestLoopback)
+}
+func (m *Manager) requestWithKeyUsing(ctx context.Context, id cliproxyconfig.ID, p secretstore.Purpose, path, header string, status int, request smokeRequester) error {
 	raw, e := m.reader.Get(p)
 	if e != nil {
 		return ErrPersistence
@@ -1517,30 +1521,21 @@ func (m *Manager) requestWithKey(ctx context.Context, id cliproxyconfig.ID, p se
 	if header == "Authorization" {
 		value = "Bearer " + value
 	}
-	return m.request(ctx, port, path, header, value, status)
+	return m.requestStatus(ctx, port, path, header, value, status, request)
 }
 func (m *Manager) request(ctx context.Context, port int, path, header, value string, want int) error {
-	tr := &http.Transport{Proxy: nil}
-	defer tr.CloseIdleConnections()
-	client := &http.Client{Transport: tr, Timeout: 2 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	req, e := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d%s", port, path), nil)
-	if e != nil {
-		return ErrPersistence
-	}
-	if header != "" {
-		req.Header.Set(header, value)
-	}
-	resp, e := client.Do(req)
-	if e != nil {
-		return ErrPersistence
-	}
-	defer resp.Body.Close()
-	body, e := io.ReadAll(io.LimitReader(resp.Body, 4097))
-	if e != nil || len(body) > 4096 || resp.StatusCode != want {
+	return m.requestStatus(ctx, port, path, header, value, want, requestLoopback)
+}
+func (m *Manager) requestStatus(ctx context.Context, port int, path, header, value string, want int, request smokeRequester) error {
+	status, body, err := request(ctx, port, path, header, value)
+	if err != nil || status != want {
+		zeroSmokeBytes(body)
 		return ErrPersistence
 	}
 	if path == "/healthz" && !bytes.Equal(body, []byte(`{"status":"ok"}`)) {
+		zeroSmokeBytes(body)
 		return ErrPersistence
 	}
+	zeroSmokeBytes(body)
 	return nil
 }

@@ -10,13 +10,12 @@ import (
 	"github.com/trungqwe/dual-pool/internal/dataroot"
 	"github.com/trungqwe/dual-pool/internal/lockfile"
 	"github.com/trungqwe/dual-pool/internal/state"
-	"github.com/trungqwe/dual-pool/internal/update"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
 
 func TestComposeUpdaterCannotSplitManagerAuthority(t *testing.T) {
 	composition := reflect.TypeOf(ComposeUpdater)
-	if composition.NumIn() != 2 || composition.In(1) != reflect.TypeOf((*update.Smoke)(nil)).Elem() {
+	if composition.NumIn() != 1 || composition.In(0) != reflect.TypeOf((*Manager)(nil)) {
 		t.Fatalf("ComposeUpdater accepts caller-selected transaction authority: %v", composition)
 	}
 }

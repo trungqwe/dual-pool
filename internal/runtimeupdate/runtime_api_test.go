@@ -8,7 +8,6 @@ import (
 	"github.com/trungqwe/dual-pool/internal/instance"
 	"github.com/trungqwe/dual-pool/internal/runtimeupdate"
 	"github.com/trungqwe/dual-pool/internal/state"
-	"github.com/trungqwe/dual-pool/internal/update"
 	"github.com/trungqwe/dual-pool/internal/upstreamcatalog"
 	"github.com/trungqwe/dual-pool/internal/upstreamstage"
 )
@@ -45,9 +44,17 @@ func TestRuntimeCannotExposeLockedUpdaterLifecycle(t *testing.T) {
 
 func TestComposeUpdaterDoesNotAcceptCallerSelectedAuthority(t *testing.T) {
 	composition := reflect.TypeOf(instance.ComposeUpdater)
-	smokeType := reflect.TypeOf((*update.Smoke)(nil)).Elem()
-	if composition.NumIn() != 2 || composition.In(0) != reflect.TypeOf((*instance.Manager)(nil)) || composition.In(1) != smokeType {
+	if composition.NumIn() != 1 || composition.In(0) != reflect.TypeOf((*instance.Manager)(nil)) {
 		t.Fatalf("unexpected ComposeUpdater public signature: %v", composition)
+	}
+}
+
+func TestRuntimeConfigDoesNotExposeSmokeInjection(t *testing.T) {
+	typeOfConfig := reflect.TypeOf(runtimeupdate.Config{})
+	for i := 0; i < typeOfConfig.NumField(); i++ {
+		if typeOfConfig.Field(i).Name == "Smoke" {
+			t.Fatal("runtimeupdate.Config still exposes caller-selected Smoke")
+		}
 	}
 }
 

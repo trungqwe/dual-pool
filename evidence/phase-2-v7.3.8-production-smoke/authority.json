@@ -1,0 +1,9 @@
+{
+  "slice": "phase-2-v7.3.8-production-smoke",
+  "start_sha": "4d56626a361b10abfdef63d898a59267f1f6a84d",
+  "authoritative_upstream": "4d56626a361b10abfdef63d898a59267f1f6a84d",
+  "current_version": "v7.3.7",
+  "candidate_version": "v7.3.8",
+  "authority": "Manager-owned closed resolver; unknown versions rejected before launch",
+  "status": "PASS_COMPONENT_SMOKE"
+}

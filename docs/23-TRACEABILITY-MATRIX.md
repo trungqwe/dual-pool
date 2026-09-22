@@ -240,3 +240,13 @@ Real second-release and production multi-version acceptance remain OPEN.
 | P2-PROVENANCE-PRODUCTION-001: runtime derives only current exact pin | `TestProductionCompositionResolvesPinnedSlot`, `production-regression.json` | PASS_COMPONENT |
 
 Synthetic vA/vB entries prove component binding only. A real second release, config compatibility, staging, promotion and rollback remain OPEN.
+
+## Phase 2 production compatibility Smoke — 2026-09-22
+
+| Requirement | Test and evidence | Status |
+|---|---|---|
+| P2-SMOKE-AUTH-001: Manager-owned closed Smoke authority | `ComposeUpdater`, runtime API regressions, `composition.json` | PASS_COMPONENT |
+| P2-SMOKE-DISPOSABLE-001: exact installed identity and isolated synthetic-key loopback smoke | `internal/instance/smoke_test.go`, `disposable.json`, `disposable-auth.json` | PASS_COMPONENT |
+| P2-SMOKE-PRODUCTION-001: config preflight and shared readiness semantics | `production.json`, production Smoke tests | PASS_COMPONENT |
+| P2-SMOKE-ROLLBACK-001: pre-Smoke boundary and rollback/recovery | `rollback.json`, updater composition tests | PASS_COMPONENT |
+| P2-SMOKE-LIVE-001: real archive/product-root/live promotion acceptance | opt-in test skipped; no live mutation | OPEN |

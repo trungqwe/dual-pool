@@ -31,22 +31,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-type recordingSmoke struct{ calls []string }
-
-func (s *recordingSmoke) Disposable(_ context.Context, version string) error {
-	s.calls = append(s.calls, "disposable:"+version)
-	return nil
-}
-func (s *recordingSmoke) Production(_ context.Context, version string) error {
-	s.calls = append(s.calls, "production:"+version)
-	return nil
-}
-
-type nilSmoke struct{}
-
-func (*nilSmoke) Disposable(context.Context, string) error { return nil }
-func (*nilSmoke) Production(context.Context, string) error { return nil }
-
 type nilACL struct{}
 
 func (*nilACL) Create(string) error                 { return nil }
@@ -54,25 +38,12 @@ func (*nilACL) Inspect(string) error                { return nil }
 func (*nilACL) CreateFile(string) (*os.File, error) { return nil, nil }
 func (*nilACL) InspectFile(string) error            { return nil }
 
-func TestNewRejectsNilAndTypedNilSmoke(t *testing.T) {
-	if _, err := New(Config{}); !errors.Is(err, ErrCompositionInvalid) {
-		t.Fatalf("nil smoke: %v", err)
-	}
-	var smoke *nilSmoke
-	if !isNil(smoke) {
-		t.Fatal("typed nil smoke not detected")
-	}
-	if _, err := New(Config{Smoke: smoke}); !errors.Is(err, ErrCompositionInvalid) {
-		t.Fatalf("typed nil smoke: %v", err)
-	}
-}
-
 func TestNewRejectsTypedNilACL(t *testing.T) {
 	var acl *nilACL
 	if !isNil(acl) {
 		t.Fatal("typed nil ACL not detected")
 	}
-	if _, err := New(Config{ACL: acl, Smoke: &recordingSmoke{}}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(Config{ACL: acl}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("typed nil ACL: %v", err)
 	}
 }
@@ -112,7 +83,6 @@ func productionFixture(t *testing.T) (*Runtime, Config) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	smoke := &recordingSmoke{}
 	seedLocks, err := lockfile.NewManager(layout.Locks)
 	if err != nil {
 		t.Fatal(err)
@@ -124,7 +94,7 @@ func productionFixture(t *testing.T) (*Runtime, Config) {
 	if err = seedStore.SaveState(testState(pin.Version)); err != nil {
 		t.Fatal(err)
 	}
-	config := Config{Layout: layout, Lock: pin, ACL: acl, Smoke: smoke}
+	config := Config{Layout: layout, Lock: pin, ACL: acl}
 	runtime, err := New(config)
 	if err != nil {
 		t.Fatal(err)
@@ -182,12 +152,26 @@ func TestRuntimeCompositionSharesExactObjects(t *testing.T) {
 	if pointerField(runtime.Updater, "verifier") != reflect.ValueOf(runtime.registry).Pointer() || pointerField(runtime.Manager, "registry") != reflect.ValueOf(runtime.registry).Pointer() {
 		t.Fatal("Registry is not shared")
 	}
+	if _, err := os.Lstat(filepath.Join(runtime.layout.State, "compat-smoke")); !os.IsNotExist(err) {
+		t.Fatalf("Runtime.New eagerly created compatibility Smoke workspace: %v", err)
+	}
 	updaterLocks := pointerField(runtime.Updater, "locks")
 	if updaterLocks == 0 || pointerField(runtime.Manager, "locks") != updaterLocks || pointerField(runtime.state, "locks") != updaterLocks || pointerField(runtime.registry, "locks") != updaterLocks || reflect.ValueOf(runtime.locks).Pointer() != updaterLocks {
 		t.Fatal("lock Manager is not shared")
 	}
 }
 
+func TestRuntimeProductionSmokeUsesExactManager(t *testing.T) {
+	runtime, _ := productionFixture(t)
+	smoke := reflect.ValueOf(runtime.Updater).Elem().FieldByName("smoke")
+	if smoke.Kind() != reflect.Interface || smoke.IsNil() || smoke.Elem().Type().String() != "*instance.updaterSmoke" {
+		t.Fatalf("Runtime production Smoke type=%v", smoke)
+	}
+	manager := smoke.Elem().Elem().FieldByName("manager")
+	if manager.Kind() != reflect.Pointer || manager.Pointer() != reflect.ValueOf(runtime.Manager).Pointer() {
+		t.Fatal("Runtime production Smoke does not reference the exact Manager")
+	}
+}
 func TestRuntimePrivateLifecycleUsesExactManager(t *testing.T) {
 	runtime, _ := productionFixture(t)
 	lifecycle := reflect.ValueOf(runtime.Updater).Elem().FieldByName("lifecycle")
@@ -232,7 +216,6 @@ func TestProductionCompositionBindsPinnedV738DigestToRegistry(t *testing.T) {
 
 func TestUninstalledProductionCandidateFailsUpdaterPreflight(t *testing.T) {
 	runtime, config := productionFixture(t)
-	smoke := config.Smoke.(*recordingSmoke)
 	if _, err := runtime.catalog.Resolve("7.3.8"); err != nil {
 		t.Fatalf("verified candidate is absent from catalog: %v", err)
 	}
@@ -244,8 +227,8 @@ func TestUninstalledProductionCandidateFailsUpdaterPreflight(t *testing.T) {
 	if loadErr != nil || current.ActiveUpstreamVersion != config.Lock.Version {
 		t.Fatalf("state=%#v err=%v", current, loadErr)
 	}
-	if len(smoke.calls) != 0 {
-		t.Fatalf("smoke called: %v", smoke.calls)
+	if _, statErr := os.Stat(filepath.Join(config.Layout.State, "compat-smoke")); !os.IsNotExist(statErr) {
+		t.Fatalf("preflight failure created the lazy smoke workspace: %v", statErr)
 	}
 	if _, statErr := os.Stat(filepath.Join(config.Layout.State, ".update-transaction.json")); !os.IsNotExist(statErr) {
 		t.Fatalf("marker exists: %v", statErr)
@@ -315,7 +298,7 @@ func TestRuntimeCandidateStageCreatesRootOnlyOnRequestAndRequestsExactV738(t *te
 func TestRuntimeCompositionConstructorFailureMatrixAndNoSideEffects(t *testing.T) {
 	_, config := productionFixture(t)
 	marker := filepath.Join(config.Layout.State, ".update-transaction.json")
-	if _, err := New(Config{Layout: config.Layout, Lock: upstreamlock.Lock{}, ACL: config.ACL, Smoke: config.Smoke}); !errors.Is(err, ErrCompositionInvalid) {
+	if _, err := New(Config{Layout: config.Layout, Lock: upstreamlock.Lock{}, ACL: config.ACL}); !errors.Is(err, ErrCompositionInvalid) {
 		t.Fatalf("invalid lock: %v", err)
 	}
 	bad := config

@@ -45,6 +45,7 @@ func (*composedRegistry) RegisterLocked(context.Context, string) error { return 
 type composedSmoke struct {
 	calls          []string
 	failVersion    string
+	failVersions   map[string]bool
 	failDisposable bool
 }
 
@@ -57,7 +58,7 @@ func (s *composedSmoke) Disposable(_ context.Context, version string) error {
 }
 func (s *composedSmoke) Production(_ context.Context, version string) error {
 	s.calls = append(s.calls, "production:"+version)
-	if version == s.failVersion {
+	if version == s.failVersion || s.failVersions[version] {
 		return errors.New("synthetic smoke failure")
 	}
 	return nil
@@ -96,6 +97,7 @@ type composedFixture struct {
 	records       map[cliproxyconfig.ID]ProcessRecord
 	starts, stops []string
 	startCount    int
+	statusCount   int
 	stopCount     int
 	failStartCall int
 	failStopCall  int
@@ -170,6 +172,7 @@ func (f *composedFixture) record(id cliproxyconfig.ID, slot installedslot.Resolv
 	return ProcessRecord{SchemaVersion: 2, InstanceID: string(id), PID: pid, StartTime: uint64(pid) + 100, ExecutableSHA256: slot.ExecutableSHA256, ConfigSHA256: hex.EncodeToString(bytes32(9)), Port: port, UpstreamVersion: slot.Version, ManifestSHA256: slot.ManifestSHA256}
 }
 func (f *composedFixture) status(id cliproxyconfig.ID) (Status, error) {
+	f.statusCount++
 	record, ok := f.records[id]
 	if !ok {
 		return Status{ID: id}, ErrNotRunning
@@ -255,8 +258,8 @@ func TestInstalledCandidateSmokeFailureBlocksPromotionBeforeLifecycle(t *testing
 	if err == nil || err.Error() != "synthetic disposable smoke failure" {
 		t.Fatalf("Promote error=%v, want disposable smoke sentinel", err)
 	}
-	if f.stopCount != 0 || f.startCount != 0 {
-		t.Fatalf("lifecycle ran before candidate Smoke: stops=%d starts=%d", f.stopCount, f.startCount)
+	if f.stopCount != 0 || f.startCount != 0 || f.statusCount != 0 {
+		t.Fatalf("lifecycle ran before candidate Smoke: status=%d stops=%d starts=%d", f.statusCount, f.stopCount, f.startCount)
 	}
 	active, err := f.store.LoadState()
 	if err != nil || active.ActiveUpstreamVersion != "vA" {
@@ -414,6 +417,9 @@ func TestComposedPromotionSmokeFailureRollsBackPreviousSlot(t *testing.T) {
 	if !containsString(f.stops, "codex:vB") || !containsString(f.stops, "google:vB") {
 		t.Fatalf("stops=%v", f.stops)
 	}
+	if !reflect.DeepEqual(f.smoke.calls, []string{"disposable:vB", "production:vB", "production:vA"}) {
+		t.Fatalf("Smoke order=%v", f.smoke.calls)
+	}
 }
 
 func TestComposedPromotionPartialStopFailsClosed(t *testing.T) {
@@ -486,6 +492,9 @@ func TestComposedRecoveryAfterActiveSaveRestoresPrevious(t *testing.T) {
 			t.Fatalf("record=%#v", record)
 		}
 	}
+	if !reflect.DeepEqual(f.smoke.calls, []string{"disposable:vB", "production:vA"}) {
+		t.Fatalf("recovery Smoke order=%v", f.smoke.calls)
+	}
 }
 
 func TestComposedRecoveryRejectsPartialRunningSet(t *testing.T) {
@@ -531,4 +540,16 @@ func containsString(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func TestComposedPreviousProductionSmokeFailureKeepsMarker(t *testing.T) {
+	f := newComposedFixture(t, state.PoolCodex)
+	f.smoke.failVersions = map[string]bool{"vA": true, "vB": true}
+	err := f.updater(nil).Promote(context.Background(), "vB")
+	if !errors.Is(err, update.ErrRollbackUnresolved) || !f.markerExists() || f.active() != "vA" {
+		t.Fatalf("err=%v marker=%v active=%s", err, f.markerExists(), f.active())
+	}
+	if !reflect.DeepEqual(f.smoke.calls, []string{"disposable:vB", "production:vB", "production:vA"}) {
+		t.Fatalf("Smoke order=%v", f.smoke.calls)
+	}
 }

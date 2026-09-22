@@ -22,6 +22,22 @@ func TestCreateAppliesProtectedExactACL(t *testing.T) {
 	}
 }
 
+func TestCreateExclusiveRejectsExistingDirectory(t *testing.T) {
+	m, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "attempt")
+	if err = m.CreateExclusive(path); err != nil {
+		t.Fatal(err)
+	}
+	if err = m.Inspect(path); err != nil {
+		t.Fatal(err)
+	}
+	if err = m.CreateExclusive(path); err == nil {
+		t.Fatal("exclusive directory creation accepted an existing path")
+	}
+}
 func TestCreateFileAppliesProtectedExactACLAtCreation(t *testing.T) {
 	m, err := New()
 	if err != nil {

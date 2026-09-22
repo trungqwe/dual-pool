@@ -1,0 +1,1 @@
+{"status":"PASS_COMPONENT","pre_smoke_failure":"no lifecycle/state/marker mutation","candidate_failure":"rollback to v7.3.7","previous_failure":"ErrRollbackUnresolved and marker retained","success":"marker removed after coherent transaction","scope":"same-process deterministic transaction tests; no OS/power-loss claim"}

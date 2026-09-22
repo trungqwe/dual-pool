@@ -132,6 +132,20 @@ func TestRealV738TemporaryStageInstallOptIn(t *testing.T) {
 	if err := registry.VerifyInstalled(ctx, "7.3.8"); err != nil {
 		t.Fatalf("VerifyInstalled: %v", err)
 	}
+	registryBefore := digest(filepath.Join(layout.Bin, "cliproxyapi", "installed-slots.json"))
+	if err := newUpdaterSmoke(manager).Disposable(ctx, "7.3.8"); err != nil {
+		t.Fatalf("Disposable Smoke against exact TEMP candidate: %v", err)
+	}
+	if active.ActiveUpstreamVersion != lock.Version || digest(filepath.Join(layout.Bin, "cliproxyapi", "installed-slots.json")) != registryBefore {
+		t.Fatal("Disposable Smoke changed active state or installed-slot registry")
+	}
+	if entries, readErr := os.ReadDir(layout.Instances); readErr != nil || len(entries) != 0 {
+		t.Fatalf("Disposable Smoke created production process records: entries=%v err=%v", entries, readErr)
+	}
+	attempts, readErr := os.ReadDir(filepath.Join(layout.State, smokeRootName))
+	if readErr != nil || len(attempts) != 0 {
+		t.Fatalf("Disposable Smoke left its TEMP attempt workspace: entries=%v err=%v", attempts, readErr)
+	}
 	resolved, err := registry.Resolve("7.3.8")
 	if err != nil || resolved.Version != provenance.Version || resolved.Tag != provenance.Tag || resolved.Commit != provenance.Commit || resolved.Platform != provenance.Platform || resolved.ExecutableSHA256 != provenance.ExecutableSHA256 || resolved.UpstreamLockSHA256 != provenance.Digest || resolved.ConfigAdapterVersion != provenance.ConfigAdapterVersion || resolved.SlotDirectory != filepath.Join(layout.Bin, "cliproxyapi", "7.3.8") {
 		t.Fatalf("resolved slot=%+v err=%v", resolved, err)

@@ -1,0 +1,1 @@
+{"status":"PASS_COMPONENT","active_version":"exact requested trusted version","config_pair":"preflight before status; schema-2/hash/manifest checks","readiness":"shared L0/L1/L2 readiness contract","stopped_pools":"accepted only intentionally stopped","stale_or_wrong_records":"rejected","nested_global":"not reacquired"}

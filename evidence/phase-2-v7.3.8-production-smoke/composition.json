@@ -1,0 +1,1 @@
+{"status":"PASS","composition":"ComposeUpdater(*Manager) constructs private updaterSmoke","public_runtime":"Updater and Manager only","authority":"shared Manager lock/state/registry/layout/ACL/inspector"}

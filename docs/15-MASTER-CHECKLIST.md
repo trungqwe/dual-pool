@@ -190,3 +190,14 @@ Hiệu chỉnh: PASS component ở head e9b68f8 không cho phép integration vì
 - [x] Focused x20, stress x50, race x10, full repository, Windows build, Node, lock, JSON, documentation-link, privacy, secret and scanner-positive-control gates. Evidence: `evidence/phase-2-v7.3.8-stage-install/test-result.json` and `security-gate.json`.
 - [ ] Real v7.3.8 TEMP archive stage/install acceptance; opt-in test skipped because `DUALPOOL_V738_ARCHIVE` was not supplied. Evidence: `evidence/phase-2-v7.3.8-stage-install/staging.json`.
 - [ ] Product-root candidate install, production Smoke, promotion/rollback, retained-handle launch, TOCTOU, OS/process/power-loss durability and updater CLI remain open.
+
+## Phase 2 trusted v7.3.8 production compatibility Smoke — 2026-09-22
+
+- [x] Production composition owns the private `update.Smoke`; callers cannot inject a no-op Smoke. Evidence: `evidence/phase-2-v7.3.8-production-smoke/composition.json`.
+- [x] Closed v7.3.7/v7.3.8 authority, exact installed-slot identity and unknown-version rejection. Evidence: `authority.json`, `disposable.json`.
+- [x] Disposable synthetic-key, loopback, health, client/management auth, process identity and exact cleanup contract. Evidence: `disposable.json`, `disposable-auth.json`.
+- [x] Production config-pair preflight and shared L0/L1/L2 readiness with stopped-pool semantics. Evidence: `production.json`.
+- [x] Pre-Smoke transaction immutability, candidate rollback, recovery and marker semantics. Evidence: `rollback.json`.
+- [x] Focused, stress, race, full Go, vet, module, Windows build, Node and lock gates. Evidence: `test-result.json`, `security-gate.json`.
+- [ ] Real offline archive StageCandidate → InstallCandidate → Disposable Smoke; skipped because `DUALPOOL_V738_ARCHIVE` was unset.
+- [ ] Live/product-root promotion and rollback, retained launch handle, pathname TOCTOU, OS/process/power-loss durability and updater CLI remain open.

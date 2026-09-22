@@ -44,6 +44,28 @@ func (m *Manager) Create(path string) error {
 	return m.Inspect(path)
 }
 
+// CreateExclusive creates a new protected directory and fails if the name
+// already exists. Unlike Create, it gives callers an ownership guarantee for
+// later cleanup of attempt-scoped data.
+func (m *Manager) CreateExclusive(path string) error {
+	if err := validateParent(path); err != nil {
+		return err
+	}
+	sd, err := windows.SecurityDescriptorFromString("O:" + m.user + "D:P(A;OICI;FA;;;" + m.user + ")(A;OICI;FA;;;SY)")
+	if err != nil {
+		return ErrUnsafeACL
+	}
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return ErrUnsafeACL
+	}
+	sa := &windows.SecurityAttributes{Length: uint32(unsafe.Sizeof(windows.SecurityAttributes{})), SecurityDescriptor: sd}
+	if err = windows.CreateDirectory(p, sa); err != nil {
+		return ErrUnsafeACL
+	}
+	return m.Inspect(path)
+}
+
 // CreateFile opens a new regular file with the protected product DACL already
 // attached at creation time. The caller must close the returned handle.
 func (m *Manager) CreateFile(path string) (*os.File, error) {

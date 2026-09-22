@@ -29,7 +29,6 @@ type Config struct {
 	Layout dataroot.Layout
 	Lock   upstreamlock.Lock
 	ACL    ACL
-	Smoke  update.Smoke
 }
 
 // Runtime exposes only the operational command boundary. Mutable state and
@@ -48,7 +47,7 @@ type Runtime struct {
 }
 
 func New(c Config) (*Runtime, error) {
-	if isNil(c.ACL) || isNil(c.Smoke) || c.Lock.Validate() != nil || c.Layout.Root == "" || c.Layout.State == "" || c.Layout.Locks == "" {
+	if isNil(c.ACL) || c.Lock.Validate() != nil || c.Layout.Root == "" || c.Layout.State == "" || c.Layout.Locks == "" {
 		return nil, ErrCompositionInvalid
 	}
 	for _, dir := range []string{c.Layout.Root, c.Layout.Bin, c.Layout.Instances, c.Layout.Config, c.Layout.State, c.Layout.Backups, c.Layout.Evidence, c.Layout.Locks} {
@@ -76,7 +75,7 @@ func New(c Config) (*Runtime, error) {
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}
-	updater, err := instance.ComposeUpdater(manager, c.Smoke)
+	updater, err := instance.ComposeUpdater(manager)
 	if err != nil {
 		return nil, ErrCompositionInvalid
 	}

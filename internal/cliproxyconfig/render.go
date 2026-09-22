@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"io"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"unicode/utf8"
@@ -23,12 +24,16 @@ func renderWithCost(id ID, authDir string, clientWire, managementWire []byte, co
 	if !id.valid() || len(clientWire) != 43 || len(managementWire) != 43 {
 		return nil, ErrConfigInvalid
 	}
+	return renderConfig(expectedConfig(id, authDir, string(clientWire), ""), managementWire, cost)
+}
+
+func renderConfig(value config, managementWire []byte, cost int) ([]byte, error) {
 	hash, err := bcrypt.GenerateFromPassword(managementWire, cost)
 	if err != nil {
 		return nil, ErrConfigInvalid
 	}
 	defer zero(hash)
-	value := expectedConfig(id, authDir, string(clientWire), string(hash))
+	value.RemoteManagement.SecretKey = string(hash)
 	var node yaml.Node
 	if err = yamlNode(value, &node); err != nil {
 		return nil, ErrConfigInvalid
@@ -44,6 +49,45 @@ func renderWithCost(id ID, authDir string, clientWire, managementWire []byte, co
 		return nil, ErrConfigInvalid
 	}
 	return out.Bytes(), nil
+}
+
+// RenderCompatibilitySmoke renders the production adapter schema for an
+// isolated loopback compatibility process. Only its ephemeral port, workspace
+// (which determines auth-dir), and synthetic keys vary from the instance
+// configuration. The upstream and adapter provenance remain fixed in header.
+func RenderCompatibilitySmoke(port int, workspace string, clientWire, managementWire []byte) ([]byte, error) {
+	if !validCompatibilitySmokePort(port) || !validCompatibilitySmokeWorkspace(workspace) || !validWireKey(clientWire) || !validWireKey(managementWire) || equal(clientWire, managementWire) {
+		return nil, ErrConfigInvalid
+	}
+	value := expectedConfigAt(port, filepath.Join(workspace, "auth"), string(clientWire), "")
+	return renderConfig(value, managementWire, bcrypt.DefaultCost)
+}
+
+func validCompatibilitySmokePort(port int) bool {
+	return port >= 1024 && port <= 65535 && port != CodexPort && port != GooglePort
+}
+
+func validCompatibilitySmokeWorkspace(workspace string) bool {
+	if workspace == "" || filepath.Clean(workspace) != workspace || !filepath.IsAbs(workspace) || strings.ContainsAny(workspace, "\x00\r\n") {
+		return false
+	}
+	volume := filepath.VolumeName(workspace)
+	if volume == "" || strings.HasPrefix(workspace, `\\`) || strings.EqualFold(filepath.Clean(workspace), volume+string(filepath.Separator)) {
+		return false
+	}
+	return true
+}
+
+func validWireKey(value []byte) bool {
+	if len(value) != 43 {
+		return false
+	}
+	for _, b := range value {
+		if !((b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '-' || b == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 func yamlNode(v config, n *yaml.Node) error {
@@ -135,6 +179,12 @@ func validateConfigWithCost(data []byte, id ID, authDir string, clientWire, mana
 		}
 	}
 	return nil
+}
+
+func expectedConfigAt(port int, authDir, clientWire, managementHash string) config {
+	value := expectedConfig(Codex, authDir, clientWire, managementHash)
+	value.Port = port
+	return value
 }
 
 var rootShape = map[string][]string{
