@@ -7,13 +7,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/trungqwe/dual-pool/internal/state"
 	"github.com/trungqwe/dual-pool/internal/upstreamlock"
 )
 
 var (
 	ErrInvalidCatalog    = errors.New("trusted upstream catalog is invalid")
 	ErrUnknownProvenance = errors.New("trusted upstream provenance is unknown")
-	versionPattern       = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+\-]{0,63}$`)
 	commitPattern        = regexp.MustCompile(`^[a-f0-9]{40}$`)
 	digestPattern        = regexp.MustCompile(`^[a-f0-9]{64}$`)
 )
@@ -66,6 +66,7 @@ func newVerified(entries []Provenance) (*Catalog, error) {
 		return nil, ErrInvalidCatalog
 	}
 	result := &Catalog{entries: make(map[string]Provenance, len(entries))}
+	digests := make(map[string]struct{}, len(entries))
 	for _, entry := range entries {
 		if !valid(entry) {
 			return nil, ErrInvalidCatalog
@@ -73,14 +74,18 @@ func newVerified(entries []Provenance) (*Catalog, error) {
 		if _, exists := result.entries[entry.Version]; exists {
 			return nil, ErrInvalidCatalog
 		}
+		if _, exists := digests[entry.Digest]; exists {
+			return nil, ErrInvalidCatalog
+		}
 		result.entries[entry.Version] = entry
+		digests[entry.Digest] = struct{}{}
 	}
 	return result, nil
 }
 
 // Resolve returns the exact independently bound provenance for version.
 func (c *Catalog) Resolve(version string) (Provenance, error) {
-	if c == nil || !versionPattern.MatchString(version) {
+	if c == nil || !state.ValidLogicalVersion(version) {
 		return Provenance{}, ErrUnknownProvenance
 	}
 	p, ok := c.entries[version]
@@ -99,7 +104,7 @@ func (c *Catalog) Len() int {
 }
 
 func valid(p Provenance) bool {
-	if p.Product != "CLIProxyAPI" || !versionPattern.MatchString(p.Version) || p.Tag != "v"+p.Version || !commitPattern.MatchString(p.Commit) || p.Platform != "windows_amd64" || !upstreamlock.SafeBasename(p.Artifact) || p.Artifact != "CLIProxyAPI_"+p.Version+"_windows_amd64.zip" || !digestPattern.MatchString(p.ArchiveSHA256) || !digestPattern.MatchString(p.ExecutableSHA256) || !digestPattern.MatchString(p.Digest) || strings.TrimSpace(p.ConfigAdapterVersion) == "" {
+	if p.Product != "CLIProxyAPI" || !state.ValidLogicalVersion(p.Version) || p.Tag != "v"+p.Version || !commitPattern.MatchString(p.Commit) || p.Platform != "windows_amd64" || !upstreamlock.SafeBasename(p.Artifact) || p.Artifact != "CLIProxyAPI_"+p.Version+"_windows_amd64.zip" || !digestPattern.MatchString(p.ArchiveSHA256) || !digestPattern.MatchString(p.ExecutableSHA256) || !digestPattern.MatchString(p.Digest) || strings.TrimSpace(p.ConfigAdapterVersion) == "" {
 		return false
 	}
 	return exactURL(p.ReleaseMetadataURL, "/router-for-me/CLIProxyAPI/releases/tag/"+p.Tag) && exactURL(p.DownloadURL, "/router-for-me/CLIProxyAPI/releases/download/"+p.Tag+"/"+p.Artifact)

@@ -3,6 +3,7 @@ package upstreamcatalog
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -63,6 +64,35 @@ func TestCatalogRejectsInvalidAndDuplicateEntries(t *testing.T) {
 				t.Fatal("invalid catalog accepted")
 			}
 		})
+	}
+}
+
+func TestCatalogUsesSharedWindowsSafeLogicalVersionContract(t *testing.T) {
+	for _, version := range []string{"", ".", "..", "../x", `a\b`, "a/b", "CON", "CON.txt", "NUL", "nul.foo", "COM1", "COM1.exe", "LPT9", "v1.", "trailing ", "a\x00b", "a\x1fb", "a\x7fb", strings.Repeat("x", 65)} {
+		p := fixture("vA", "adapter-a", 'a')
+		p.Version = version
+		p.Tag = "v" + version
+		p.Artifact = "CLIProxyAPI_" + version + "_windows_amd64.zip"
+		p.DownloadURL = "https://github.com/router-for-me/CLIProxyAPI/releases/download/" + p.Tag + "/" + p.Artifact
+		p.ReleaseMetadataURL = "https://github.com/router-for-me/CLIProxyAPI/releases/tag/" + p.Tag
+		if _, err := NewVerified(p); err == nil {
+			t.Fatalf("unsafe version accepted: %q", version)
+		}
+	}
+	for _, version := range []string{"7.3.7", "7.3.8", "1.2.3-rc1", "vA", "vB"} {
+		p := fixture(version, "adapter-a", 'a')
+		if _, err := NewVerified(p); err != nil {
+			t.Fatalf("safe version rejected %q: %v", version, err)
+		}
+	}
+}
+
+func TestCatalogRejectsDuplicateProvenanceDigest(t *testing.T) {
+	a := fixture("vA", "adapter-a", 'a')
+	b := fixture("vB", "adapter-b", 'b')
+	b.Digest = a.Digest
+	if _, err := NewVerified(a, b); err == nil {
+		t.Fatal("duplicate provenance digest accepted")
 	}
 }
 

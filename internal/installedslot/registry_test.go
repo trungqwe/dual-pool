@@ -59,6 +59,9 @@ func fixtureManifest(version, exeHash string) Manifest {
 	if version == "vB" {
 		commit, digest = strings.Repeat("c", 40), strings.Repeat("d", 64)
 	}
+	if version == "vC" {
+		commit, digest = strings.Repeat("e", 40), strings.Repeat("f", 64)
+	}
 	return Manifest{SchemaVersion: 1, Product: "CLIProxyAPI", Version: version, Tag: "v" + version, Commit: commit, Platform: "windows_amd64", ExecutableSHA256: exeHash, UpstreamLockSHA256: digest, ConfigAdapterVersion: "fixture-adapter", ExecutableBasename: "cliproxyapi.exe"}
 }
 
