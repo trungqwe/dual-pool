@@ -8,8 +8,8 @@
 - Repository: `trungqwe/dual-pool`
 - Branch: `phase-2/v7.3.8-candidate-stage-install`
 - Start HEAD: `a4bc87bc4370a8010a8619ade147f53d3689eaed`
-- End HEAD: pending commit and exact-SHA Source CI
-- Remote push result: pending
+- Repair code/evidence HEAD: `ae9cd3350aeb5b0a6937f14b254706cedc1132b0`
+- Repair commit push: PASS, normal push to `phase-2/v7.3.8-candidate-stage-install`
 
 ## Assigned objective
 
@@ -67,7 +67,7 @@ The public wrapper computes the exact production candidate path using a helper t
 | `node scripts/phase0-upstream-lock.cjs` | PASS | `UPSTREAM_LOCK_VALID` |
 | JSON validation | PASS | 215 JSON files parsed successfully |
 | Documentation links, privacy/secret scans, and scanner positive control | PASS | Handoff/report links resolved; 0 privacy/secret matches; in-memory positive control detected |
-| Exact-SHA Source CI | PENDING | Must be push / Source CI / completed / success for final SHA
+| Exact-SHA Source CI for repair commit | PASS | run `35733252908`; push event, exact branch and SHA `ae9cd3350aeb5b0a6937f14b254706cedc1132b0`; all mandatory steps succeeded
 | Real archive opt-in test | SKIPPED | Environment variable unset; no network request |
 
 ## Security/privacy review
@@ -81,21 +81,21 @@ The public wrapper computes the exact production candidate path using a helper t
 
 ## Acceptance evaluation
 
-The ACL seam repair and local acceptance tests are PASS. JSON/link/privacy/secret gates pass; delivery is pending the scoped normal push and exact final-SHA Source CI. Real v7.3.8 archive integration remains open and was deliberately not run.
+The ACL seam repair, local acceptance tests, normal repair-branch push, and exact-SHA Source CI run `35733252908` are PASS for `ae9cd3350aeb5b0a6937f14b254706cedc1132b0`. This report/evidence receipt update is documentation-only and will receive its own Source CI run. Real v7.3.8 archive integration remains open and was deliberately not run.
 
 ## Risks and unresolved items
 
 | Risk/unknown | Severity | Owner | Required next action |
 |---|---|---|---|
-| Exact-SHA Source CI has not run for repair head | High | Implementation run | Push scoped commit, verify exact branch/SHA and every mandatory source-check |
+| Documentation/evidence receipt commit requires exact-SHA Source CI | Medium | Implementation run | Push the receipt-only update and verify the resulting exact branch/SHA Source CI |
 | Real v7.3.8 archive path not exercised in this run | Medium | Owner/auditor | Review current regression and later decide whether controlled offline archive integration is required |
 | Smoke/promotion/rollback/launch-handle/OS durability gates | Open | Future Phase 2 slices | Do not start in this repair run |
 
 ## Git delivery
 
-- Files committed: pending.
-- Commit(s): pending.
-- Push command/result: pending; normal push only to `phase-2/v7.3.8-candidate-stage-install`.
+- Files committed: seven scoped files in repair commit `ae9cd3350aeb5b0a6937f14b254706cedc1132b0`; documentation/evidence receipt update follows.
+- Commit: `ae9cd3350aeb5b0a6937f14b254706cedc1132b0` (`fix(phase-2): align candidate stage install ACL boundary`).
+- Push command/result: `git push origin HEAD:refs/heads/phase-2/v7.3.8-candidate-stage-install` succeeded.
 - `phase-2/upstream-lifecycle`: must remain `5bfb1518059a171a0f3858877585e3097d9fe099`.
 
 ## Rollback

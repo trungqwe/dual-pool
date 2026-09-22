@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "PASS_LOCAL_REPAIR_PENDING_SOURCE_CI",
+  "status": "PASS_REPAIR_SOURCE_CI; receipt update pending",
   "branch": "phase-2/v7.3.8-candidate-stage-install",
   "repair_start_sha": "a4bc87bc4370a8010a8619ade147f53d3689eaed",
   "authoritative_upstream_sha": "5bfb1518059a171a0f3858877585e3097d9fe099",
@@ -54,5 +54,13 @@
   "production_or_provider_mutation": false,
   "product_root_mutated": false,
   "upstream_ref_mutated": false,
-  "source_ci": "PENDING exact final SHA"
+  "source_ci": {
+    "mandatory_steps": "all passed",
+    "head_sha": "ae9cd3350aeb5b0a6937f14b254706cedc1132b0",
+    "event": "push",
+    "branch": "phase-2/v7.3.8-candidate-stage-install",
+    "status": "completed",
+    "run_id": 35733252908,
+    "conclusion": "success"
+  }
 }

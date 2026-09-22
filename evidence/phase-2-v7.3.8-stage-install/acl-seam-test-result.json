@@ -48,6 +48,11 @@
   "privacy_scan": "PASS; 0 matches",
   "secret_scan": "PASS; 0 matches",
   "secret_scanner_positive_control": "PASS; in-memory sentinel detected",
-  "push": "PENDING",
-  "source_ci_exact_final_sha": "PENDING exact final SHA"
+  "push": "PASS; normal push to phase-2/v7.3.8-candidate-stage-install",
+  "source_ci_exact_final_sha": "PENDING delivery receipt commit",
+  "source_ci_exact_repair_sha": {
+    "conclusion": "success",
+    "run_id": 35733252908,
+    "sha": "ae9cd3350aeb5b0a6937f14b254706cedc1132b0"
+  }
 }
