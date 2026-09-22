@@ -91,7 +91,7 @@
     "node_tests": "PASS 55/55",
     "phase0_upstream_lock": "PASS",
     "json_validation": "PASS 205 files",
-    "documentation_links": "PASS 29 local links in changed handoff/report",
+    "documentation_links": "PASS 27 local links in changed handoff/report",
     "secret_privacy_scan": "PASS 21 changed files, 0 matches",
     "scanner_positive_control": "PASS"
   },
@@ -127,5 +127,26 @@
     "residual_location": "disposable system TEMP only, outside repository, DualPool product root, and known user configuration roots",
     "synthetic_material": "local CLIProxyAPI client/management keys generated for this verification only; temporary auth directories contain zero files; no secretstore/WinCred/real provider credential was read",
     "classification": "environment residue, not provenance or product failure and not a repository delivery blocker"
-  }
+  },
+  "post_ci_repair": {
+    "scope": "test fixture only; production receipt parser/trust policy unchanged",
+    "regression": "TestVerifiedV738ReceiptRejectsTampering now constructs unknown/duplicate-field mutations independent of LF/CRLF and verifies mutated input differs",
+    "stress_x50": "PASS; go test ./internal/upstreamcatalog -count=50; 0.074s",
+    "race_x10": "PASS; go test -race ./internal/upstreamcatalog -count=10; 1.125s",
+    "snapshot": "PASS; go mod verify; go vet ./...; go test -count=1 ./...; git diff --check"
+  },
+  "source_ci_attempts": [
+    {
+      "sha": "918722fe91995436a9ffd24b8684ca210748f0e9",
+      "run_id": "35702682125",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "failed_step": "Go tests",
+      "failure": "TestVerifiedV738ReceiptRejectsTampering: newline-sensitive strings.Replace failed to mutate embedded receipt on Windows CRLF checkout",
+      "production_parser_failure": false,
+      "all_other_steps": "format, module verification, vet PASS; later steps skipped"
+    }
+  ],
+  "source_ci_next": "PENDING correction commit push"
 }

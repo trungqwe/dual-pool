@@ -79,19 +79,44 @@ func TestVerifiedV738ReceiptRejectsTampering(t *testing.T) {
 			}
 		})
 	}
-	for _, bad := range [][]byte{
-		[]byte(strings.Replace(string(verifiedV738Receipt), "\n}\n", ",\n  \"unknown\": true\n}\n", 1)),
-		[]byte(strings.Replace(string(verifiedV738Receipt), "\n  \"version\": \"7.3.8\",", "\n  \"version\": \"7.3.8\",\n  \"version\": \"7.3.8\",", 1)),
-	} {
-		if _, err := parseVerifiedV738Receipt(bad); err == nil {
-			t.Fatal("structurally tampered receipt accepted")
-		}
+	for _, ending := range []struct {
+		name   string
+		ending string
+	}{{name: "LF", ending: "\n"}, {name: "CRLF", ending: "\r\n"}} {
+		t.Run(ending.name, func(t *testing.T) {
+			receipt := strings.ReplaceAll(strings.ReplaceAll(string(verifiedV738Receipt), "\r\n", "\n"), "\n", ending.ending)
+			unknown := insertUnknownReceiptField(receipt)
+			duplicate := strings.Replace(receipt, `"version": "7.3.8",`, `"version": "7.3.8", "version": "7.3.8",`, 1)
+			for name, bad := range map[string]string{"unknown field": unknown, "duplicate version": duplicate} {
+				t.Run(name, func(t *testing.T) {
+					if bad == receipt {
+						t.Fatal("tampering fixture did not modify the receipt")
+					}
+					if _, err := parseVerifiedV738Receipt([]byte(bad)); err == nil {
+						t.Fatal("structurally tampered receipt accepted")
+					}
+				})
+			}
+		})
 	}
 }
 
+func insertUnknownReceiptField(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	closing := strings.LastIndexByte(trimmed, '}')
+	if closing < 0 {
+		return raw
+	}
+	return trimmed[:closing] + `,"unknown":true` + trimmed[closing:]
+}
+
 func TestVerifiedV738ReceiptRejectsDuplicateKeys(t *testing.T) {
-	bad := []byte(strings.Replace(string(verifiedV738Receipt), "\n  \"tag\": \"v7.3.8\",", "\n  \"tag\": \"v7.3.8\",\n  \"tag\": \"v7.3.8\",", 1))
-	if _, err := parseVerifiedV738Receipt(bad); err == nil {
+	receipt := string(verifiedV738Receipt)
+	bad := strings.Replace(receipt, `"tag": "v7.3.8",`, `"tag": "v7.3.8", "tag": "v7.3.8",`, 1)
+	if bad == receipt {
+		t.Fatal("duplicate-key fixture did not modify the receipt")
+	}
+	if _, err := parseVerifiedV738Receipt([]byte(bad)); err == nil {
 		t.Fatal("duplicate key accepted")
 	}
 }
