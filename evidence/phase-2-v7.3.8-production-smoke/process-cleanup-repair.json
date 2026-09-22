@@ -1,0 +1,9 @@
+{
+  "status": "PASS_COMPONENT_SMOKE_PROCESS_CLEANUP_REPAIR",
+  "old_bug": {"kill": "commandSmokeProcess.Kill called os.Process.Kill successfully", "wait": "exec.Cmd.Wait returned expected *exec.ExitError on Windows", "old_result": "cleanup incorrectly failed because any non-os.ErrProcessDone Wait error was rejected"},
+  "repaired_classification": "terminateSmokeProcess accepts nil or *exec.ExitError only after Kill returns nil",
+  "unexpected_wait_error": "fails closed",
+  "child_already_gone_before_kill": "os.ErrProcessDone from Kill fails closed",
+  "real_subprocess_regression": "TestCommandSmokeProcessForcedKillProducesExitError and TestTerminateSmokeProcessAcceptsExpectedForcedTermination",
+  "port_and_workspace": "cleanup still requires port-free check and exact owned workspace removal"
+}

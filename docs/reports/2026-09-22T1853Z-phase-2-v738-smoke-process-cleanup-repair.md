@@ -1,0 +1,6 @@
+
+## Process cleanup repair addendum — 2026-09-22
+
+Owner/auditor classified the real Windows Disposable Smoke cleanup path as `FAIL_REPAIR_REQUIRED`: `os.Process.Kill` succeeds by deliberate `TerminateProcess`, while `exec.Cmd.Wait` returns the expected non-zero `*exec.ExitError`. The previous cleanup rejected that expected result. `terminateSmokeProcess` now accepts `nil` or `*exec.ExitError` only after a successful owned `Kill`; `Kill` errors including `os.ErrProcessDone` and every other wait error remain failures. Port-free verification and exact owned workspace removal remain mandatory.
+
+A real `os/exec` helper subprocess regression proves the raw Windows result and the repaired classification. New deterministic regressions cover expected forced termination, unexpected wait failure and child-already-gone-before-Kill. No archive download, live product mutation, provider action, promotion or upstream movement occurred. Evidence: [`process-cleanup-repair.json`](../evidence/phase-2-v7.3.8-production-smoke/process-cleanup-repair.json). Broader Windows stress commands can surface existing TempDir cleanup residue under repeated lock-heavy tests; the focused cleanup regressions pass and final Source CI is authoritative.

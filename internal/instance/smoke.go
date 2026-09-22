@@ -329,10 +329,7 @@ func verifySmokeEndpoints(ctx context.Context, port int, keys smokeKeys, request
 func (s *updaterSmoke) cleanupAttempt(child smokeProcess, port int, attempt string, owned bool, deps smokeDependencies) error {
 	var failures []error
 	if child != nil {
-		if err := child.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
-			failures = append(failures, err)
-		}
-		if err := child.Wait(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		if err := terminateSmokeProcess(child); err != nil {
 			failures = append(failures, err)
 		}
 		if port != 0 {
@@ -355,6 +352,27 @@ func (s *updaterSmoke) cleanupAttempt(child smokeProcess, port int, attempt stri
 		}
 	}
 	return errors.Join(failures...)
+}
+
+// terminateSmokeProcess accepts the non-zero exit status produced by a
+// deliberate Windows TerminateProcess call, but only after our Kill request
+// succeeded. An already-dead child and every other wait failure remain errors.
+func terminateSmokeProcess(child smokeProcess) error {
+	if child == nil {
+		return ErrCompatibilitySmoke
+	}
+	if err := child.Kill(); err != nil {
+		return err
+	}
+	waitErr := child.Wait()
+	if waitErr == nil {
+		return nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(waitErr, &exitErr) {
+		return nil
+	}
+	return waitErr
 }
 
 func (s *updaterSmoke) removeAttempt(attempt string) error {

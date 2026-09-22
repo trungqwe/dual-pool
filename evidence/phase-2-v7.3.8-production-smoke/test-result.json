@@ -1,1 +1,16 @@
-{"focused_x20":"PASS: cliproxyconfig, instance, runtimeupdate, update","stress_x50":"PASS: cliproxyconfig, runtimeupdate, update, installedslot, winacl; instance PASS filtered Smoke/Promotion/Rollback/Recovery/ComposeUpdater","race_x10":"PASS: cliproxyconfig, instance, runtimeupdate, update, installedslot","full_go":"PASS go test ./...","full_race":"PASS go test -race -count=1 ./...","vet":"PASS","modules":"PASS","node":"PASS 55/55","lock":"PASS","build":"PASS Windows executable build","archive":"SKIPPED: DUALPOOL_V738_ARCHIVE unset"}
+{
+  "focused_x20": "PASS: cliproxyconfig, instance, runtimeupdate, update",
+  "stress_x50": "PASS: cliproxyconfig, runtimeupdate, update, installedslot, winacl; instance PASS filtered Smoke/Promotion/Rollback/Recovery/ComposeUpdater",
+  "race_x10": "PASS: cliproxyconfig, instance, runtimeupdate, update, installedslot",
+  "full_go": "PASS go test ./...",
+  "full_race": "PASS go test -race -count=1 ./...",
+  "vet": "PASS",
+  "modules": "PASS",
+  "node": "PASS 55/55",
+  "lock": "PASS",
+  "build": "PASS Windows executable build",
+  "archive": "SKIPPED: DUALPOOL_V738_ARCHIVE unset",
+  "process_cleanup_raw_exec": "PASS: raw exec.Cmd Wait returns *exec.ExitError after successful Kill",
+  "process_cleanup_classification": "PASS: accepted only after successful owned Kill; unexpected wait and child-gone cases fail closed",
+  "local_stress_note": "Targeted new cleanup regressions x50 PASS; broader Windows instance/update stress reruns encountered pre-existing TempDir cleanup residue flakiness; final Source CI is authoritative"
+}

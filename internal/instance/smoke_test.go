@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/trungqwe/dual-pool/internal/cliproxyconfig"
@@ -32,6 +34,7 @@ func (i *smokeInspector) Inspect(uint32) (lockfile.ProcessIdentity, error) { ret
 type fakeSmokeProcess struct {
 	pid       uint32
 	killed    bool
+	killErr   error
 	waitErr   error
 	killCount int
 	waitCount int
@@ -40,6 +43,9 @@ type fakeSmokeProcess struct {
 func (p *fakeSmokeProcess) PID() uint32 { return p.pid }
 func (p *fakeSmokeProcess) Kill() error {
 	p.killCount++
+	if p.killErr != nil {
+		return p.killErr
+	}
 	p.killed = true
 	return nil
 }
@@ -56,6 +62,11 @@ type productionSmokeSecrets struct {
 	values map[secretstore.Purpose][]byte
 	reads  int
 }
+
+var (
+	forcedKillRawOnce      atomic.Bool
+	forcedKillClassifyOnce atomic.Bool
+)
 
 func (r *productionSmokeSecrets) Get(p secretstore.Purpose) ([]byte, error) {
 	r.reads++
@@ -387,6 +398,74 @@ func TestDisposableSmokeCleanupFailureFailsClosed(t *testing.T) {
 	err := f.smoke.Disposable(context.Background(), f.manager.lock.Version)
 	if !errors.Is(err, ErrCompatibilitySmoke) || !strings.Contains(err.Error(), "synthetic process wait failure") {
 		t.Fatalf("cleanup failure result=%v", err)
+	}
+}
+
+func TestDisposableSmokeAcceptsExpectedForcedTerminationStatus(t *testing.T) {
+	f := newDisposableFixture(t)
+	f.child.waitErr = &exec.ExitError{}
+	if err := f.smoke.Disposable(context.Background(), f.manager.lock.Version); err != nil {
+		t.Fatalf("expected deliberate forced termination to be accepted: %v", err)
+	}
+}
+
+func TestDisposableSmokeRejectsUnexpectedWaitFailure(t *testing.T) {
+	f := newDisposableFixture(t)
+	f.child.waitErr = errors.New("unexpected wait failure")
+	if err := f.smoke.Disposable(context.Background(), f.manager.lock.Version); !errors.Is(err, ErrCompatibilitySmoke) || !strings.Contains(err.Error(), "unexpected wait failure") {
+		t.Fatalf("unexpected wait failure classification=%v", err)
+	}
+}
+
+func TestDisposableSmokeRejectsChildGoneBeforeOwnedTermination(t *testing.T) {
+	f := newDisposableFixture(t)
+	f.child.killErr = os.ErrProcessDone
+	if err := f.smoke.Disposable(context.Background(), f.manager.lock.Version); !errors.Is(err, ErrCompatibilitySmoke) {
+		t.Fatalf("already-gone child was accepted: %v", err)
+	}
+}
+
+func TestSmokeHelperProcess(t *testing.T) {
+	if os.Getenv("DUALPOOL_SMOKE_HELPER") != "1" {
+		return
+	}
+	select {}
+}
+
+func startSmokeHelper(t *testing.T) *commandSmokeProcess {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestSmokeHelperProcess$")
+	cmd.Env = append(os.Environ(), "DUALPOOL_SMOKE_HELPER=1")
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	return &commandSmokeProcess{cmd: cmd}
+}
+
+func TestCommandSmokeProcessForcedKillProducesExitError(t *testing.T) {
+	if forcedKillRawOnce.Swap(true) {
+		t.Skip("raw os/exec regression already exercised in this test process")
+	}
+	child := startSmokeHelper(t)
+	if err := child.Kill(); err != nil {
+		t.Fatalf("Kill failed: %v", err)
+	}
+	err := child.Wait()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("raw Wait error=%T %v, want *exec.ExitError after deliberate Kill", err, err)
+	}
+}
+
+func TestTerminateSmokeProcessAcceptsExpectedForcedTermination(t *testing.T) {
+	if forcedKillClassifyOnce.Swap(true) {
+		t.Skip("forced-exit classification already exercised in this test process")
+	}
+	child := startSmokeHelper(t)
+	if err := terminateSmokeProcess(child); err != nil {
+		t.Fatalf("expected successful deliberate termination, got %v", err)
 	}
 }
 

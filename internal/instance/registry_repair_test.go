@@ -63,6 +63,12 @@ func legacyInstallFixture(t *testing.T) (*Manager, upstreamstage.Result) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The fixture's executable is this test binary, whose identity is already
+	// established by the synthetic TestMain -h contract. Avoid spawning a
+	// Windows verifier subprocess for every stress iteration.
+	m.identityVerifier = func(_ context.Context, _ string, _ upstreamstage.ExpectedIdentity) (upstreamstage.Identity, error) {
+		return upstreamstage.Identity{VersionMatch: true, CommitMatch: true}, nil
+	}
 	if err = copyProtected(acl, self, m.executablePath()); err != nil {
 		t.Fatal(err)
 	}
